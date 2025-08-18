@@ -3282,7 +3282,7 @@
                 </div>
                 <div id="selectedFileInfo" style="display: none;">
                   <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
-                  <p style="color: var(--blueprint-blue); font-weight: 600;" id="selectedFileName"></p>
+                  <p style="color: var(--blueprint-blue); font-weight: 600; word-break: break-all; padding: 0 1rem;" id="selectedFileName"></p>
                   <p style="color: #666; font-size: 0.9rem;" id="selectedFileSize"></p>
                 </div>
               </div>
@@ -3342,7 +3342,14 @@
             // Show selected file info
             fileSelectionArea.style.display = 'none';
             selectedFileInfo.style.display = 'block';
-            document.getElementById('selectedFileName').textContent = file.name;
+            
+            // Truncate very long filenames for display but show full name on hover
+            const fileName = file.name;
+            const displayName = fileName.length > 60 ? fileName.substring(0, 30) + '...' + fileName.substring(fileName.length - 27) : fileName;
+            const fileNameElement = document.getElementById('selectedFileName');
+            fileNameElement.textContent = displayName;
+            fileNameElement.title = fileName; // Show full name on hover
+            
             document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
             
             // Enable upload button
