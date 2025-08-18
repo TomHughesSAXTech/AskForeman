@@ -2873,7 +2873,7 @@
                 position: relative;
               ">
                 <!-- Close X button -->
-                <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
+                <button onclick="this.closest('[style*=\"position: fixed\"]').remove();" style="
                   position: absolute;
                   top: 1rem;
                   right: 1rem;
@@ -2940,7 +2940,7 @@
                     <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
                       Download the file, edit it in Word/Excel/etc., then upload the updated version
                     </p>
-                    <button onclick="downloadAndTrackForEdit('${file.blobUrl}', '${fileName}', '${file.fullPath}'); this.closest('div').parentElement.parentElement.parentElement.remove();" style="
+                    <button onclick="downloadAndTrackForEdit('${file.blobUrl}', '${fileName}', '${file.fullPath}'); this.closest('[style*=\"position: fixed\"]').remove();" style="
                       padding: 0.75rem 1.5rem;
                       background: var(--blueprint-blue);
                       color: white;
@@ -2966,7 +2966,7 @@
                     <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
                       Open the file directly in your browser for viewing
                     </p>
-                    <button onclick="openInBrowser('${file.blobUrl}'); this.closest('div').parentElement.parentElement.parentElement.remove();" style="
+                    <button onclick="openInBrowser('${file.blobUrl}'); this.closest('[style*=\"position: fixed\"]').remove();" style="
                       padding: 0.75rem 1rem;
                       background: white;
                       color: #333;
@@ -2982,7 +2982,7 @@
                   </div>
                 </div>
                 
-                <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
+                <button onclick="this.closest('[style*=\"position: fixed\"]').remove();" style="
                   margin-top: 1rem;
                   padding: 0.75rem 1.5rem;
                   background: #f0f0f0;
