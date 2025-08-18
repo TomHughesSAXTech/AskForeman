@@ -3851,7 +3851,7 @@
                 <span class="file-meta-item file-meta-date">${formattedDate}</span>
               </div>
               <div class="existing-file-actions">
-                <button class="file-action-btn" onclick="window.open('${file.blobUrl}', '_blank'); event.stopPropagation();"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M12 15l-5-5h3V4h4v6h3l-5 5z"/><path d="M19 18H5v2h14v-2z"/></svg></button>
+                <button class="file-action-btn" onclick="downloadAndTrackForEdit('${file.blobUrl}', '${file.name.replace(/'/g, "\\'").replace(/"/g, "&quot;")}', '${file.fullPath.replace(/'/g, "\\'").replace(/"/g, "&quot;")}'); event.stopPropagation();"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M12 15l-5-5h3V4h4v6h3l-5 5z"/><path d="M19 18H5v2h14v-2z"/></svg></button>
                 <button class="file-action-btn" onclick="deleteFile('${file.fullPath}'); event.stopPropagation();">🗑️</button>
               </div>
             </div>
