@@ -3421,15 +3421,21 @@
         uploadBtn.textContent = 'Uploading...';
         
         try {
+          // Properly encode the path but not the SAS token
+          // The originalPath might contain spaces or special characters that need encoding
+          const encodedPath = originalPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+          
           // Upload to Azure Blob Storage (replacing the original - overwrites the existing blob)
-          const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${originalPath}${AZURE_STORAGE.sasToken}`;
+          const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+          
+          console.log('Uploading to:', uploadUrl); // Debug log
           
           const response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: {
               'x-ms-blob-type': 'BlockBlob',
               'Content-Type': file.type || 'application/octet-stream',
-              'x-ms-blob-content-disposition': `attachment; filename="${file.name}"`,
+              'x-ms-blob-content-disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
               'x-ms-blob-overwrite': 'true' // Explicitly overwrite the existing blob
             },
             body: file
