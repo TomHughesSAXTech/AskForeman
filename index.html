@@ -3452,14 +3452,70 @@
           fileItem.onclick = (e) => handleItemClick(e, file.name, false);
           fileItem.oncontextmenu = (e) => showContextMenu(e, file.name, false);
           
-          // Get file icon based on extension
+          // Get file icon based on extension - using more appropriate icons
           const ext = file.name.split('.').pop().toLowerCase();
-          let icon = '📄';
-          if (ext === 'pdf') icon = '📕';
-          else if (ext === 'docx' || ext === 'doc') icon = '📘';
-          else if (ext === 'xlsx' || ext === 'xls') icon = '📗';
-          else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') icon = '🖼️';
-          else if (ext === 'dwg' || ext === 'dxf') icon = '📐';
+          let icon = '📄'; // Default generic document
+          
+          // PDF files
+          if (ext === 'pdf') {
+            icon = '📑'; // PDF document icon
+          }
+          // Word documents
+          else if (ext === 'docx' || ext === 'doc' || ext === 'docm' || ext === 'dotx' || ext === 'dot') {
+            icon = '📝'; // Word document icon
+          }
+          // Excel spreadsheets
+          else if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm' || ext === 'xlsb' || ext === 'xltx' || ext === 'xlt' || ext === 'csv') {
+            icon = '📊'; // Excel/spreadsheet icon
+          }
+          // PowerPoint presentations
+          else if (ext === 'pptx' || ext === 'ppt' || ext === 'pptm' || ext === 'potx' || ext === 'pot' || ext === 'ppsx' || ext === 'pps') {
+            icon = '📺'; // Presentation icon
+          }
+          // Image files
+          else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'bmp' || ext === 'svg' || ext === 'webp' || ext === 'ico' || ext === 'tiff' || ext === 'tif') {
+            icon = '🖼️'; // Image icon
+          }
+          // CAD/Drawing files
+          else if (ext === 'dwg' || ext === 'dxf' || ext === 'dwf' || ext === 'dgn' || ext === 'rvt' || ext === 'ifc' || ext === 'skp') {
+            icon = '📐'; // CAD/technical drawing icon
+          }
+          // Archive files
+          else if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz' || ext === 'bz2') {
+            icon = '🗜️'; // Archive/compressed file icon
+          }
+          // Text files
+          else if (ext === 'txt' || ext === 'log' || ext === 'md' || ext === 'rtf') {
+            icon = '📃'; // Plain text document
+          }
+          // Email files
+          else if (ext === 'msg' || ext === 'eml' || ext === 'oft') {
+            icon = '📧'; // Email icon
+          }
+          // Video files
+          else if (ext === 'mp4' || ext === 'avi' || ext === 'mov' || ext === 'wmv' || ext === 'flv' || ext === 'mkv' || ext === 'webm') {
+            icon = '🎬'; // Video icon
+          }
+          // Audio files
+          else if (ext === 'mp3' || ext === 'wav' || ext === 'flac' || ext === 'aac' || ext === 'ogg' || ext === 'wma' || ext === 'm4a') {
+            icon = '🎵'; // Audio icon
+          }
+          // Code/Script files
+          else if (ext === 'js' || ext === 'ts' || ext === 'py' || ext === 'java' || ext === 'c' || ext === 'cpp' || ext === 'cs' || ext === 'php' || ext === 'rb' || ext === 'go' || ext === 'swift' || ext === 'kt' || ext === 'rs' || ext === 'html' || ext === 'css' || ext === 'scss' || ext === 'sass' || ext === 'json' || ext === 'xml' || ext === 'yaml' || ext === 'yml' || ext === 'sql') {
+            icon = '💻'; // Code file icon
+          }
+          // OneNote files
+          else if (ext === 'one' || ext === 'onetoc2' || ext === 'onepkg') {
+            icon = '📓'; // Notebook icon
+          }
+          // Visio files
+          else if (ext === 'vsdx' || ext === 'vsd' || ext === 'vss' || ext === 'vst' || ext === 'vssx' || ext === 'vstx') {
+            icon = '🔷'; // Diagram icon
+          }
+          // Project files
+          else if (ext === 'mpp' || ext === 'mpt') {
+            icon = '📅'; // Project/calendar icon
+          }
           
           const formattedDate = file.lastModified ? new Date(file.lastModified).toLocaleDateString() : '';
           
