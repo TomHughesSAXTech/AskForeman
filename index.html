@@ -3464,12 +3464,13 @@
             <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
           </svg>`; // Default generic document
           
-          // PDF files - Adobe PDF logo
+          // PDF files - Adobe PDF logo (classic style)
           if (ext === 'pdf') {
-            icon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-              <path fill="#FF0000" d="M1.5 0h21A1.5 1.5 0 0124 1.5v21a1.5 1.5 0 01-1.5 1.5h-21A1.5 1.5 0 010 22.5v-21A1.5 1.5 0 011.5 0z"/>
-              <path fill="#FFF" d="M7.3 17.85c-.5 0-.85-.3-.85-.75V6.9c0-.45.35-.75.85-.75h3.35c2.5 0 4.05 1.4 4.05 3.7 0 2.25-1.55 3.65-4.05 3.65H8.9v3.6c0 .45-.35.75-.85.75H7.3zm3.05-5.55c1.25 0 2-.65 2-1.75s-.75-1.8-2-1.8H8.9v3.55h1.45z"/>
-              <path fill="#FFF" d="M16 6h3c2.2 0 3.5 1.2 3.5 3.2 0 2.1-1.3 3.3-3.5 3.3h-1.5V17h-1.5V6zm1.5 1.3v3.9h1.5c1.2 0 2-.7 2-2 0-1.2-.8-1.9-2-1.9h-1.5z"/>
+            icon = `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <rect width="32" height="32" rx="2" fill="#DC372C"/>
+              <path fill="white" d="M8.5 10.5h2.8c1.7 0 2.7 1 2.7 2.5s-1 2.5-2.7 2.5h-1.6v2.5H8.5v-7.5zm1.2 1v3h1.6c1 0 1.5-.6 1.5-1.5s-.5-1.5-1.5-1.5H9.7z"/>
+              <path fill="white" d="M14.5 10.5h2.3c2.2 0 3.5 1.3 3.5 3.7s-1.3 3.8-3.5 3.8h-2.3v-7.5zm1.2 1v5.5h1.1c1.5 0 2.3-.9 2.3-2.8 0-1.8-.8-2.7-2.3-2.7h-1.1z"/>
+              <path fill="white" d="M21 10.5h4.5v1H22.2v2.5h2.8v1h-2.8v3H21v-7.5z"/>
             </svg>`;
           }
           // Word documents - Microsoft Word logo
@@ -3508,7 +3509,7 @@
           else if (ext === 'dwg' || ext === 'dxf' || ext === 'dwf' || ext === 'dgn' || ext === 'rvt' || ext === 'ifc' || ext === 'skp') {
             icon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
               <rect fill="#E51937" width="24" height="24" rx="2"/>
-              <path fill="#FFF" d="M6 8h3c1.5 0 2.5 1 2.5 2.5S10.5 13 9 13H7v3H6V8zm1 1v3h2c.8 0 1.5-.7 1.5-1.5S9.8 9 9 9H7zm6 0h1l2 3 2-3h1v7h-1v-5l-2 3-2-3v5h-1V9z"/>
+              <text x="12" y="15" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle">DWG</text>
             </svg>`;
           }
           // Archive files
@@ -3573,7 +3574,7 @@
             icon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
               <path fill="#3955A3" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
               <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
-              <path fill="#FFF" d="M7 11h3l2 8h-1.5l-2-6.5L6.5 19H5z"/>
+              <text x="12" y="16" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="white" text-anchor="middle">V</text>
             </svg>`;
           }
           // Project files - Microsoft Project logo
