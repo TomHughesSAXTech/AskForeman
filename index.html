@@ -2803,7 +2803,7 @@
           
           menu.innerHTML = `
             <div class="context-menu-item" onclick="openFile('${itemName}'); closeContextMenu();">📄 Open</div>
-            <div class="context-menu-item" onclick="window.open('${file.blobUrl}', '_blank'); closeContextMenu();">📥 Download</div>
+            <div class="context-menu-item" onclick="window.open('${file.blobUrl}', '_blank'); closeContextMenu();"><svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;"><path d="M8 11l-4-4h2.5V2h3v5H12l-4 4z"/><path d="M13 13H3v1h10v-1z"/></svg> Download</div>
             <div class="context-menu-separator"></div>
             <div class="context-menu-item" onclick="editFile('${itemName}'); closeContextMenu();">✏️ Edit</div>
             <div class="context-menu-item" onclick="renameItem('${itemName}', false); closeContextMenu();">📝 Rename</div>
@@ -2834,6 +2834,14 @@
         
         if (!file) return;
         
+        // Get file icon based on extension
+        const ext = fileName.split('.').pop().toLowerCase();
+        let fileIcon = getFileIcon(ext);
+        
+        // Format file information
+        const fileSize = formatFileSize(file.size);
+        const lastModified = file.lastModified ? new Date(file.lastModified).toLocaleString() : 'Unknown';
+        
         // Show dialog for open options
         const modal = document.createElement('div');
         modal.innerHTML = `
@@ -2851,85 +2859,204 @@
           ">
             <div style="
               background: white;
-              padding: 2rem;
+              padding: 0;
               border-radius: 10px;
               max-width: 600px;
+              width: 90%;
               box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+              position: relative;
             ">
-              <h3 style="margin-bottom: 1rem;">📄 ${fileName}</h3>
-              <p style="margin-bottom: 1.5rem; color: #666;">Choose an action:</p>
-              
-              <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <!-- Download and Edit Option -->
-                <div style="
-                  padding: 1rem;
-                  background: #f0f8ff;
-                  border: 1px solid #0078d4;
-                  border-radius: 8px;
+              <!-- Header with file info and close button -->
+              <div style="
+                padding: 1.5rem 2rem;
+                border-bottom: 1px solid #e0e0e0;
+                position: relative;
+              ">
+                <!-- Close X button -->
+                <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
+                  position: absolute;
+                  top: 1rem;
+                  right: 1rem;
+                  background: transparent;
+                  border: none;
+                  font-size: 1.5rem;
+                  cursor: pointer;
+                  color: #666;
+                  width: 32px;
+                  height: 32px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border-radius: 4px;
+                  transition: all 0.2s;
                 ">
-                  <h4 style="margin: 0 0 0.5rem 0; color: #0078d4;">✏️ Edit in Native Application</h4>
-                  <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
-                    Download the file, edit it in Word/Excel/etc., then upload the updated version
-                  </p>
-                  <button onclick="downloadAndTrackForEdit('${file.blobUrl}', '${fileName}', '${file.fullPath}'); this.closest('div').parentElement.parentElement.parentElement.remove();" style="
-                    padding: 0.75rem 1.5rem;
-                    background: var(--blueprint-blue);
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    width: 100%;
-                  ">📥 Download for Editing</button>
+                  <span style="line-height: 1;">×</span>
+                </button>
+                
+                <!-- File icon and name -->
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-right: 3rem;">
+                  <div style="width: 32px; height: 32px; flex-shrink: 0;">
+                    ${fileIcon}
+                  </div>
+                  <h3 style="
+                    margin: 0;
+                    font-size: 1.1rem;
+                    word-break: break-word;
+                    line-height: 1.4;
+                    color: #333;
+                  ">${fileName}</h3>
                 </div>
                 
-                <!-- View Only Options -->
+                <!-- File metadata -->
                 <div style="
-                  padding: 1rem;
-                  background: #fffef5;
-                  border: 1px solid #ffc107;
-                  border-radius: 8px;
+                  display: flex;
+                  gap: 2rem;
+                  font-size: 0.85rem;
+                  color: #666;
+                  padding-left: 3rem;
                 ">
-                  <h4 style="margin: 0 0 0.5rem 0; color: #f57f17;">👁️ View Only</h4>
-                  <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
-                    Open the file for viewing (no editing)
-                  </p>
-                  <div style="display: flex; gap: 0.5rem;">
-                    <button onclick="window.open('${file.blobUrl}', '_blank'); this.closest('div').parentElement.parentElement.parentElement.parentElement.remove();" style="
-                      padding: 0.75rem 1rem;
-                      background: white;
-                      color: #333;
-                      border: 1px solid #ccc;
-                      border-radius: 5px;
-                      cursor: pointer;
-                      flex: 1;
-                    ">📄 Download</button>
-                    <button onclick="openInBrowser('${file.blobUrl}'); this.closest('div').parentElement.parentElement.parentElement.parentElement.remove();" style="
-                      padding: 0.75rem 1rem;
-                      background: white;
-                      color: #333;
-                      border: 1px solid #ccc;
-                      border-radius: 5px;
-                      cursor: pointer;
-                      flex: 1;
-                    ">🌐 View in Browser</button>
+                  <div>
+                    <strong>Size:</strong> ${fileSize}
+                  </div>
+                  <div>
+                    <strong>Modified:</strong> ${lastModified}
                   </div>
                 </div>
               </div>
               
-              <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
-                margin-top: 1rem;
-                padding: 0.75rem 1.5rem;
-                background: #f0f0f0;
-                color: #666;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                cursor: pointer;
-                width: 100%;
-              ">Cancel</button>
+              <!-- Body with actions -->
+              <div style="padding: 1.5rem 2rem;">
+                <p style="margin-bottom: 1.5rem; color: #666;">Choose an action:</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                  <!-- Download and Edit Option -->
+                  <div style="
+                    padding: 1rem;
+                    background: #f0f8ff;
+                    border: 1px solid #0078d4;
+                    border-radius: 8px;
+                  ">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #0078d4;">✏️ Edit in Native Application</h4>
+                    <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
+                      Download the file, edit it in Word/Excel/etc., then upload the updated version
+                    </p>
+                    <button onclick="downloadAndTrackForEdit('${file.blobUrl}', '${fileName}', '${file.fullPath}'); this.closest('div').parentElement.parentElement.parentElement.remove();" style="
+                      padding: 0.75rem 1.5rem;
+                      background: var(--blueprint-blue);
+                      color: white;
+                      border: none;
+                      border-radius: 5px;
+                      cursor: pointer;
+                      width: 100%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 0.5rem;
+                    "><svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor"><path d="M10 14l-5-5h3V3h4v6h3l-5 5z"/><path d="M16 16H4v2h12v-2z"/></svg> Download for Editing</button>
+                  </div>
+                  
+                  <!-- View Only Options -->
+                  <div style="
+                    padding: 1rem;
+                    background: #fffef5;
+                    border: 1px solid #ffc107;
+                    border-radius: 8px;
+                  ">
+                    <h4 style="margin: 0 0 0.5rem 0; color: #f57f17;">👁️ View Only</h4>
+                    <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
+                      Open the file directly in your browser for viewing
+                    </p>
+                    <button onclick="openInBrowser('${file.blobUrl}'); this.closest('div').parentElement.parentElement.parentElement.remove();" style="
+                      padding: 0.75rem 1rem;
+                      background: white;
+                      color: #333;
+                      border: 1px solid #ccc;
+                      border-radius: 5px;
+                      cursor: pointer;
+                      width: 100%;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 0.5rem;
+                    ">🌐 View in Browser</button>
+                  </div>
+                </div>
+                
+                <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
+                  margin-top: 1rem;
+                  padding: 0.75rem 1.5rem;
+                  background: #f0f0f0;
+                  color: #666;
+                  border: 1px solid #ccc;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  width: 100%;
+                ">Cancel</button>
+              </div>
             </div>
           </div>
         `;
         document.body.appendChild(modal);
+      }
+      
+      // Helper function to get file icon SVG
+      function getFileIcon(ext) {
+        // PDF files
+        if (ext === 'pdf') {
+          return `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <rect width="32" height="32" rx="2" fill="#DC372C"/>
+            <path fill="white" d="M8.5 10.5h2.8c1.7 0 2.7 1 2.7 2.5s-1 2.5-2.7 2.5h-1.6v2.5H8.5v-7.5zm1.2 1v3h1.6c1 0 1.5-.6 1.5-1.5s-.5-1.5-1.5-1.5H9.7z"/>
+            <path fill="white" d="M14.5 10.5h2.3c2.2 0 3.5 1.3 3.5 3.7s-1.3 3.8-3.5 3.8h-2.3v-7.5zm1.2 1v5.5h1.1c1.5 0 2.3-.9 2.3-2.8 0-1.8-.8-2.7-2.3-2.7h-1.1z"/>
+            <path fill="white" d="M21 10.5h4.5v1H22.2v2.5h2.8v1h-2.8v3H21v-7.5z"/>
+          </svg>`;
+        }
+        // Word documents
+        else if (ext === 'docx' || ext === 'doc') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <path fill="#2B579A" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+            <path fill="#FFF" d="M9.5 11.5h1l.9 4.2h.05l1.05-4.2h1.5l1.05 4.2h.05l.9-4.2h1l-1.45 6h-1.55l-1-3.85h-.05l-1 3.85H10.95z"/>
+          </svg>`;
+        }
+        // Excel spreadsheets
+        else if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <path fill="#107C41" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+            <path fill="#FFF" d="M8.5 11.5h1.5l1.5 3 1.5-3h1.5l-2.25 4.5 2.25 4.5h-1.5L12 17.5l-1.5 3H9l2.25-4.5z"/>
+          </svg>`;
+        }
+        // PowerPoint
+        else if (ext === 'pptx' || ext === 'ppt') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <path fill="#B7472A" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+            <path fill="#FFF" d="M9 11.5h3.5c1.93 0 3 1.07 3 2.75s-1.07 2.75-3 2.75H10.5v3.5H9v-9zm1.5 1.25v3h2c.83 0 1.5-.42 1.5-1.5s-.67-1.5-1.5-1.5h-2z"/>
+          </svg>`;
+        }
+        // CAD/Drawing files
+        else if (ext === 'dwg' || ext === 'dxf' || ext === 'rvt') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <rect fill="#E51937" width="24" height="24" rx="2"/>
+            <text x="12" y="15" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="white" text-anchor="middle">DWG</text>
+          </svg>`;
+        }
+        // Images
+        else if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'].includes(ext)) {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <rect fill="#4285F4" width="24" height="24" rx="2"/>
+            <circle cx="8" cy="8" r="2" fill="#FFF"/>
+            <path fill="#FFF" d="M4 18h16l-5-6-4 4.5-2.5-3z"/>
+          </svg>`;
+        }
+        // Default document icon
+        else {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+            <path fill="#757575" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+            <path fill="#FFF" d="M7 11h10v1H7zm0 2h10v1H7zm0 2h7v1H7z"/>
+          </svg>`;
+        }
       }
       
       // Track file for editing and show upload prompt
