@@ -1811,6 +1811,13 @@
       });
 
       function handleCategoryFiles(files, category) {
+        // Auto-check the category checkbox when files are selected
+        const checkboxId = category === "signed-contracts" ? "signed-contracts" : category;
+        const checkbox = document.getElementById(checkboxId);
+        if (checkbox && files.length > 0) {
+          checkbox.checked = true;
+        }
+        
         for (let file of files) {
           if (isValidFile(file)) {
             const fileWithCategory = new File([file], file.name, {
@@ -3166,6 +3173,53 @@
         document.body.appendChild(notification);
       }
       
+      // Helper function to show errors in modal
+      function showModalError(modal, message) {
+        // Remove any existing error message
+        const existingError = modal.querySelector('.modal-error-message');
+        if (existingError) {
+          existingError.remove();
+        }
+        
+        // Create error message element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'modal-error-message';
+        errorDiv.style.cssText = `
+          background: #fee;
+          border: 1px solid #fcc;
+          border-radius: 5px;
+          padding: 0.75rem;
+          margin: 1rem 0;
+          color: #c00;
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        `;
+        errorDiv.innerHTML = `
+          <span style="font-size: 1.2rem;">⚠️</span>
+          <span>${message}</span>
+        `;
+        
+        // Insert error after the title
+        const modalContent = modal.querySelector('div[style*="background: white"]');
+        if (modalContent) {
+          const title = modalContent.querySelector('h3');
+          if (title) {
+            title.insertAdjacentElement('afterend', errorDiv);
+          } else {
+            modalContent.insertBefore(errorDiv, modalContent.firstChild);
+          }
+        }
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (errorDiv.parentNode) {
+            errorDiv.remove();
+          }
+        }, 5000);
+      }
+      
       // Show upload dialog for edited file - make it global
       window.showUploadDialog = function(originalFileName, originalPath) {
         const modal = document.createElement('div');
@@ -3198,6 +3252,7 @@
               box-shadow: 0 10px 30px rgba(0,0,0,0.3);
               max-height: 90vh;
               overflow-y: auto;
+              position: relative;
             ">
               <h3 style="margin-bottom: 1rem; color: var(--concrete-gray);">📤 Upload Updated File</h3>
               <p style="margin-bottom: 1rem; color: #666; word-break: break-word;">
@@ -3346,7 +3401,11 @@
       window.uploadEditedFile = async function(originalPath) {
         const file = window.tempEditedFile;
         if (!file) {
-          showError('No file selected');
+          // Show error in modal
+          const modal = document.getElementById('uploadEditModal');
+          if (modal) {
+            showModalError(modal, 'No file selected. Please choose a file to upload.');
+          }
           return;
         }
         
@@ -3402,7 +3461,15 @@
           
         } catch (error) {
           console.error('Error uploading edited file:', error);
-          showError(`Failed to upload edited file: ${error.message}`);
+          
+          // Show error in modal instead of global error
+          const modal = document.getElementById('uploadEditModal');
+          if (modal) {
+            const errorMsg = error.message.includes('Failed to fetch') ? 
+              'Network error: Unable to connect to storage. Please check your internet connection and try again.' : 
+              `Failed to upload edited file: ${error.message}`;
+            showModalError(modal, errorMsg);
+          }
           
           // Re-enable button
           uploadBtn.disabled = false;
