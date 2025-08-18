@@ -3166,8 +3166,8 @@
         document.body.appendChild(notification);
       }
       
-      // Show upload dialog for edited file
-      function showUploadDialog(originalFileName, originalPath) {
+      // Show upload dialog for edited file - make it global
+      window.showUploadDialog = function(originalFileName, originalPath) {
         const modal = document.createElement('div');
         modal.id = 'uploadEditModal';
         
@@ -3326,8 +3326,8 @@
         });
       }
       
-      // Confirmation dialogs for dismissing edit notifications
-      function confirmDismissEdit() {
+      // Confirmation dialogs for dismissing edit notifications - make them global
+      window.confirmDismissEdit = function() {
         if (confirm('Are you sure you want to dismiss? The AI model will not learn from any of your changes unless you upload the updated file.')) {
           const notification = document.getElementById('editNotification');
           if (notification) notification.remove();
@@ -3335,15 +3335,15 @@
         }
       }
       
-      function confirmCancelUpload() {
+      window.confirmCancelUpload = function() {
         if (confirm('Are you sure you want to cancel? The AI model will not learn from any of your changes unless you upload the updated file.')) {
           const modal = document.getElementById('uploadEditModal');
           if (modal) modal.remove();
         }
       }
       
-      // Upload the edited file to replace the original
-      async function uploadEditedFile(originalPath) {
+      // Upload the edited file to replace the original - make it global
+      window.uploadEditedFile = async function(originalPath) {
         const file = window.tempEditedFile;
         if (!file) {
           showError('No file selected');
