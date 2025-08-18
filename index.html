@@ -3127,16 +3127,19 @@
           animation: slideIn 0.3s ease-out;
         `;
         
+        // Truncate long filenames for display
+        const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+        
         notification.innerHTML = `
           <div style="display: flex; align-items: start; gap: 1rem;">
             <div style="font-size: 2rem;">📝</div>
             <div style="flex: 1;">
-              <h4 style="margin: 0 0 0.5rem 0; color: var(--concrete-gray);">Editing: ${fileName}</h4>
+              <h4 style="margin: 0 0 0.5rem 0; color: var(--concrete-gray); word-break: break-word;" title="${fileName}">Editing: ${displayName}</h4>
               <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
                 After editing in your application, click below to upload the updated version.
               </p>
-              <div style="display: flex; gap: 0.5rem;">
-                <button onclick="showUploadDialog('${fileName}', '${fullPath}')" style="
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="showUploadDialog('${fileName.replace(/'/g, "\\'").replace(/"/g, "&quot;")}', '${fullPath.replace(/'/g, "\\'").replace(/"/g, "&quot;")}')" style="
                   padding: 0.5rem 1rem;
                   background: var(--blueprint-blue);
                   color: white;
@@ -3144,8 +3147,9 @@
                   border-radius: 5px;
                   cursor: pointer;
                   font-size: 0.9rem;
-                ">📤 Upload Updated File</button>
-                <button onclick="this.closest('#editNotification').remove(); sessionStorage.removeItem('editingFile');" style="
+                  white-space: nowrap;
+                ">📤 Upload Updated</button>
+                <button onclick="confirmDismissEdit()" style="
                   padding: 0.5rem 1rem;
                   background: #f0f0f0;
                   color: #666;
@@ -3165,6 +3169,11 @@
       // Show upload dialog for edited file
       function showUploadDialog(originalFileName, originalPath) {
         const modal = document.createElement('div');
+        modal.id = 'uploadEditModal';
+        
+        // Truncate long filenames for display
+        const displayName = originalFileName.length > 50 ? originalFileName.substring(0, 47) + '...' : originalFileName;
+        
         modal.innerHTML = `
           <div style="
             position: fixed;
@@ -3177,18 +3186,22 @@
             justify-content: center;
             align-items: center;
             z-index: 10000;
+            overflow-y: auto;
+            padding: 1rem;
           ">
             <div style="
               background: white;
               padding: 2rem;
               border-radius: 10px;
               max-width: 500px;
-              width: 90%;
+              width: 100%;
               box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+              max-height: 90vh;
+              overflow-y: auto;
             ">
               <h3 style="margin-bottom: 1rem; color: var(--concrete-gray);">📤 Upload Updated File</h3>
-              <p style="margin-bottom: 1rem; color: #666;">
-                Select the edited version of <strong>${originalFileName}</strong> to replace the existing file.
+              <p style="margin-bottom: 1rem; color: #666; word-break: break-word;">
+                Select the edited version of <strong title="${originalFileName}">${displayName}</strong> to replace the existing file.
               </p>
               
               <div style="
@@ -3247,7 +3260,7 @@
                   font-weight: 600;
                   opacity: 0.5;
                 ">Upload & Replace</button>
-                <button onclick="this.closest('div').parentElement.parentElement.remove();" style="
+                <button onclick="confirmCancelUpload()" style="
                   padding: 0.75rem 1.5rem;
                   background: #f0f0f0;
                   color: #666;
@@ -3313,6 +3326,22 @@
         });
       }
       
+      // Confirmation dialogs for dismissing edit notifications
+      function confirmDismissEdit() {
+        if (confirm('Are you sure you want to dismiss? The AI model will not learn from any of your changes unless you upload the updated file.')) {
+          const notification = document.getElementById('editNotification');
+          if (notification) notification.remove();
+          sessionStorage.removeItem('editingFile');
+        }
+      }
+      
+      function confirmCancelUpload() {
+        if (confirm('Are you sure you want to cancel? The AI model will not learn from any of your changes unless you upload the updated file.')) {
+          const modal = document.getElementById('uploadEditModal');
+          if (modal) modal.remove();
+        }
+      }
+      
       // Upload the edited file to replace the original
       async function uploadEditedFile(originalPath) {
         const file = window.tempEditedFile;
@@ -3326,28 +3355,31 @@
         uploadBtn.textContent = 'Uploading...';
         
         try {
-          // Upload to Azure Blob Storage (replacing the original)
+          // Upload to Azure Blob Storage (replacing the original - overwrites the existing blob)
           const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${originalPath}${AZURE_STORAGE.sasToken}`;
           
           const response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: {
               'x-ms-blob-type': 'BlockBlob',
-              'Content-Type': file.type || 'application/octet-stream'
+              'Content-Type': file.type || 'application/octet-stream',
+              'x-ms-blob-content-disposition': `attachment; filename="${file.name}"`,
+              'x-ms-blob-overwrite': 'true' // Explicitly overwrite the existing blob
             },
             body: file
           });
           
           if (response.ok || response.status === 201) {
-            // Success!
-            addSystemMessage(`✅ File "${originalPath.split('/').pop()}" has been updated successfully!`);
+            // Success! The file has been replaced in Azure Blob Storage
+            const fileName = originalPath.split('/').pop();
+            addSystemMessage(`✅ File "${fileName}" has been successfully replaced with your updated version!`);
             
             // Clear the edit session
             sessionStorage.removeItem('editingFile');
             window.tempEditedFile = null;
             
             // Close the modal
-            const modal = uploadBtn.closest('div').parentElement.parentElement;
+            const modal = document.getElementById('uploadEditModal');
             if (modal) modal.remove();
             
             // Remove the edit notification if it exists
