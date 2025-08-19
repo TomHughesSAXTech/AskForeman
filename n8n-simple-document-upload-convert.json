@@ -1,0 +1,185 @@
+{
+  "name": "Document Upload and Convert (Simplified)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/upload-document",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook_upload",
+      "name": "Webhook - Upload Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "containerName": "askforeman",
+        "blobName": "={{ $json.body.clientId }}/original/{{ $json.body.fileName }}",
+        "binaryPropertyName": "data",
+        "options": {
+          "metadata": {
+            "clientId": "={{ $json.body.clientId }}",
+            "uploadDate": "={{ new Date().toISOString() }}",
+            "originalFileName": "={{ $json.body.fileName }}",
+            "fileType": "original"
+          }
+        }
+      },
+      "id": "upload_original",
+      "name": "Upload to Original Folder",
+      "type": "n8n-nodes-base.azureBlobStorage",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "azureBlobStorageApi": {
+          "id": "1",
+          "name": "Azure Blob Storage",
+          "data": {
+            "accountName": "askforemanblob",
+            "accessKey": "fVJvbGT2QCbmJaQ7VpLyqPDC7kgaC5L5T8oJ3mKx8hA2dF9nR4sT6vB1wX0zY5uM+AStBx7kLg=="
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://askforemanfunctions.azurewebsites.net/api/ConvertDocumentToText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "BlobUrl",
+              "value": "=https://askforemanblob.blob.core.windows.net/askforeman/{{ $json.body.clientId }}/original/{{ $json.body.fileName }}"
+            },
+            {
+              "name": "FileName",
+              "value": "={{ $json.body.fileName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "convert_document",
+      "name": "Convert Document to Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "Azure Function Key",
+          "data": {
+            "name": "x-functions-key",
+            "value": "aHR0cHM6Ly9hc2tmb3JlbWFuZnVuY3Rpb25zLmF6dXJld2Vic2l0ZXMubmV0L2FwaS9Db252ZXJ0RG9jdW1lbnRUb1RleHQ/Y29kZT1BSXphU3lEUV9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fXw=="
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "containerName": "askforeman",
+        "blobName": "={{ $node['webhook_upload'].json.body.clientId }}/converted/{{ $node['webhook_upload'].json.body.fileName.replace(/\\.[^.]+$/, '.txt') }}",
+        "binaryPropertyName": "data",
+        "options": {
+          "metadata": {
+            "clientId": "={{ $node['webhook_upload'].json.body.clientId }}",
+            "originalFileName": "={{ $node['webhook_upload'].json.body.fileName }}",
+            "convertedDate": "={{ new Date().toISOString() }}",
+            "fileType": "converted"
+          }
+        }
+      },
+      "id": "upload_converted",
+      "name": "Save Converted Text",
+      "type": "n8n-nodes-base.azureBlobStorage",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "azureBlobStorageApi": {
+          "id": "1",
+          "name": "Azure Blob Storage",
+          "data": {
+            "accountName": "askforemanblob",
+            "accessKey": "fVJvbGT2QCbmJaQ7VpLyqPDC7kgaC5L5T8oJ3mKx8hA2dF9nR4sT6vB1wX0zY5uM+AStBx7kLg=="
+          }
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"success\": true,\n  \"message\": \"Document uploaded and converted successfully\",\n  \"clientId\": \"{{ $node['webhook_upload'].json.body.clientId }}\",\n  \"originalFile\": \"{{ $node['webhook_upload'].json.body.clientId }}/original/{{ $node['webhook_upload'].json.body.fileName }}\",\n  \"convertedFile\": \"{{ $node['webhook_upload'].json.body.clientId }}/converted/{{ $node['webhook_upload'].json.body.fileName.replace(/\\\\.[^.]+$/, '.txt') }}\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "prepare_response",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "webhook_upload": {
+      "main": [
+        [
+          {
+            "node": "upload_original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_original": {
+      "main": [
+        [
+          {
+            "node": "convert_document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convert_document": {
+      "main": [
+        [
+          {
+            "node": "upload_converted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_converted": {
+      "main": [
+        [
+          {
+            "node": "prepare_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateId": "document-upload-convert-simple"
+  },
+  "pinData": {},
+  "versionId": "simple-v1",
+  "triggerCount": 0,
+  "tags": []
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Convert Document to Text - Fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://workflows.saxtechnology.com/webhook/ask-foreman/convert-to-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"BlobUrl\": \"={{ $json.blobUrl }}\",\n  \"FileName\": \"={{ $json.sanitizedFileName }}\",\n  \"Client\": \"={{ $json.client }}\",\n  \"Category\": \"={{ $json.category }}\",\n  \"OriginalFileName\": \"={{ $json.originalFileName }}\",\n  \"FileId\": \"={{ $json.fileId }}\",\n  \"MimeType\": \"={{ $json.mimeType }}\"\n}",
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "convert-text-fixed",
+      "name": "Convert Document to Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 300]
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {},
+  "id": "convert-text-node"
+}

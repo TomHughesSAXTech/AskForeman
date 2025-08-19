@@ -1,0 +1,201 @@
+{
+  "name": "Document Upload and Convert with Code Nodes",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/upload-document",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook_upload",
+      "name": "Webhook - Upload Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract file data and metadata\nconst clientId = $input.first().json.body.clientId;\nconst fileName = $input.first().json.body.fileName;\nconst fileData = $input.first().binary.data;\n\n// Azure Storage configuration\nconst storageAccount = 'askforemanblob';\nconst containerName = 'askforeman';\nconst sasToken = 'sv=2021-06-08&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-08-31T04:59:59Z&st=2024-01-01T05:00:00Z&spr=https&sig=XKf7L9mNR2vGjQx5Y8bTzW4aH3pC1dS0oE6nU7kFr9M%3D';\n\n// Construct blob URL for original folder\nconst blobName = `${clientId}/original/${fileName}`;\nconst uploadUrl = `https://${storageAccount}.blob.core.windows.net/${containerName}/${blobName}?${sasToken}`;\n\n// Prepare output\nreturn {\n  json: {\n    clientId,\n    fileName,\n    uploadUrl,\n    blobName\n  },\n  binary: {\n    data: fileData\n  }\n};"
+      },
+      "id": "prepare_upload",
+      "name": "Prepare Upload to Original",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "options": {
+          "headers": {
+            "x-ms-blob-type": "BlockBlob",
+            "x-ms-meta-clientId": "={{ $json.clientId }}",
+            "x-ms-meta-uploadDate": "={{ new Date().toISOString() }}",
+            "x-ms-meta-originalFileName": "={{ $json.fileName }}",
+            "x-ms-meta-fileType": "original"
+          }
+        }
+      },
+      "id": "upload_to_azure",
+      "name": "Upload to Azure Original",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://askforemanfunctions.azurewebsites.net/api/ConvertDocumentToText",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "BlobUrl",
+              "value": "=https://askforemanblob.blob.core.windows.net/askforeman/{{ $('prepare_upload').item.json.clientId }}/original/{{ $('prepare_upload').item.json.fileName }}"
+            },
+            {
+              "name": "FileName",
+              "value": "={{ $('prepare_upload').item.json.fileName }}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "x-functions-key": "AIzaSyDQ_________________________________________________"
+          }
+        }
+      },
+      "id": "convert_document",
+      "name": "Convert Document to Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get conversion result and metadata\nconst convertedText = $input.first().json.text || $input.first().json.content || $input.first().json;\nconst clientId = $('prepare_upload').first().json.clientId;\nconst originalFileName = $('prepare_upload').first().json.fileName;\n\n// Create text filename (replace extension with .txt)\nconst textFileName = originalFileName.replace(/\\.[^.]+$/, '.txt');\n\n// Azure Storage configuration\nconst storageAccount = 'askforemanblob';\nconst containerName = 'askforeman';\nconst sasToken = 'sv=2021-06-08&ss=bfqt&srt=sco&sp=rwdlacupiytfx&se=2025-08-31T04:59:59Z&st=2024-01-01T05:00:00Z&spr=https&sig=XKf7L9mNR2vGjQx5Y8bTzW4aH3pC1dS0oE6nU7kFr9M%3D';\n\n// Construct blob URL for converted folder\nconst blobName = `${clientId}/converted/${textFileName}`;\nconst uploadUrl = `https://${storageAccount}.blob.core.windows.net/${containerName}/${blobName}?${sasToken}`;\n\n// Convert text to buffer\nconst textBuffer = Buffer.from(JSON.stringify(convertedText));\n\nreturn {\n  json: {\n    clientId,\n    originalFileName,\n    textFileName,\n    uploadUrl,\n    blobName,\n    textContent: convertedText\n  },\n  binary: {\n    data: {\n      data: textBuffer.toString('base64'),\n      mimeType: 'text/plain',\n      fileName: textFileName\n    }\n  }\n};"
+      },
+      "id": "prepare_converted",
+      "name": "Prepare Converted Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data",
+        "options": {
+          "headers": {
+            "x-ms-blob-type": "BlockBlob",
+            "x-ms-meta-clientId": "={{ $json.clientId }}",
+            "x-ms-meta-originalFileName": "={{ $json.originalFileName }}",
+            "x-ms-meta-convertedDate": "={{ new Date().toISOString() }}",
+            "x-ms-meta-fileType": "converted",
+            "Content-Type": "text/plain"
+          }
+        }
+      },
+      "id": "upload_converted",
+      "name": "Upload Converted to Azure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const clientId = $('prepare_upload').first().json.clientId;\nconst originalFileName = $('prepare_upload').first().json.fileName;\nconst textFileName = originalFileName.replace(/\\.[^.]+$/, '.txt');\n\nreturn {\n  json: {\n    success: true,\n    message: 'Document uploaded and converted successfully',\n    clientId: clientId,\n    originalFile: `${clientId}/original/${originalFileName}`,\n    convertedFile: `${clientId}/converted/${textFileName}`,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "prepare_response",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "webhook_upload": {
+      "main": [
+        [
+          {
+            "node": "prepare_upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_upload": {
+      "main": [
+        [
+          {
+            "node": "upload_to_azure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_to_azure": {
+      "main": [
+        [
+          {
+            "node": "convert_document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "convert_document": {
+      "main": [
+        [
+          {
+            "node": "prepare_converted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_converted": {
+      "main": [
+        [
+          {
+            "node": "upload_converted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_converted": {
+      "main": [
+        [
+          {
+            "node": "prepare_response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateId": "document-upload-convert-code"
+  },
+  "pinData": {},
+  "versionId": "code-v1",
+  "triggerCount": 0,
+  "tags": []
+}
