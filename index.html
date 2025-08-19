@@ -1643,7 +1643,7 @@
       const AZURE_STORAGE = {
         account: "saxtechfcs",
         container: "fcs-clients",
-        sasToken: "?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D"
+        sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
       };
 
       // File Management
@@ -2464,14 +2464,15 @@
           setTimeout(async () => {
             await loadClients();
             
-            // Try to set the new client as selected
-            const clientId = data.client?.id || clientName.toLowerCase().replace(/\s+/g, '-');
+            // Try to set the new client as selected - use the actual folder name, not lowercase
+            const clientId = data.client?.folderName || data.client?.id || clientName;
             
             // Check if the client appears in the dropdown
             const options = Array.from(clientSelect.options);
             const clientOption = options.find(opt => 
-              opt.value.toLowerCase() === clientId.toLowerCase() || 
-              opt.value.toLowerCase() === clientName.toLowerCase()
+              opt.value === clientId || 
+              opt.value === clientName ||
+              opt.value.toLowerCase() === clientId.toLowerCase()
             );
             
             if (clientOption) {
