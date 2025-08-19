@@ -2451,7 +2451,7 @@
             console.log('Create client response data:', data);
           } catch (e) {
             console.warn('Response was not JSON, treating as success');
-            data = { client: { id: clientName.toLowerCase().replace(/\s+/g, '-') } };
+            data = { client: { id: clientName.replace(/\s+/g, '-') } };  // Keep original capitalization
           }
           
           // Close modal
@@ -2576,7 +2576,7 @@
                   if (!clientSet.has(clientName) && !clientName.startsWith('.') && clientName.length > 0) {
                     clientSet.add(clientName);
                     clients.push({
-                      id: clientName.toLowerCase(),
+                      id: clientName,  // Keep original capitalization for folder name
                       name: formatClientName(clientName),
                       projectName: '' // Will be populated if needed
                     });
@@ -2594,7 +2594,7 @@
                 // Skip system folders or hidden folders
                 if (!folderName.startsWith('.') && folderName.length > 0 && folderName !== 'FCS-OriginalClients') {
                   clients.push({
-                    id: folderName.toLowerCase(),
+                    id: folderName,  // Keep original capitalization for folder name
                     name: formatClientName(folderName),
                     projectName: '' // Will be populated if needed
                   });
@@ -2627,7 +2627,7 @@
             
             uniqueClients.forEach(clientName => {
               clients.push({
-                id: clientName.toLowerCase(),
+                id: clientName,  // Keep original capitalization for folder name
                 name: formatClientName(clientName),
                 projectName: ''
               });
@@ -3679,7 +3679,7 @@
           const formData = new FormData();
           formData.append('file', file);
           formData.append('category', category);
-          formData.append('client', clientName.toLowerCase());
+          formData.append('client', clientName);  // Keep original capitalization
           formData.append('action', 'reindex'); // Flag this as a reindex operation
           
           // Call the processing webhook

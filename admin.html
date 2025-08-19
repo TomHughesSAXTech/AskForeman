@@ -472,7 +472,7 @@
         const AZURE_STORAGE = {
             account: 'saxtechfcs',
             container: 'fcs-clients',
-            sasToken: '?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D'
+            sasToken: '?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D'
         };
         
         // Azure Function key is loaded from external config file or sessionStorage
@@ -560,7 +560,7 @@
                         if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
                             const clientName = pathParts[1];
                             clients.push({
-                                id: clientName.toLowerCase(),
+                                id: clientName,  // Keep original capitalization
                                 name: clientName,
                                 folder: clientName,
                                 projectType: 'Commercial',
