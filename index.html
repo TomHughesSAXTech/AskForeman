@@ -2388,7 +2388,16 @@
           return;
         }
         
+        // Show loading state in the create button
+        const createBtn = event.target || document.querySelector('#clientModal button[onclick="createClient()"]');
+        if (createBtn) {
+          createBtn.disabled = true;
+          createBtn.textContent = 'Creating...';
+        }
+        
         try {
+          console.log('Creating client:', { clientName, projectName, projectType });
+          
           const response = await fetch(API_CONFIG.createClientWebhookUrl, {
             method: 'POST',
             headers: {
@@ -2402,32 +2411,64 @@
             }),
           });
           
+          console.log('Create client response status:', response.status);
+          
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            console.error('Create client error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText || 'Server error'}`);
           }
           
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+            console.log('Create client response data:', data);
+          } catch (e) {
+            console.warn('Response was not JSON, treating as success');
+            data = { client: { id: clientName.toLowerCase().replace(/\s+/g, '-') } };
+          }
           
           // Close modal
           closeClientModal();
           
-          // Update client dropdown
-          await loadClients();
+          // Add success message first
+          addSystemMessage(`✅ Client "${clientName}" created successfully! Project: "${projectName}". The client folder is being created in Azure Storage...`);
           
-          // Set the new client as selected
-          const clientId = data.client.id;
-          clientSelect.value = clientId;
-          selectedClient = clientId;
-          
-          // Add success message
-          addSystemMessage(`✅ Client "${clientName}" created successfully! Project: "${projectName}". You can now upload documents for this client.`);
-          
-          updateProcessButton();
+          // Wait a moment for Azure to create the folder, then reload clients
+          setTimeout(async () => {
+            await loadClients();
+            
+            // Try to set the new client as selected
+            const clientId = data.client?.id || clientName.toLowerCase().replace(/\s+/g, '-');
+            
+            // Check if the client appears in the dropdown
+            const options = Array.from(clientSelect.options);
+            const clientOption = options.find(opt => 
+              opt.value.toLowerCase() === clientId.toLowerCase() || 
+              opt.value.toLowerCase() === clientName.toLowerCase()
+            );
+            
+            if (clientOption) {
+              clientSelect.value = clientOption.value;
+              selectedClient = clientOption.value;
+              addSystemMessage(`✅ Client "${clientName}" is now selected and ready for document uploads.`);
+            } else {
+              console.log('Client not found in dropdown yet, it may take a moment to appear');
+              addSystemMessage(`⚠️ Client "${clientName}" was created but may take a moment to appear in the list. Please refresh the page if it doesn't appear shortly.`);
+            }
+            
+            updateProcessButton();
+          }, 2000); // Wait 2 seconds for Azure to create the folder
           
         } catch (error) {
           console.error('Create client error:', error);
           alert(`Error creating client: ${error.message}`);
+          
+          // Re-enable the create button
+          if (createBtn) {
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Client';
+          }
         }
       }
       
@@ -3421,22 +3462,39 @@
         uploadBtn.textContent = 'Uploading...';
         
         try {
-          // Properly encode the path but not the SAS token
-          // The originalPath might contain spaces or special characters that need encoding
-          const encodedPath = originalPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+          // Parse the original path to properly handle encoding
+          // The originalPath already contains the full path like "FCS-OriginalClients/clientname/category/filename"
+          // We need to encode each segment properly while preserving the structure
           
-          // Upload to Azure Blob Storage (replacing the original - overwrites the existing blob)
+          // First, normalize the path (remove any double slashes, trim)
+          let normalizedPath = originalPath.replace(/\/+/g, '/').trim();
+          
+          // Encode each path segment separately
+          const pathSegments = normalizedPath.split('/');
+          const encodedSegments = pathSegments.map(segment => {
+            // Skip empty segments
+            if (!segment) return '';
+            // Encode the segment, which will handle spaces and special characters
+            return encodeURIComponent(segment);
+          }).filter(s => s); // Remove empty segments
+          
+          const encodedPath = encodedSegments.join('/');
+          
+          // Construct the upload URL with the SAS token
           const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodedPath}${AZURE_STORAGE.sasToken}`;
           
-          console.log('Uploading to:', uploadUrl); // Debug log
+          console.log('Original path:', originalPath);
+          console.log('Encoded path:', encodedPath);
+          console.log('Full upload URL:', uploadUrl); // Debug log
           
           const response = await fetch(uploadUrl, {
             method: 'PUT',
             headers: {
               'x-ms-blob-type': 'BlockBlob',
               'Content-Type': file.type || 'application/octet-stream',
-              'x-ms-blob-content-disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
-              'x-ms-blob-overwrite': 'true' // Explicitly overwrite the existing blob
+              'x-ms-blob-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+              'x-ms-blob-overwrite': 'true', // Explicitly overwrite the existing blob
+              'x-ms-blob-cache-control': 'no-cache' // Prevent caching issues
             },
             body: file
           });
