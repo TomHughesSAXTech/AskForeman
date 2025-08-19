@@ -433,23 +433,23 @@
                                         <span>🤖 Auto-detect</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="drawings">
+                                        <input type="radio" name="uploadCategory" value="Drawings">
                                         <span>📐 Drawings</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="estimates">
+                                        <input type="radio" name="uploadCategory" value="Estimates">
                                         <span>💰 Estimates</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="proposals">
+                                        <input type="radio" name="uploadCategory" value="Proposals">
                                         <span>📊 Proposals</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="specs">
+                                        <input type="radio" name="uploadCategory" value="Specs">
                                         <span>📋 Specs</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="signed-contracts">
+                                        <input type="radio" name="uploadCategory" value="Signed-Contracts">
                                         <span>📝 Contracts</span>
                                     </label>
                                 </div>
@@ -680,15 +680,15 @@
                 const xmlDoc = parser.parseFromString(xmlText, "text/xml");
                 const blobs = xmlDoc.getElementsByTagName("Blob");
                 
-                // Organize documents by category/folder
+                // Organize documents by category/folder (using capitalized folder names as in Azure)
                 const documentsByCategory = {
-                    'drawings': [],
-                    'estimates': [],
-                    'proposals': [],
-                    'specs': [],
-                    'signed-contracts': [],
-                    'documents': [],
-                    'other': []
+                    'Drawings': [],
+                    'Estimates': [],
+                    'Proposals': [],
+                    'Specs': [],
+                    'Signed-Contracts': [],
+                    'Documents': [],
+                    'Other': []
                 };
                 
                 // Parse and categorize documents
@@ -735,7 +735,7 @@
                             if (documentsByCategory[category]) {
                                 documentsByCategory[category].push(doc);
                             } else {
-                                documentsByCategory['other'].push(doc);
+                                documentsByCategory['Other'].push(doc);
                             }
                         }
                     }
@@ -749,15 +749,15 @@
                 if (totalDocs === 0) {
                     html += '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">No documents found</p>';
                 } else {
-                    // Category display names and icons
+                    // Category display names and icons (matching Azure folder names)
                     const categoryInfo = {
-                        'drawings': { name: 'Drawings', icon: '📐' },
-                        'estimates': { name: 'Estimates', icon: '💰' },
-                        'proposals': { name: 'Proposals', icon: '📊' },
-                        'specs': { name: 'Specifications', icon: '📋' },
-                        'signed-contracts': { name: 'Signed Contracts', icon: '📝' },
-                        'documents': { name: 'General Documents', icon: '📁' },
-                        'other': { name: 'Other Files', icon: '📎' }
+                        'Drawings': { name: 'Drawings', icon: '📐' },
+                        'Estimates': { name: 'Estimates', icon: '💰' },
+                        'Proposals': { name: 'Proposals', icon: '📊' },
+                        'Specs': { name: 'Specifications', icon: '📋' },
+                        'Signed-Contracts': { name: 'Signed Contracts', icon: '📝' },
+                        'Documents': { name: 'General Documents', icon: '📁' },
+                        'Other': { name: 'Other Files', icon: '📎' }
                     };
                     
                     // Display each category
@@ -1022,19 +1022,19 @@
                 const fileSize = formatFileSize(file.size);
                 
                 // Auto-detect category if default is 'auto'
-                let autoCategory = 'documents';
+                let autoCategory = 'Documents';
                 if (defaultCategory === 'auto') {
                     const lowerName = fileName.toLowerCase();
                     if (lowerName.includes('drawing') || lowerName.includes('plan')) {
-                        autoCategory = 'drawings';
+                        autoCategory = 'Drawings';
                     } else if (lowerName.includes('estimate')) {
-                        autoCategory = 'estimates';
+                        autoCategory = 'Estimates';
                     } else if (lowerName.includes('proposal')) {
-                        autoCategory = 'proposals';
+                        autoCategory = 'Proposals';
                     } else if (lowerName.includes('spec')) {
-                        autoCategory = 'specs';
+                        autoCategory = 'Specs';
                     } else if (lowerName.includes('contract')) {
-                        autoCategory = 'signed-contracts';
+                        autoCategory = 'Signed-Contracts';
                     }
                 }
                 
@@ -1045,12 +1045,12 @@
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileSize}</td>`;
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">`;
                 html += `<select id="fileCategory_${index}" style="padding: 0.25rem; border: 1px solid var(--medium-gray); border-radius: 3px;">`;
-                html += `<option value="drawings" ${selectedCategory === 'drawings' ? 'selected' : ''}>📐 Drawings</option>`;
-                html += `<option value="estimates" ${selectedCategory === 'estimates' ? 'selected' : ''}>💰 Estimates</option>`;
-                html += `<option value="proposals" ${selectedCategory === 'proposals' ? 'selected' : ''}>📊 Proposals</option>`;
-                html += `<option value="specs" ${selectedCategory === 'specs' ? 'selected' : ''}>📋 Specs</option>`;
-                html += `<option value="signed-contracts" ${selectedCategory === 'signed-contracts' ? 'selected' : ''}>📝 Contracts</option>`;
-                html += `<option value="documents" ${selectedCategory === 'documents' ? 'selected' : ''}>📁 Documents</option>`;
+                html += `<option value="Drawings" ${selectedCategory === 'Drawings' ? 'selected' : ''}>📐 Drawings</option>`;
+                html += `<option value="Estimates" ${selectedCategory === 'Estimates' ? 'selected' : ''}>💰 Estimates</option>`;
+                html += `<option value="Proposals" ${selectedCategory === 'Proposals' ? 'selected' : ''}>📊 Proposals</option>`;
+                html += `<option value="Specs" ${selectedCategory === 'Specs' ? 'selected' : ''}>📋 Specs</option>`;
+                html += `<option value="Signed-Contracts" ${selectedCategory === 'Signed-Contracts' ? 'selected' : ''}>📝 Contracts</option>`;
+                html += `<option value="Documents" ${selectedCategory === 'Documents' ? 'selected' : ''}>📁 Documents</option>`;
                 html += `</select>`;
                 html += `</td>`;
                 html += '</tr>';
@@ -1089,7 +1089,7 @@
                 
                 // Get category from dropdown
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
-                const category = categorySelect ? categorySelect.value : 'documents';
+                const category = categorySelect ? categorySelect.value : 'Documents';
                 
                 const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
                 const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
@@ -1169,21 +1169,21 @@
                 const file = files[i];
                 const fileName = file.name;
                 
-                let category = 'documents';
+                let category = 'Documents';
                 
                 if (selectedCategory === 'auto') {
                     // Auto-categorize based on filename
                     const lowerName = fileName.toLowerCase();
                     if (lowerName.includes('drawing') || lowerName.includes('plan')) {
-                        category = 'drawings';
+                        category = 'Drawings';
                     } else if (lowerName.includes('estimate')) {
-                        category = 'estimates';
+                        category = 'Estimates';
                     } else if (lowerName.includes('proposal')) {
-                        category = 'proposals';
+                        category = 'Proposals';
                     } else if (lowerName.includes('spec')) {
-                        category = 'specs';
+                        category = 'Specs';
                     } else if (lowerName.includes('contract')) {
-                        category = 'signed-contracts';
+                        category = 'Signed-Contracts';
                     }
                 } else {
                     // Use manually selected category
