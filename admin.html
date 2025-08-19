@@ -491,6 +491,9 @@
                 console.log('No config in sessionStorage');
             }
         }
+        
+        // Debug: Log if key is configured (without exposing the actual key)
+        console.log('Azure Function key configured:', AZURE_FUNCTION_KEY ? 'Yes' : 'No');
 
         let selectedClient = null;
         let clients = [];
@@ -873,9 +876,22 @@
             }
             
             try {
-                const response = await fetch(`https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code=${AZURE_FUNCTION_KEY}`, {
-                    method: 'DELETE'
+                const deleteUrl = `https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code=${AZURE_FUNCTION_KEY}`;
+                console.log('Delete URL:', deleteUrl.replace(AZURE_FUNCTION_KEY, 'REDACTED'));
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Delete response error:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+                }
                 
                 const result = await response.json();
                 
@@ -890,6 +906,7 @@
                     showStatus('error', `Failed to delete client: ${result.Error}`);
                 }
             } catch (error) {
+                console.error('Delete client error:', error);
                 showStatus('error', `Failed to delete client: ${error.message}`);
             } finally {
                 hideLoading();
@@ -1146,6 +1163,8 @@
                 const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
                 
                 try {
+                    console.log(`Uploading ${fileName} to ${category}`);
+                    
                     // Check if file exists
                     const checkResponse = await fetch(uploadUrl, { method: 'HEAD' });
                     
@@ -1165,12 +1184,22 @@
                             body: file
                         });
                         
+                        console.log(`Upload response for ${fileName}:`, uploadResponse.status);
+                        
                         if (uploadResponse.ok || uploadResponse.status === 201) {
                             successCount++;
+                            console.log(`Successfully uploaded ${fileName}`);
+                        } else {
+                            const errorText = await uploadResponse.text();
+                            console.error(`Failed to upload ${fileName}:`, uploadResponse.status, errorText);
                         }
+                    } else {
+                        console.log(`Skipped ${fileName} (user cancelled)`);
                     }
                 } catch (error) {
                     console.error(`Error uploading ${fileName}:`, error);
+                    // Show user the specific error
+                    showStatus('error', `Failed to upload ${fileName}: ${error.message}`);
                 }
                 
                 document.getElementById('loadingText').textContent = `Processing file ${i + 1} of ${selectedFiles.length}...`;
