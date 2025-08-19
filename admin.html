@@ -876,39 +876,103 @@
             
             showLoading('Deleting client and all associated files...');
             
-            // Check if Azure Function key is configured
-            if (!AZURE_FUNCTION_KEY) {
-                showStatus('error', 'Azure Function key not configured. Please add admin-config.js file.');
-                hideLoading();
-                return;
-            }
-            
             try {
-                const deleteUrl = `https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code=${AZURE_FUNCTION_KEY}`;
-                console.log('Delete URL:', deleteUrl.replace(AZURE_FUNCTION_KEY, 'REDACTED'));
+                // First, list all blobs in the client folder
+                const prefix = `FCS-OriginalClients/${selectedClient.folder}/`;
+                const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
                 
-                const response = await fetch(deleteUrl, {
-                    method: 'DELETE'
-                    // Remove mode and headers to avoid preflight request
-                });
+                const listResponse = await fetch(listUrl);
+                const xmlText = await listResponse.text();
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Delete response error:', response.status, errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const blobs = xmlDoc.getElementsByTagName("Blob");
+                
+                let deletedCount = 0;
+                let failedCount = 0;
+                
+                // Delete each blob
+                for (let i = 0; i < blobs.length; i++) {
+                    const nameEl = blobs[i].getElementsByTagName("Name")[0];
+                    if (nameEl) {
+                        const blobPath = nameEl.textContent;
+                        const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
+                        
+                        try {
+                            const deleteResponse = await fetch(deleteUrl, {
+                                method: 'DELETE',
+                                headers: {
+                                    'x-ms-delete-snapshots': 'include'
+                                }
+                            });
+                            
+                            if (deleteResponse.ok || deleteResponse.status === 202) {
+                                deletedCount++;
+                                console.log(`Deleted: ${blobPath}`);
+                            } else {
+                                failedCount++;
+                                console.error(`Failed to delete: ${blobPath}`);
+                            }
+                        } catch (error) {
+                            failedCount++;
+                            console.error(`Error deleting ${blobPath}:`, error);
+                        }
+                    }
+                    
+                    // Update progress
+                    document.getElementById('loadingText').textContent = `Deleting files... (${deletedCount} deleted, ${failedCount} failed)`;
                 }
                 
-                const result = await response.json();
+                // Also try to delete from FCS-ConvertedClients folder
+                const convertedPrefix = `FCS-ConvertedClients/${selectedClient.folder}/`;
+                const convertedListUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(convertedPrefix)}`;
                 
-                if (result.Success) {
-                    showStatus('success', `Client deleted successfully. ${result.Summary.TotalDeleted} files removed.`);
+                try {
+                    const convertedResponse = await fetch(convertedListUrl);
+                    const convertedXml = await convertedResponse.text();
+                    const convertedDoc = parser.parseFromString(convertedXml, "text/xml");
+                    const convertedBlobs = convertedDoc.getElementsByTagName("Blob");
+                    
+                    for (let i = 0; i < convertedBlobs.length; i++) {
+                        const nameEl = convertedBlobs[i].getElementsByTagName("Name")[0];
+                        if (nameEl) {
+                            const blobPath = nameEl.textContent;
+                            const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
+                            
+                            try {
+                                const deleteResponse = await fetch(deleteUrl, {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'x-ms-delete-snapshots': 'include'
+                                    }
+                                });
+                                
+                                if (deleteResponse.ok || deleteResponse.status === 202) {
+                                    deletedCount++;
+                                    console.log(`Deleted converted: ${blobPath}`);
+                                }
+                            } catch (error) {
+                                console.error(`Error deleting converted ${blobPath}:`, error);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.log('No converted files or error accessing converted folder:', error);
+                }
+                
+                if (deletedCount > 0) {
+                    showStatus('success', `Client deleted successfully. ${deletedCount} files removed.`);
                     selectedClient = null;
                     loadClients();
                     // Clear the details panel
                     document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
                     document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
+                } else if (failedCount > 0) {
+                    showStatus('error', `Failed to delete client. ${failedCount} files could not be deleted.`);
                 } else {
-                    showStatus('error', `Failed to delete client: ${result.Error}`);
+                    showStatus('success', 'Client folder was empty or already deleted.');
+                    selectedClient = null;
+                    loadClients();
                 }
             } catch (error) {
                 console.error('Delete client error:', error);
