@@ -331,6 +331,8 @@
             margin-top: 0.25rem;
         }
     </style>
+    <!-- External configuration for sensitive keys -->
+    <script src="admin-config.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -346,7 +348,7 @@
     <!-- Admin Panel -->
     <div id="adminContainer" class="admin-container">
         <header class="header">
-            <h1>🛠️ Ask Foreman Admin Panel <span style="font-size: 0.5em; color: var(--hi-vis-green);">(v2.0 - Updated)</span></h1>
+            <h1>🛠️ Ask Foreman Admin Panel</h1>
             <div>
                 <button class="btn btn-primary" onclick="window.location.href='index.html'">← Back to App</button>
                 <button class="btn btn-danger" onclick="logout()">Logout</button>
@@ -495,6 +497,10 @@
             container: 'fcs-clients',
             sasToken: '?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D'
         };
+        
+        // Azure Function key is loaded from external config file
+        // If not found, use empty string (will fail gracefully with proper error message)
+        const AZURE_FUNCTION_KEY = window.AdminConfig?.AZURE_FUNCTION_KEY || '';
 
         let selectedClient = null;
         let clients = [];
@@ -863,7 +869,37 @@
                 return;
             }
             
-            showStatus('error', 'Client deletion requires server-side implementation to delete all Azure blobs');
+            showLoading('Deleting client and all associated files...');
+            
+            // Check if Azure Function key is configured
+            if (!AZURE_FUNCTION_KEY) {
+                showStatus('error', 'Azure Function key not configured. Please add admin-config.js file.');
+                hideLoading();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code=${AZURE_FUNCTION_KEY}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.Success) {
+                    showStatus('success', `Client deleted successfully. ${result.Summary.TotalDeleted} files removed.`);
+                    selectedClient = null;
+                    loadClients();
+                    // Clear the details panel
+                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
+                    document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
+                } else {
+                    showStatus('error', `Failed to delete client: ${result.Error}`);
+                }
+            } catch (error) {
+                showStatus('error', `Failed to delete client: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
         }
 
         function createNewClient() {
