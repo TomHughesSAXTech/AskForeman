@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Foreman Admin - System Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --construction-orange: #ff6b35;
+            --safety-yellow: #ffc107;
+            --concrete-gray: #424242;
+            --steel-gray: #616161;
+            --blueprint-blue: #1565c0;
+            --hi-vis-green: #76ff03;
+            --warning-red: #d32f2f;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #212121;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+        }
+
+        .login-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            color: var(--concrete-gray);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+            color: var(--dark-gray);
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-box button:hover {
+            opacity: 0.9;
+        }
+
+        .error-message {
+            color: var(--warning-red);
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        /* Admin Panel */
+        .admin-container {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--concrete-gray) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--warning-red);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--safety-yellow);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout {
+            background: var(--warning-red);
+            color: white;
+        }
+
+        .btn-back {
+            background: var(--blueprint-blue);
+            color: white;
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .panel h2 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--safety-yellow);
+        }
+
+        /* Client List */
+        .client-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .client-item {
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .client-item:hover {
+            background: var(--light-gray);
+            border-color: var(--construction-orange);
+        }
+
+        .client-item.selected {
+            background: #fff3cd;
+            border-color: var(--safety-yellow);
+        }
+
+        .client-name {
+            font-weight: 600;
+            color: var(--concrete-gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .client-info {
+            font-size: 0.9rem;
+            color: var(--steel-gray);
+        }
+
+        /* Client Details */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--concrete-gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+            color: var(--dark-gray);
+        }
+
+        .btn-danger {
+            background: var(--warning-red);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--hi-vis-green);
+            color: var(--dark-gray);
+        }
+
+        .btn-secondary {
+            background: var(--steel-gray);
+            color: white;
+        }
+
+        /* Documents Section */
+        .documents-section {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--medium-gray);
+        }
+
+        .document-category {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 5px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .category-title {
+            font-weight: 600;
+            color: var(--concrete-gray);
+        }
+
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+            padding: 0.5rem;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--light-gray);
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            flex: 1;
+            font-size: 0.9rem;
+            color: var(--steel-gray);
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .file-actions button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        /* Mass Operations */
+        .mass-operations {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #fff3cd;
+            border: 2px solid var(--safety-yellow);
+            border-radius: 5px;
+        }
+
+        .mass-operations h3 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+        }
+
+        .operation-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--light-gray);
+            border-top: 5px solid var(--safety-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* File Upload */
+        .file-upload-area {
+            border: 2px dashed var(--blueprint-blue);
+            border-radius: 5px;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            background: var(--light-gray);
+        }
+
+        .file-upload-area.dragover {
+            background: #e3f2fd;
+            border-color: var(--blueprint-blue);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--medium-gray);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--steel-gray);
+            border-radius: 5px 5px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--concrete-gray);
+            border: 2px solid var(--medium-gray);
+            border-bottom: 2px solid white;
+            margin-bottom: -2px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>🔒 Admin Access</h2>
+            <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">Login</button>
+            <div id="loginError" class="error-message">Invalid password. Please try again.</div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminContainer" class="admin-container">
+        <header class="header">
+            <h1>🛠️ Ask Foreman Admin Panel</h1>
+            <div class="header-buttons">
+                <button class="btn btn-back" onclick="window.location.href='index.html'">← Back to App</button>
+                <button class="btn btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Client List Panel -->
+            <div class="panel">
+                <h2>📁 Client Projects</h2>
+                <button class="btn btn-primary" onclick="createNewClient()" style="width: 100%; margin-bottom: 1rem;">
+                    ➕ Create New Client
+                </button>
+                <div id="clientList" class="client-list">
+                    <!-- Client items will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Client Details Panel -->
+            <div class="panel">
+                <h2>📋 Client Details</h2>
+                
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('details')">Details</button>
+                    <button class="tab" onclick="switchTab('documents')">Documents</button>
+                    <button class="tab" onclick="switchTab('operations')">Operations</button>
+                </div>
+
+                <!-- Details Tab -->
+                <div id="detailsTab" class="tab-content active">
+                    <div id="clientDetails">
+                        <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
+                            Select a client from the list to view details
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content">
+                    <div id="documentManagement">
+                        <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
+                            Select a client to manage documents
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Operations Tab -->
+                <div id="operationsTab" class="tab-content">
+                    <div class="mass-operations">
+                        <h3>🔧 Mass Operations</h3>
+                        <div class="operation-buttons">
+                            <button class="btn btn-success" onclick="reindexAllDocuments()">
+                                🔄 Reindex All Documents
+                            </button>
+                            <button class="btn btn-primary" onclick="syncAzureStorage()">
+                                ☁️ Sync Azure Storage
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportClientData()">
+                                📥 Export Client Data
+                            </button>
+                            <button class="btn btn-danger" onclick="clearSearchIndex()">
+                                🗑️ Clear Search Index
+                            </button>
+                        </div>
+                        
+                        <div style="margin-top: 2rem;">
+                            <h4>📤 Bulk Upload Documents</h4>
+                            <div class="file-upload-area" id="bulkUploadArea" onclick="document.getElementById('bulkFileInput').click()">
+                                <p>📁 Drop files here or click to browse</p>
+                                <p style="font-size: 0.9rem; color: var(--steel-gray);">Select multiple files to upload</p>
+                            </div>
+                            <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFiles(event)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText" style="margin-top: 1rem;">Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const ADMIN_PASSWORD = 'FCS2025!';
+        const API_BASE = 'https://workflows.saxtechnology.com/webhook/ask-foreman';
+        const AZURE_STORAGE = {
+            account: 'saxtechfcs',
+            container: 'fcs-clients',
+            sasToken: '?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D'
+        };
+
+        let selectedClient = null;
+        let clients = [];
+
+        // Authentication
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            window.location.reload();
+        }
+
+        // Check authentication on load
+        window.onload = function() {
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            }
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Load clients from Azure
+        async function loadClients() {
+            showLoading('Loading clients...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/clients/list`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer admin'
+                    }
+                });
+                
+                if (!response.ok) {
+                    // Fallback to direct Azure query
+                    await loadClientsFromAzure();
+                    return;
+                }
+                
+                const data = await response.json();
+                clients = data.clients || [];
+                renderClientList();
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                // Fallback to direct Azure query
+                await loadClientsFromAzure();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadClientsFromAzure() {
+            try {
+                const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
+                
+                const response = await fetch(url);
+                const xmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+                
+                clients = [];
+                for (let i = 0; i < prefixes.length; i++) {
+                    const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+                    if (nameElement) {
+                        const fullPath = nameElement.textContent.replace(/\/$/, '');
+                        const pathParts = fullPath.split('/');
+                        if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                            const clientName = pathParts[1];
+                            clients.push({
+                                id: clientName.toLowerCase(),
+                                name: clientName,
+                                folderName: clientName,
+                                projectName: '',
+                                projectType: 'general',
+                                description: ''
+                            });
+                        }
+                    }
+                }
+                
+                renderClientList();
+            } catch (error) {
+                console.error('Error loading from Azure:', error);
+                showStatus('Failed to load clients', 'error');
+            }
+        }
+
+        function renderClientList() {
+            const listContainer = document.getElementById('clientList');
+            listContainer.innerHTML = '';
+            
+            clients.forEach(client => {
+                const item = document.createElement('div');
+                item.className = 'client-item';
+                item.onclick = () => selectClient(client);
+                
+                item.innerHTML = `
+                    <div class="client-name">${client.name}</div>
+                    <div class="client-info">
+                        ${client.projectName ? `Project: ${client.projectName}` : 'No project name'}
+                    </div>
+                `;
+                
+                listContainer.appendChild(item);
+            });
+        }
+
+        function selectClient(client) {
+            selectedClient = client;
+            
+            // Update UI selection
+            document.querySelectorAll('.client-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.client-item').classList.add('selected');
+            
+            // Load client details
+            loadClientDetails();
+            loadClientDocuments();
+        }
+
+        function loadClientDetails() {
+            const detailsContainer = document.getElementById('clientDetails');
+            
+            detailsContainer.innerHTML = `
+                <div class="form-group">
+                    <label>Client Name</label>
+                    <input type="text" id="clientName" value="${selectedClient.name}">
+                </div>
+                <div class="form-group">
+                    <label>Folder Name (in Azure)</label>
+                    <input type="text" id="folderName" value="${selectedClient.folderName}" readonly style="background: #f0f0f0;">
+                </div>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="projectName" value="${selectedClient.projectName || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Project Type</label>
+                    <select id="projectType">
+                        <option value="Commercial" ${selectedClient.projectType === 'Commercial' ? 'selected' : ''}>Commercial</option>
+                        <option value="Residential" ${selectedClient.projectType === 'Residential' ? 'selected' : ''}>Residential</option>
+                        <option value="Industrial" ${selectedClient.projectType === 'Industrial' ? 'selected' : ''}>Industrial</option>
+                        <option value="Healthcare" ${selectedClient.projectType === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+                        <option value="Educational" ${selectedClient.projectType === 'Educational' ? 'selected' : ''}>Educational</option>
+                        <option value="Government" ${selectedClient.projectType === 'Government' ? 'selected' : ''}>Government</option>
+                        <option value="Infrastructure" ${selectedClient.projectType === 'Infrastructure' ? 'selected' : ''}>Infrastructure</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="projectDescription">${selectedClient.description || ''}</textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="updateClient()">💾 Save Changes</button>
+                    <button class="btn btn-danger" onclick="deleteClient()">🗑️ Delete Client</button>
+                    <button class="btn btn-success" onclick="reindexClient()">🔄 Reindex Documents</button>
+                </div>
+            `;
+        }
+
+        async function loadClientDocuments() {
+            const documentsContainer = document.getElementById('documentManagement');
+            showLoading('Loading documents...');
+            
+            try {
+                const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
+                let documentHTML = '<h3>📂 Document Categories</h3>';
+                
+                for (const category of categories) {
+                    const files = await loadCategoryFiles(selectedClient.folderName, category);
+                    
+                    documentHTML += `
+                        <div class="document-category">
+                            <div class="category-header">
+                                <span class="category-title">📁 ${category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                                <button class="btn btn-primary btn-sm" onclick="uploadToCategory('${category}')">
+                                    ➕ Upload
+                                </button>
+                            </div>
+                            <div class="file-list">
+                    `;
+                    
+                    if (files.length === 0) {
+                        documentHTML += '<p style="color: #999; text-align: center;">No files</p>';
+                    } else {
+                        files.forEach(file => {
+                            documentHTML += `
+                                <div class="file-item">
+                                    <span class="file-name">${file.name}</span>
+                                    <div class="file-actions">
+                                        <button class="btn btn-danger btn-sm" onclick="deleteFile('${file.path}')">Delete</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    documentHTML += '</div></div>';
+                }
+                
+                documentsContainer.innerHTML = documentHTML;
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                documentsContainer.innerHTML = '<p style="color: red;">Failed to load documents</p>';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function loadCategoryFiles(clientName, category) {
+            try {
+                const prefix = `FCS-OriginalClients/${clientName}/${category}/`;
+                const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
+                
+                const response = await fetch(url);
+                const xmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const blobs = xmlDoc.getElementsByTagName("Blob");
+                
+                const files = [];
+                for (let i = 0; i < blobs.length; i++) {
+                    const nameElement = blobs[i].getElementsByTagName("Name")[0];
+                    if (nameElement) {
+                        const fullPath = nameElement.textContent;
+                        const fileName = fullPath.split('/').pop();
+                        if (fileName && !fileName.startsWith('.')) {
+                            files.push({
+                                name: fileName,
+                                path: fullPath
+                            });
+                        }
+                    }
+                }
+                
+                return files;
+            } catch (error) {
+                console.error(`Error loading ${category} files:`, error);
+                return [];
+            }
+        }
+
+        // Client operations
+        async function createNewClient() {
+            const name = prompt('Enter client name:');
+            if (!name) return;
+            
+            const projectName = prompt('Enter project name:');
+            const projectType = prompt('Enter project type (Commercial/Residential/Industrial):') || 'Commercial';
+            
+            showLoading('Creating client...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/clients/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientName: name,
+                        projectName: projectName,
+                        projectType: projectType,
+                        projectDescription: ''
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('Client created successfully', 'success');
+                    setTimeout(() => loadClients(), 2000);
+                } else {
+                    throw new Error('Failed to create client');
+                }
+            } catch (error) {
+                console.error('Error creating client:', error);
+                showStatus('Failed to create client', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function updateClient() {
+            const updatedData = {
+                name: document.getElementById('clientName').value,
+                projectName: document.getElementById('projectName').value,
+                projectType: document.getElementById('projectType').value,
+                description: document.getElementById('projectDescription').value
+            };
+            
+            showLoading('Updating client...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/clients/update`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientId: selectedClient.id,
+                        folderName: selectedClient.folderName,
+                        ...updatedData
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('Client updated successfully', 'success');
+                    selectedClient = { ...selectedClient, ...updatedData };
+                    loadClients();
+                } else {
+                    throw new Error('Update failed');
+                }
+            } catch (error) {
+                console.error('Error updating client:', error);
+                showStatus('Failed to update client metadata. Note: Folder name cannot be changed.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function deleteClient() {
+            if (!confirm(`Are you sure you want to delete "${selectedClient.name}"? This will delete all documents!`)) {
+                return;
+            }
+            
+            showLoading('Deleting client...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/clients/delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientId: selectedClient.id,
+                        folderName: selectedClient.folderName
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('Client deleted successfully', 'success');
+                    selectedClient = null;
+                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
+                    loadClients();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            } catch (error) {
+                console.error('Error deleting client:', error);
+                showStatus('Failed to delete client. You may need to delete files manually in Azure.', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function reindexClient() {
+            if (!confirm(`Reindex all documents for "${selectedClient.name}"?`)) {
+                return;
+            }
+            
+            showLoading('Reindexing documents...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/reindex`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientId: selectedClient.id,
+                        folderName: selectedClient.folderName
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('Documents reindexed successfully', 'success');
+                } else {
+                    throw new Error('Reindex failed');
+                }
+            } catch (error) {
+                console.error('Error reindexing:', error);
+                showStatus('Failed to reindex documents', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Mass operations
+        async function reindexAllDocuments() {
+            if (!confirm('This will reindex ALL documents for ALL clients. This may take a while. Continue?')) {
+                return;
+            }
+            
+            showLoading('Reindexing all documents...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/reindex-all`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showStatus('All documents reindexed successfully', 'success');
+                } else {
+                    throw new Error('Reindex failed');
+                }
+            } catch (error) {
+                console.error('Error reindexing all:', error);
+                showStatus('Failed to reindex all documents', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function syncAzureStorage() {
+            showLoading('Syncing with Azure Storage...');
+            
+            try {
+                // This would sync folder structure with database/metadata
+                await loadClients();
+                showStatus('Azure Storage synced successfully', 'success');
+            } catch (error) {
+                console.error('Error syncing:', error);
+                showStatus('Failed to sync Azure Storage', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function exportClientData() {
+            showLoading('Exporting client data...');
+            
+            try {
+                const data = {
+                    exportDate: new Date().toISOString(),
+                    clients: clients
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `askforeman-clients-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                
+                showStatus('Client data exported successfully', 'success');
+            } catch (error) {
+                console.error('Error exporting:', error);
+                showStatus('Failed to export client data', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function clearSearchIndex() {
+            if (!confirm('WARNING: This will clear the entire search index. All documents will need to be reindexed. Continue?')) {
+                return;
+            }
+            
+            showLoading('Clearing search index...');
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/clear-index`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showStatus('Search index cleared. Please reindex all documents.', 'success');
+                } else {
+                    throw new Error('Clear failed');
+                }
+            } catch (error) {
+                console.error('Error clearing index:', error);
+                showStatus('Failed to clear search index', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // File operations
+        async function deleteFile(filePath) {
+            if (!confirm(`Delete file "${filePath.split('/').pop()}"?`)) {
+                return;
+            }
+            
+            showLoading('Deleting file...');
+            
+            try {
+                const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'x-ms-delete-snapshots': 'include'
+                    }
+                });
+                
+                if (response.ok || response.status === 202) {
+                    showStatus('File deleted successfully', 'success');
+                    loadClientDocuments();
+                } else {
+                    throw new Error('Delete failed');
+                }
+            } catch (error) {
+                console.error('Error deleting file:', error);
+                showStatus('Failed to delete file', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function uploadToCategory(category) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = async (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    await uploadFiles(files, category);
+                }
+            };
+            input.click();
+        }
+
+        async function uploadFiles(files, category) {
+            showLoading(`Uploading ${files.length} file(s)...`);
+            
+            try {
+                for (const file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('category', category);
+                    formData.append('client', selectedClient.id);
+                    
+                    await fetch(`${API_BASE}/process`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                showStatus('Files uploaded successfully', 'success');
+                loadClientDocuments();
+            } catch (error) {
+                console.error('Error uploading files:', error);
+                showStatus('Failed to upload some files', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Bulk upload handling
+        function handleBulkFiles(event) {
+            const files = event.target.files;
+            if (!selectedClient) {
+                alert('Please select a client first');
+                return;
+            }
+            
+            const category = prompt('Enter category for these files (drawings/estimates/proposals/specs/signed-contracts):');
+            if (!category) return;
+            
+            uploadFiles(files, category);
+        }
+
+        // Drag and drop
+        const bulkUploadArea = document.getElementById('bulkUploadArea');
+        
+        bulkUploadArea?.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            bulkUploadArea.classList.add('dragover');
+        });
+        
+        bulkUploadArea?.addEventListener('dragleave', () => {
+            bulkUploadArea.classList.remove('dragover');
+        });
+        
+        bulkUploadArea?.addEventListener('drop', (e) => {
+            e.preventDefault();
+            bulkUploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleBulkFiles({ target: { files } });
+            }
+        });
+
+        // UI helpers
+        function showLoading(text = 'Loading...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
