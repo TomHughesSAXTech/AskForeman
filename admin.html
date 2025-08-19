@@ -624,9 +624,17 @@
                     const metadata = await response.json();
                     selectedClient.description = metadata.description || '';
                     selectedClient.projectType = metadata.projectType || 'Commercial';
+                } else if (response.status === 404) {
+                    // Metadata doesn't exist yet - this is normal for new clients
+                    console.log('Metadata not found for client - will be created on first save');
+                    selectedClient.description = '';
+                    selectedClient.projectType = 'Commercial';
                 }
             } catch (error) {
-                console.log('No metadata found for client, using defaults');
+                // Network error or other issue
+                console.log('Could not load metadata, using defaults:', error.message);
+                selectedClient.description = '';
+                selectedClient.projectType = 'Commercial';
             }
             
             detailsContainer.innerHTML = `
