@@ -424,40 +424,17 @@
                         <div style="margin-top: 2rem;">
                             <h4>📤 Bulk Upload Documents</h4>
                             
-                            <!-- Global Category Selection -->
+                            <!-- Client Selection for Upload -->
                             <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
-                                <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="auto" checked>
-                                        <span>🤖 Auto-detect</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="Drawings">
-                                        <span>📐 Drawings</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="Estimates">
-                                        <span>💰 Estimates</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="Proposals">
-                                        <span>📊 Proposals</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="Specs">
-                                        <span>📋 Specs</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="Signed-Contracts">
-                                        <span>📝 Contracts</span>
-                                    </label>
-                                </div>
+                                <p style="font-weight: 600; margin-bottom: 0.5rem;">Select Client for Upload:</p>
+                                <select id="uploadClientSelect" style="width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid var(--medium-gray); border-radius: 5px;">
+                                    <option value="">-- Select a Client --</option>
+                                </select>
                             </div>
                             
-                            <div class="file-upload-area" id="bulkUploadArea" onclick="document.getElementById('bulkFileInput').click()">
+                            <div class="file-upload-area" id="bulkUploadArea" onclick="handleUploadClick()" style="opacity: 0.5; cursor: not-allowed;">
                                 <p>📁 Drop files here or click to browse</p>
-                                <p style="font-size: 0.9rem; color: var(--steel-gray);">You can customize category for each file after selection</p>
+                                <p style="font-size: 0.9rem; color: var(--steel-gray);">Select a client first, then choose category for each file</p>
                             </div>
                             <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFilesWithPreview(event)">
                             
@@ -544,6 +521,9 @@
                 document.getElementById('adminContainer').style.display = 'flex';
                 loadClients();
             }
+            
+            // Setup upload client selector
+            setupUploadClientSelector();
         };
 
         // Tab switching
@@ -588,6 +568,7 @@
                 }
                 
                 renderClients();
+                updateUploadClientSelector();
             } catch (error) {
                 console.error('Error loading clients:', error);
                 showStatus('error', 'Failed to load clients');
@@ -1004,22 +985,80 @@
         // Store selected files for preview
         let selectedFiles = [];
         
+        // Setup upload client selector
+        function setupUploadClientSelector() {
+            const selector = document.getElementById('uploadClientSelect');
+            if (selector) {
+                selector.addEventListener('change', function() {
+                    const uploadArea = document.getElementById('bulkUploadArea');
+                    if (this.value) {
+                        uploadArea.style.opacity = '1';
+                        uploadArea.style.cursor = 'pointer';
+                    } else {
+                        uploadArea.style.opacity = '0.5';
+                        uploadArea.style.cursor = 'not-allowed';
+                    }
+                });
+            }
+        }
+        
+        // Update upload client selector with current clients
+        function updateUploadClientSelector() {
+            const selector = document.getElementById('uploadClientSelect');
+            if (!selector) return;
+            
+            // Keep current selection if any
+            const currentValue = selector.value;
+            
+            // Clear and rebuild options
+            selector.innerHTML = '<option value="">-- Select a Client --</option>';
+            
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.folder;
+                option.textContent = client.name;
+                selector.appendChild(option);
+            });
+            
+            // Restore selection if it still exists
+            if (currentValue && clients.find(c => c.folder === currentValue)) {
+                selector.value = currentValue;
+            }
+        }
+        
+        // Handle upload area click
+        function handleUploadClick() {
+            const selector = document.getElementById('uploadClientSelect');
+            if (!selector || !selector.value) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
+            document.getElementById('bulkFileInput').click();
+        }
+        
         // Enhanced bulk upload with preview
         function handleBulkFilesWithPreview(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
             
-            if (!selectedClient) {
+            const selector = document.getElementById('uploadClientSelect');
+            if (!selector || !selector.value) {
                 showStatus('error', 'Please select a client first');
                 event.target.value = '';
                 return;
             }
             
-            // Store files for preview
-            selectedFiles = Array.from(files);
+            // Find the selected client for upload
+            const uploadClient = clients.find(c => c.folder === selector.value);
+            if (!uploadClient) {
+                showStatus('error', 'Selected client not found');
+                event.target.value = '';
+                return;
+            }
             
-            // Get default category
-            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
+            // Store files for preview with client info
+            selectedFiles = Array.from(files);
+            selectedFiles.uploadClient = uploadClient;
             
             // Build preview UI
             const fileListContainer = document.getElementById('fileList');
@@ -1034,24 +1073,22 @@
                 const fileName = file.name;
                 const fileSize = formatFileSize(file.size);
                 
-                // Auto-detect category if default is 'auto'
+                // Auto-detect category based on filename
                 let autoCategory = 'Documents';
-                if (defaultCategory === 'auto') {
-                    const lowerName = fileName.toLowerCase();
-                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
-                        autoCategory = 'Drawings';
-                    } else if (lowerName.includes('estimate')) {
-                        autoCategory = 'Estimates';
-                    } else if (lowerName.includes('proposal')) {
-                        autoCategory = 'Proposals';
-                    } else if (lowerName.includes('spec')) {
-                        autoCategory = 'Specs';
-                    } else if (lowerName.includes('contract')) {
-                        autoCategory = 'Signed-Contracts';
-                    }
+                const lowerName = fileName.toLowerCase();
+                if (lowerName.includes('drawing') || lowerName.includes('plan')) {
+                    autoCategory = 'Drawings';
+                } else if (lowerName.includes('estimate')) {
+                    autoCategory = 'Estimates';
+                } else if (lowerName.includes('proposal')) {
+                    autoCategory = 'Proposals';
+                } else if (lowerName.includes('spec')) {
+                    autoCategory = 'Specs';
+                } else if (lowerName.includes('contract')) {
+                    autoCategory = 'Signed-Contracts';
                 }
                 
-                const selectedCategory = defaultCategory === 'auto' ? autoCategory : defaultCategory;
+                const selectedCategory = autoCategory;
                 
                 html += '<tr>';
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
@@ -1086,8 +1123,9 @@
                 return;
             }
             
-            if (!selectedClient) {
-                showStatus('error', 'Please select a client first');
+            const uploadClient = selectedFiles.uploadClient;
+            if (!uploadClient) {
+                showStatus('error', 'No client selected for upload');
                 return;
             }
             
@@ -1104,7 +1142,7 @@
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
                 const category = categorySelect ? categorySelect.value : 'Documents';
                 
-                const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
+                const blobPath = `FCS-OriginalClients/${uploadClient.folder}/${category}/${fileName}`;
                 const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
                 
                 try {
@@ -1160,94 +1198,6 @@
             document.getElementById('bulkFileInput').value = '';
         }
         
-        // Bulk upload
-        async function handleBulkFiles(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-            
-            if (!selectedClient) {
-                showStatus('error', 'Please select a client first');
-                return;
-            }
-            
-            showLoading(`Uploading ${files.length} files...`);
-            
-            let successCount = 0;
-            let overwriteCount = 0;
-            
-            // Get selected category
-            const selectedCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileName = file.name;
-                
-                let category = 'Documents';
-                
-                if (selectedCategory === 'auto') {
-                    // Auto-categorize based on filename
-                    const lowerName = fileName.toLowerCase();
-                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
-                        category = 'Drawings';
-                    } else if (lowerName.includes('estimate')) {
-                        category = 'Estimates';
-                    } else if (lowerName.includes('proposal')) {
-                        category = 'Proposals';
-                    } else if (lowerName.includes('spec')) {
-                        category = 'Specs';
-                    } else if (lowerName.includes('contract')) {
-                        category = 'Signed-Contracts';
-                    }
-                } else {
-                    // Use manually selected category
-                    category = selectedCategory;
-                }
-                
-                const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
-                const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
-                
-                try {
-                    // Check if file exists
-                    const checkResponse = await fetch(uploadUrl, { method: 'HEAD' });
-                    
-                    let shouldUpload = true;
-                    if (checkResponse.ok) {
-                        shouldUpload = confirm(`File '${fileName}' already exists. Overwrite and reindex?`);
-                        if (shouldUpload) overwriteCount++;
-                    }
-                    
-                    if (shouldUpload) {
-                        const uploadResponse = await fetch(uploadUrl, {
-                            method: 'PUT',
-                            headers: {
-                                'x-ms-blob-type': 'BlockBlob',
-                                'Content-Type': file.type || 'application/octet-stream'
-                            },
-                            body: file
-                        });
-                        
-                        if (uploadResponse.ok || uploadResponse.status === 201) {
-                            successCount++;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error uploading ${fileName}:`, error);
-                }
-                
-                document.getElementById('loadingText').textContent = `Processing file ${i + 1} of ${files.length}...`;
-            }
-            
-            hideLoading();
-            
-            let message = `Upload complete: ${successCount} files uploaded`;
-            if (overwriteCount > 0) message += `, ${overwriteCount} overwritten`;
-            message += '. Files will be automatically indexed.';
-            
-            showStatus('success', message);
-            loadClientDocuments();
-            
-            event.target.value = '';
-        }
 
         // Drag and drop
         const bulkUploadArea = document.getElementById('bulkUploadArea');
@@ -1265,9 +1215,22 @@
             e.preventDefault();
             bulkUploadArea.classList.remove('dragover');
             
+            const selector = document.getElementById('uploadClientSelect');
+            if (!selector || !selector.value) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
+            
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                handleBulkFiles({ target: { files } });
+                // Create a fake event object to pass to handleBulkFilesWithPreview
+                const fakeEvent = {
+                    target: {
+                        files: files,
+                        value: ''
+                    }
+                };
+                handleBulkFilesWithPreview(fakeEvent);
             }
         });
 

@@ -19,6 +19,12 @@ jobs:
         with:
           submodules: true
           lfs: false
+      - name: Create admin config with Azure Function key
+        run: |
+          echo "// Admin Configuration - Generated during deployment" > admin-config.js
+          echo "window.AdminConfig = {" >> admin-config.js
+          echo "    AZURE_FUNCTION_KEY: '${{ secrets.AZURE_FUNCTION_KEY }}'" >> admin-config.js
+          echo "};" >> admin-config.js
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
