@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Config Loader</title>
+</head>
+<body>
+    <script>
+        // This file creates the configuration and redirects to admin.html
+        // Only deploy this to production, never commit with real keys
+        
+        // Create the configuration object
+        window.AdminConfig = {
+            AZURE_FUNCTION_KEY: 'YOUR_KEY_HERE'
+        };
+        
+        // Store in sessionStorage for the session
+        sessionStorage.setItem('adminConfig', JSON.stringify(window.AdminConfig));
+        
+        // Redirect to admin.html
+        window.location.href = 'admin.html';
+    </script>
+</body>
+</html>

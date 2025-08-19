@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Admin Configuration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+        .setup-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+        }
+        h2 {
+            color: #424242;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            color: #1565c0;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-family: monospace;
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #ffc107, #f57f17);
+            color: #212121;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #f57f17, #e65100);
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            display: none;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-box">
+        <h2>🔧 Setup Admin Configuration</h2>
+        
+        <div class="info">
+            <strong>⚠️ One-Time Setup Required</strong><br>
+            Enter your Azure Function key below to enable the delete client feature.
+            This will be stored in your browser session only.
+        </div>
+        
+        <input type="text" 
+               id="functionKey" 
+               placeholder="Enter Azure Function Key (e.g., 8XXgu4-yK7k...)"
+               value="">
+        
+        <button onclick="saveConfig()">Save Configuration & Go to Admin Panel</button>
+        
+        <div id="successMsg" class="success">
+            ✅ Configuration saved! Redirecting to admin panel...
+        </div>
+        
+        <div id="errorMsg" class="error">
+            ❌ Please enter a valid Azure Function key.
+        </div>
+    </div>
+    
+    <script>
+        function saveConfig() {
+            const key = document.getElementById('functionKey').value.trim();
+            
+            if (!key) {
+                document.getElementById('errorMsg').style.display = 'block';
+                document.getElementById('successMsg').style.display = 'none';
+                return;
+            }
+            
+            // Store in sessionStorage
+            const config = {
+                AZURE_FUNCTION_KEY: key
+            };
+            sessionStorage.setItem('adminConfig', JSON.stringify(config));
+            
+            // Show success message
+            document.getElementById('successMsg').style.display = 'block';
+            document.getElementById('errorMsg').style.display = 'none';
+            
+            // Redirect to admin panel after 1 second
+            setTimeout(() => {
+                window.location.href = 'admin.html';
+            }, 1000);
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('functionKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveConfig();
+            }
+        });
+    </script>
+</body>
+</html>

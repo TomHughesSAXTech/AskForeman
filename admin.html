@@ -498,9 +498,22 @@
             sasToken: '?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D'
         };
         
-        // Azure Function key is loaded from external config file
+        // Azure Function key is loaded from external config file or sessionStorage
         // If not found, use empty string (will fail gracefully with proper error message)
-        const AZURE_FUNCTION_KEY = window.AdminConfig?.AZURE_FUNCTION_KEY || '';
+        let AZURE_FUNCTION_KEY = window.AdminConfig?.AZURE_FUNCTION_KEY || '';
+        
+        // Check sessionStorage as fallback
+        if (!AZURE_FUNCTION_KEY) {
+            try {
+                const storedConfig = sessionStorage.getItem('adminConfig');
+                if (storedConfig) {
+                    const config = JSON.parse(storedConfig);
+                    AZURE_FUNCTION_KEY = config.AZURE_FUNCTION_KEY || '';
+                }
+            } catch (e) {
+                console.log('No config in sessionStorage');
+            }
+        }
 
         let selectedClient = null;
         let clients = [];
