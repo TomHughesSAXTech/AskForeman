@@ -880,11 +880,8 @@
                 console.log('Delete URL:', deleteUrl.replace(AZURE_FUNCTION_KEY, 'REDACTED'));
                 
                 const response = await fetch(deleteUrl, {
-                    method: 'DELETE',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    method: 'DELETE'
+                    // Remove mode and headers to avoid preflight request
                 });
                 
                 if (!response.ok) {
@@ -1179,7 +1176,8 @@
                             method: 'PUT',
                             headers: {
                                 'x-ms-blob-type': 'BlockBlob',
-                                'Content-Type': file.type || 'application/octet-stream'
+                                'Content-Type': file.type || 'application/octet-stream',
+                                'x-ms-blob-content-type': file.type || 'application/octet-stream'
                             },
                             body: file
                         });
@@ -1216,8 +1214,10 @@
             // Clear selection and hide preview
             clearFileSelection();
             
-            // Reload documents
-            loadClientDocuments();
+            // Reload documents if we have a selected client
+            if (selectedClient) {
+                loadClientDocuments();
+            }
         }
         
         // Clear file selection
