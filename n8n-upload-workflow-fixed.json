@@ -1,0 +1,265 @@
+{
+  "name": "Document Upload - Fixed Binary Handling",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/process",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-upload",
+      "name": "Webhook - Upload Document",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "webhookId": "ask-foreman-process"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract form data and binary file\nconst items = $input.all();\nconst item = items[0];\n\n// Get form data from body\nconst formData = item.json.body || {};\nconst clientId = formData.client;\nconst category = formData.category;\nconst action = formData.action || 'upload';\n\n// Get binary data - n8n stores uploaded files in binary.data\nconst binaryData = item.binary?.data;\nif (!binaryData) {\n  throw new Error('No file uploaded');\n}\n\nconst fileName = binaryData.fileName;\nconst mimeType = binaryData.mimeType;\n\n// Azure Storage configuration\nconst storageAccount = 'saxtechfcs';\nconst rawContainer = 'fcs-clients';\nconst convertedContainer = 'fcs-convertedclients';\nconst sasTokenRaw = 'sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D';\nconst sasTokenConverted = 'sp=racwdl&st=2025-08-08T05:03:40Z&se=2030-08-08T13:18:40Z&spr=https&sv=2024-11-04&sr=c&sig=IGFgvm%2FEh6RX3Qe5ZOubR4yc6uovwicdQAufdkrQaWs%3D';\n\n// Construct paths\nconst rawBlobPath = `FCS-OriginalClients/${clientId}/${category}/${fileName}`;\nconst uploadUrl = `https://${storageAccount}.blob.core.windows.net/${rawContainer}/${rawBlobPath}?${sasTokenRaw}`;\n\nreturn {\n  json: {\n    clientId,\n    category,\n    fileName,\n    mimeType,\n    rawBlobPath,\n    uploadUrl,\n    convertedContainer,\n    sasTokenConverted,\n    action,\n    timestamp: new Date().toISOString()\n  },\n  binary: {\n    data: binaryData\n  }\n};"
+      },
+      "id": "prepare-upload",
+      "name": "Prepare Upload Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "upload-raw",
+      "name": "Upload to fcs-clients",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://saxtech-functionapps2.azurewebsites.net/api/ConvertDocument",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"blobUrl\": \"https://saxtechfcs.blob.core.windows.net/fcs-clients/{{ $node['prepare-upload'].json.rawBlobPath }}?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D\",\n  \"fileName\": \"{{ $node['prepare-upload'].json.fileName }}\",\n  \"mimeType\": \"{{ $node['prepare-upload'].json.mimeType }}\",\n  \"client\": \"{{ $node['prepare-upload'].json.clientId }}\",\n  \"category\": \"{{ $node['prepare-upload'].json.category }}\"\n}",
+        "options": {}
+      },
+      "id": "convert-doc",
+      "name": "Convert Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get conversion result and upload data\nconst conversionResult = $input.first().json;\nconst uploadData = $node['prepare-upload'].json;\n\n// Extract converted content\nconst convertedContent = conversionResult.convertedContent || conversionResult.text || conversionResult.content || JSON.stringify(conversionResult);\n\n// Prepare paths for converted container\nconst textFileName = uploadData.fileName.replace(/\\.[^.]+$/, '.txt');\nconst convertedPath = `${uploadData.clientId}/converted/${uploadData.category}/${textFileName}`;\nconst metadataPath = `${uploadData.clientId}/metadata/${uploadData.category}/${uploadData.fileName}.json`;\n\n// Prepare metadata\nconst metadata = {\n  originalFile: uploadData.fileName,\n  category: uploadData.category,\n  client: uploadData.clientId,\n  processedAt: new Date().toISOString(),\n  conversionMethod: conversionResult.conversionMethod || 'Document Intelligence',\n  originalPath: uploadData.rawBlobPath,\n  convertedPath: convertedPath,\n  fileSize: conversionResult.convertedSize || convertedContent.length,\n  contentType: 'text/plain'\n};\n\nconst storageAccount = 'saxtechfcs';\nconst convertedUploadUrl = `https://${storageAccount}.blob.core.windows.net/${uploadData.convertedContainer}/${convertedPath}?${uploadData.sasTokenConverted}`;\nconst metadataUploadUrl = `https://${storageAccount}.blob.core.windows.net/${uploadData.convertedContainer}/${metadataPath}?${uploadData.sasTokenConverted}`;\n\nreturn [\n  {\n    json: {\n      type: 'converted',\n      uploadUrl: convertedUploadUrl,\n      content: convertedContent,\n      fileName: textFileName,\n      path: convertedPath\n    }\n  },\n  {\n    json: {\n      type: 'metadata',\n      uploadUrl: metadataUploadUrl,\n      content: JSON.stringify(metadata, null, 2),\n      fileName: uploadData.fileName + '.json',\n      path: metadataPath\n    }\n  }\n];"
+      },
+      "id": "prepare-converted",
+      "name": "Prepare Converted Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.uploadUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.type === 'metadata' ? 'application/json' : 'text/plain' }}"
+            },
+            {
+              "name": "Content-Length",
+              "value": "={{ Buffer.byteLength($json.content) }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "string",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "body",
+              "value": "={{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "upload-converted",
+      "name": "Upload to fcs-convertedclients",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare response\nconst uploadData = $node['prepare-upload'].json;\nconst conversionResult = $node['convert-doc'].json;\n\nreturn [{\n  json: {\n    success: true,\n    message: 'Document processed successfully',\n    fileName: uploadData.fileName,\n    client: uploadData.clientId,\n    category: uploadData.category,\n    timestamp: uploadData.timestamp,\n    processing: {\n      rawStoragePath: uploadData.rawBlobPath,\n      convertedStoragePath: `${uploadData.clientId}/converted/${uploadData.category}/${uploadData.fileName.replace(/\\.[^.]+$/, '.txt')}`,\n      metadataPath: `${uploadData.clientId}/metadata/${uploadData.category}/${uploadData.fileName}.json`,\n      conversionMethod: conversionResult.conversionMethod || 'Document Intelligence'\n    }\n  }\n}];"
+      },
+      "id": "prepare-response",
+      "name": "Prepare Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1500, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Upload Document": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload Data": {
+      "main": [
+        [
+          {
+            "node": "Upload to fcs-clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to fcs-clients": {
+      "main": [
+        [
+          {
+            "node": "Convert Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Document": {
+      "main": [
+        [
+          {
+            "node": "Prepare Converted Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Converted Data": {
+      "main": [
+        [
+          {
+            "node": "Upload to fcs-convertedclients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to fcs-convertedclients": {
+      "main": [
+        [
+          {
+            "node": "Prepare Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
