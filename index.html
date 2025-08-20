@@ -2325,17 +2325,6 @@
               </div>
               
               <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Name *</label>
-                <input type="text" id="projectNameInput" placeholder="e.g. Downtown Office Complex" style="
-                  width: 100%;
-                  padding: 0.75rem;
-                  border: 2px solid var(--medium-gray);
-                  border-radius: 5px;
-                  font-size: 1rem;
-                " />
-              </div>
-              
-              <div style="margin-bottom: 1rem;">
                 <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Type</label>
                 <select id="projectTypeSelect" style="
                   width: 100%;
@@ -2405,12 +2394,11 @@
       
       async function createClient() {
         const clientName = document.getElementById('clientNameInput').value.trim();
-        const projectName = document.getElementById('projectNameInput').value.trim();
         const projectType = document.getElementById('projectTypeSelect').value;
         const projectDescription = document.getElementById('projectDescInput').value.trim();
         
-        if (!clientName || !projectName) {
-          alert('Client name and project name are required');
+        if (!clientName) {
+          alert('Client name is required');
           return;
         }
         
@@ -2431,7 +2419,7 @@
             },
             body: JSON.stringify({
               clientName: clientName,
-              projectName: projectName,
+              projectName: clientName, // Use client name as project name for backwards compatibility
               projectType: projectType,
               projectDescription: projectDescription
             }),
@@ -2458,7 +2446,7 @@
           closeClientModal();
           
           // Add success message first
-          addSystemMessage(`✅ Client "${clientName}" created successfully! Project: "${projectName}". The client folder is being created in Azure Storage...`);
+          addSystemMessage(`✅ Client "${clientName}" created successfully! The client folder is being created in Azure Storage...`);
           
           // Wait a moment for Azure to create the folder, then reload clients
           setTimeout(async () => {

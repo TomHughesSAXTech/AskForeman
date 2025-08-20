@@ -1024,11 +1024,6 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Project Name <span style="color: red;">*</span></label>
-                            <input type="text" id="newProjectName" placeholder="e.g., Office Renovation 2025" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        </div>
-                        
-                        <div class="form-group">
                             <label>Project Type</label>
                             <select id="newProjectType" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                                 <option value="Commercial">Commercial</option>
@@ -1063,12 +1058,11 @@
         
         async function submitCreateClient() {
             const clientName = document.getElementById('newClientName').value.trim();
-            const projectName = document.getElementById('newProjectName').value.trim();
             const projectType = document.getElementById('newProjectType').value;
             const projectDescription = document.getElementById('newProjectDescription').value.trim();
             
-            if (!clientName || !projectName) {
-                showStatus('error', 'Client name and project name are required');
+            if (!clientName) {
+                showStatus('error', 'Client name is required');
                 return;
             }
             
@@ -1085,7 +1079,7 @@
                     },
                     body: JSON.stringify({
                         clientName: clientName,
-                        projectName: projectName,
+                        projectName: clientName, // Use client name as project name for backwards compatibility
                         projectType: projectType,
                         projectDescription: projectDescription
                     })
