@@ -1825,6 +1825,22 @@
           console.warn('Viewer token parse failed:', e);
         }
         
+        // Also detect and convert drawing/PDF links in square brackets format
+        // Pattern: [filename.pdf](url)
+        try {
+          content = content.replace(/\[([^\]]+\.pdf)\]\((https?:\/\/[^)]+)\)/gi, (match, filename, url) => {
+            const btnClass = 'drawing-preview-thumb';
+            const escAttr = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const escText = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+            // Extract drawing info from filename if possible
+            const drawingMatch = filename.match(/([A-Z]+-?\d+[.]?\d*)/i);
+            const drawingNumber = drawingMatch ? drawingMatch[1] : '';
+            return `<button class="${btnClass}" onclick="openDrawing('${escAttr(url)}','${escAttr(filename)}','${escAttr(drawingNumber)}','','',1)">📐 View ${escText(filename)}</button>`;
+          });
+        } catch (e) {
+          console.warn('PDF link conversion failed:', e);
+        }
+        
         // First, handle bullet points (convert - ** to proper bullets)
         content = content.replace(/- \*\*(.*?)\*\*/g, '• **$1**');
         
