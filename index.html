@@ -2028,7 +2028,7 @@
       });
 
       // Chat context selection handler
-      chatClientSelect.addEventListener("change", (e) => {
+      chatClientSelect.addEventListener("change", async (e) => {
         chatContext = e.target.value;
         const contextName =
           chatClientSelect.options[chatClientSelect.selectedIndex].text;
@@ -2039,11 +2039,14 @@
           );
           chatInput.placeholder =
             "Ask about construction estimating, specifications, or any project questions...";
+          updateMetadata(); // Reset to defaults
         } else {
           addSystemMessage(
             `🎯 Chat context focused on ${contextName}. I'll prioritize information from this project's documents.`
           );
           chatInput.placeholder = `Ask about ${contextName} project details, specifications, or requirements...`;
+          // Update metadata for the selected chat context
+          await updateMetadataFromAzure(chatContext);
         }
       });
 
@@ -2063,9 +2066,12 @@
           updateProcessButton();
           // Load existing files for this client
           await loadClientFiles(selectedClient);
+          // Update metadata from Azure
+          await updateMetadataFromAzure(selectedClient);
         } else {
           // Clear file list if no client selected
           initializeFileList();
+          updateMetadata(); // Reset to defaults
         }
         updateChatAvailability();
       });
@@ -2530,15 +2536,105 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      function updateMetadata() {
-        document.getElementById("docCount").textContent = processedDocuments;
-        document.getElementById("indexSize").textContent = `${(
-          processedDocuments * 0.5
-        ).toFixed(1)} MB`;
-        document.getElementById("lastUpdated").textContent =
-          new Date().toLocaleString();
-        document.getElementById("indexStatus").textContent =
-          processedDocuments > 0 ? "Active" : "Ready";
+      function updateMetadata(docCount = null, indexSize = null, lastUpdated = null, status = null) {
+        // Use provided values or defaults
+        document.getElementById("docCount").textContent = docCount !== null ? docCount : processedDocuments;
+        
+        if (indexSize !== null) {
+          document.getElementById("indexSize").textContent = indexSize;
+        } else {
+          document.getElementById("indexSize").textContent = `${(
+            (docCount || processedDocuments) * 0.5
+          ).toFixed(1)} MB`;
+        }
+        
+        document.getElementById("lastUpdated").textContent = lastUpdated || new Date().toLocaleString();
+        
+        if (status !== null) {
+          document.getElementById("indexStatus").textContent = status;
+        } else {
+          const count = docCount !== null ? docCount : processedDocuments;
+          document.getElementById("indexStatus").textContent = count > 0 ? "Active" : "Ready";
+        }
+      }
+      
+      // Pull live metadata from Azure for a client
+      async function updateMetadataFromAzure(clientName) {
+        try {
+          // Try to fetch metadata from fcs-convertedclients container
+          const metadataUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/fcs-convertedclients/${encodeURIComponent(clientName)}/metadata/client-info.json${AZURE_STORAGE.sasToken}`;
+          
+          const response = await fetch(metadataUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const metadata = await response.json();
+            updateMetadata(
+              metadata.documentsCount || 0,
+              `${((metadata.documentsCount || 0) * 0.5).toFixed(1)} MB`,
+              metadata.lastUpdated ? new Date(metadata.lastUpdated).toLocaleString() : 'Never',
+              metadata.indexStatus || 'Ready'
+            );
+          } else {
+            // If no metadata file exists, count files in FCS-OriginalClients
+            const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent('FCS-OriginalClients/' + clientName + '/')}`;
+            
+            const listResponse = await fetch(listUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/xml'
+              }
+            });
+            
+            if (listResponse.ok) {
+              const xmlText = await listResponse.text();
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+              const blobs = xmlDoc.getElementsByTagName("Blob");
+              
+              let totalSize = 0;
+              let fileCount = 0;
+              let lastModifiedDate = null;
+              
+              for (let i = 0; i < blobs.length; i++) {
+                const nameElement = blobs[i].getElementsByTagName("Name")[0];
+                if (nameElement && !nameElement.textContent.endsWith('.placeholder')) {
+                  fileCount++;
+                  
+                  const propertiesElement = blobs[i].getElementsByTagName("Properties")[0];
+                  if (propertiesElement) {
+                    const sizeElement = propertiesElement.getElementsByTagName("Content-Length")[0];
+                    if (sizeElement) {
+                      totalSize += parseInt(sizeElement.textContent) || 0;
+                    }
+                    
+                    const modifiedElement = propertiesElement.getElementsByTagName("Last-Modified")[0];
+                    if (modifiedElement) {
+                      const modDate = new Date(modifiedElement.textContent);
+                      if (!lastModifiedDate || modDate > lastModifiedDate) {
+                        lastModifiedDate = modDate;
+                      }
+                    }
+                  }
+                }
+              }
+              
+              updateMetadata(
+                fileCount,
+                `${(totalSize / (1024 * 1024)).toFixed(1)} MB`,
+                lastModifiedDate ? lastModifiedDate.toLocaleString() : 'Never',
+                fileCount > 0 ? 'Active' : 'Ready'
+              );
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching Azure metadata:', error);
+          // Keep current display if error
+        }
       }
 
       // Create Client Modal functionality
