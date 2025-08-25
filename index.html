@@ -2561,75 +2561,58 @@
       // Pull live metadata from Azure for a client
       async function updateMetadataFromAzure(clientName) {
         try {
-          // Try to fetch metadata from fcs-convertedclients container
-          const metadataUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/fcs-convertedclients/${encodeURIComponent(clientName)}/metadata/client-info.json${AZURE_STORAGE.sasToken}`;
+          // Only count files from FCS-OriginalClients in fcs-clients container
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent('FCS-OriginalClients/' + clientName + '/')}`;
           
-          const response = await fetch(metadataUrl, {
+          const listResponse = await fetch(listUrl, {
             method: 'GET',
             headers: {
-              'Accept': 'application/json'
+              'Accept': 'application/xml'
             }
           });
           
-          if (response.ok) {
-            const metadata = await response.json();
-            updateMetadata(
-              metadata.documentsCount || 0,
-              `${((metadata.documentsCount || 0) * 0.5).toFixed(1)} MB`,
-              metadata.lastUpdated ? new Date(metadata.lastUpdated).toLocaleString() : 'Never',
-              metadata.indexStatus || 'Ready'
-            );
-          } else {
-            // If no metadata file exists, count files in FCS-OriginalClients
-            const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent('FCS-OriginalClients/' + clientName + '/')}`;
+          if (listResponse.ok) {
+            const xmlText = await listResponse.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const blobs = xmlDoc.getElementsByTagName("Blob");
             
-            const listResponse = await fetch(listUrl, {
-              method: 'GET',
-              headers: {
-                'Accept': 'application/xml'
-              }
-            });
+            let totalSize = 0;
+            let fileCount = 0;
+            let lastModifiedDate = null;
             
-            if (listResponse.ok) {
-              const xmlText = await listResponse.text();
-              const parser = new DOMParser();
-              const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-              const blobs = xmlDoc.getElementsByTagName("Blob");
-              
-              let totalSize = 0;
-              let fileCount = 0;
-              let lastModifiedDate = null;
-              
-              for (let i = 0; i < blobs.length; i++) {
-                const nameElement = blobs[i].getElementsByTagName("Name")[0];
-                if (nameElement && !nameElement.textContent.endsWith('.placeholder')) {
-                  fileCount++;
+            for (let i = 0; i < blobs.length; i++) {
+              const nameElement = blobs[i].getElementsByTagName("Name")[0];
+              if (nameElement && !nameElement.textContent.endsWith('.placeholder')) {
+                fileCount++;
+                
+                const propertiesElement = blobs[i].getElementsByTagName("Properties")[0];
+                if (propertiesElement) {
+                  const sizeElement = propertiesElement.getElementsByTagName("Content-Length")[0];
+                  if (sizeElement) {
+                    totalSize += parseInt(sizeElement.textContent) || 0;
+                  }
                   
-                  const propertiesElement = blobs[i].getElementsByTagName("Properties")[0];
-                  if (propertiesElement) {
-                    const sizeElement = propertiesElement.getElementsByTagName("Content-Length")[0];
-                    if (sizeElement) {
-                      totalSize += parseInt(sizeElement.textContent) || 0;
-                    }
-                    
-                    const modifiedElement = propertiesElement.getElementsByTagName("Last-Modified")[0];
-                    if (modifiedElement) {
-                      const modDate = new Date(modifiedElement.textContent);
-                      if (!lastModifiedDate || modDate > lastModifiedDate) {
-                        lastModifiedDate = modDate;
-                      }
+                  const modifiedElement = propertiesElement.getElementsByTagName("Last-Modified")[0];
+                  if (modifiedElement) {
+                    const modDate = new Date(modifiedElement.textContent);
+                    if (!lastModifiedDate || modDate > lastModifiedDate) {
+                      lastModifiedDate = modDate;
                     }
                   }
                 }
               }
-              
-              updateMetadata(
-                fileCount,
-                `${(totalSize / (1024 * 1024)).toFixed(1)} MB`,
-                lastModifiedDate ? lastModifiedDate.toLocaleString() : 'Never',
-                fileCount > 0 ? 'Active' : 'Ready'
-              );
             }
+            
+            updateMetadata(
+              fileCount,
+              `${(totalSize / (1024 * 1024)).toFixed(1)} MB`,
+              lastModifiedDate ? lastModifiedDate.toLocaleString() : 'Never',
+              fileCount > 0 ? 'Active' : 'Ready'
+            );
+          } else {
+            // If list fails, just keep current display
+            console.log('Could not fetch file list for metadata update');
           }
         } catch (error) {
           console.error('Error fetching Azure metadata:', error);
