@@ -1309,6 +1309,108 @@
         }
       }
     </style>
+    <style>
+      /* Embedded PDF Viewer styles */
+      .pdf-viewer-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 9999;
+        backdrop-filter: blur(2px);
+      }
+      .pdf-viewer-overlay.active { display: block; }
+
+      .pdf-viewer-container {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 92%;
+        max-width: 1400px;
+        height: 86vh;
+        background: #ffffff;
+        border-radius: 10px;
+        z-index: 10000;
+        box-shadow: var(--shadow-lg);
+        border: 3px solid var(--construction-orange);
+        overflow: hidden;
+      }
+      .pdf-viewer-container.active {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .pdf-viewer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.6rem 0.9rem;
+        background: linear-gradient(135deg, var(--concrete-gray), var(--steel-gray));
+        color: #fff;
+        border-bottom: 4px solid var(--safety-yellow);
+      }
+      .pdf-viewer-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+      }
+      .pdf-viewer-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+      }
+      .viewer-btn {
+        padding: 0.35rem 0.6rem;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.12);
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+      .viewer-btn:hover { background: rgba(255,255,255,0.2); }
+      .viewer-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.3); margin: 0 4px; }
+      .viewer-info { font-size: 0.85rem; color: #f0f0f0; padding: 0 6px; }
+
+      .pdf-viewer-body { flex: 1; display: flex; background: #f3f3f3; }
+      .pdf-viewer-iframe { width: 100%; height: 100%; border: 0; background: #f3f3f3; }
+
+      /* Button shown in chat to open drawings */
+      .drawing-preview-thumb {
+        background: linear-gradient(135deg, var(--safety-yellow) 0%, #f57f17 100%);
+        color: var(--dark-gray);
+        border: none;
+        padding: 0.5rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0.25rem 0.25rem 0.25rem 0;
+      }
+      .drawing-preview-thumb:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+        background: linear-gradient(135deg, #f57f17 0%, var(--safety-yellow) 100%);
+      }
+      .drawing-preview-thumb:active { transform: translateY(0); }
+
+      @media (max-width: 768px) {
+        .pdf-viewer-container { width: 96%; height: 80vh; }
+        .pdf-viewer-title { font-size: 0.95rem; }
+      }
+    </style>
   </head>
   <body>
     <header class="header">
@@ -1625,6 +1727,32 @@
       </main>
     </div>
 
+    <!-- Embedded PDF Viewer Overlay -->
+    <div id="pdfViewerOverlay" class="pdf-viewer-overlay" onclick="closePdfViewer()"></div>
+    <div id="pdfViewerContainer" class="pdf-viewer-container" role="dialog" aria-modal="true" aria-label="Document viewer">
+      <div class="pdf-viewer-header">
+        <div class="pdf-viewer-title">
+          <span id="pdfViewerTitle">📐 Document Viewer</span>
+        </div>
+        <div class="pdf-viewer-controls">
+          <button class="viewer-btn" title="Previous page" onclick="prevPage()">◀</button>
+          <div class="viewer-info" id="pdfViewerPageInfo">Page 1</div>
+          <button class="viewer-btn" title="Next page" onclick="nextPage()">▶</button>
+          <div class="viewer-sep"></div>
+          <button class="viewer-btn" title="Zoom out" onclick="zoomOut()">−</button>
+          <div class="viewer-info" id="pdfViewerZoomInfo">100%</div>
+          <button class="viewer-btn" title="Zoom in" onclick="zoomIn()">＋</button>
+          <div class="viewer-sep"></div>
+          <button class="viewer-btn" title="Open in new tab" onclick="openInNewTab()">↗</button>
+          <button class="viewer-btn" title="Download" onclick="downloadPdf()">⬇</button>
+          <button class="viewer-btn" style="background: #d32f2f; border-color: #d32f2f;" title="Close" onclick="closePdfViewer()">✕</button>
+        </div>
+      </div>
+      <div class="pdf-viewer-body">
+        <iframe id="pdfViewerFrame" class="pdf-viewer-iframe" src="" title="PDF Viewer"></iframe>
+      </div>
+    </div>
+
     <script>
       // Configuration - Production webhook URLs
       const API_CONFIG = {
@@ -1680,6 +1808,22 @@
         
         // Ensure content is a string
         content = String(content);
+
+        // Convert embedded viewer tokens into buttons BEFORE other formatting
+        // Pattern: [VIEWER:url|filename|drawingNumber|scale|category]
+        try {
+          const btnClass = 'drawing-preview-thumb';
+          const escAttr = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const escText = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+          content = content.replace(/\[VIEWER:([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|([^\]|]*)\]/g,
+            (m, url, filename, number, scale, category) => {
+              const label = filename || number || 'Document';
+              return `<button class="${btnClass}" onclick="openDrawing('${escAttr(url)}','${escAttr(filename)}','${escAttr(number)}','${escAttr(scale)}','${escAttr(category)}',1)">📐 View ${escText(label)}</button>`;
+            }
+          );
+        } catch (e) {
+          console.warn('Viewer token parse failed:', e);
+        }
         
         // First, handle bullet points (convert - ** to proper bullets)
         content = content.replace(/- \*\*(.*?)\*\*/g, '• **$1**');
@@ -1766,6 +1910,100 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+      }
+
+      // Embedded PDF Viewer logic
+      const pdfViewerState = {
+        url: '',
+        fileName: '',
+        drawingNumber: '',
+        scale: '',
+        category: '',
+        page: 1,
+        zoom: 100
+      };
+
+      function buildPdfJsUrl(url, page, zoom) {
+        const base = 'https://mozilla.github.io/pdf.js/web/viewer.html?file=' + encodeURIComponent(url);
+        const hash = `#page=${page}&zoom=${zoom}`;
+        return base + hash;
+      }
+
+      function updatePdfViewer() {
+        const frame = document.getElementById('pdfViewerFrame');
+        if (!frame) return;
+        frame.src = buildPdfJsUrl(pdfViewerState.url, pdfViewerState.page, pdfViewerState.zoom);
+        const pageInfo = document.getElementById('pdfViewerPageInfo');
+        const zoomInfo = document.getElementById('pdfViewerZoomInfo');
+        if (pageInfo) pageInfo.textContent = `Page ${pdfViewerState.page}`;
+        if (zoomInfo) zoomInfo.textContent = `${pdfViewerState.zoom}%`;
+      }
+
+      function openDrawing(url, fileName = '', drawingNumber = '', scale = '', category = '', page = 1) {
+        const overlay = document.getElementById('pdfViewerOverlay');
+        const container = document.getElementById('pdfViewerContainer');
+        const title = document.getElementById('pdfViewerTitle');
+        
+        pdfViewerState.url = decodeURIComponent(url);
+        pdfViewerState.fileName = fileName || '';
+        pdfViewerState.drawingNumber = drawingNumber || '';
+        pdfViewerState.scale = scale || '';
+        pdfViewerState.category = category || '';
+        pdfViewerState.page = parseInt(page || 1, 10) || 1;
+        pdfViewerState.zoom = 100;
+
+        if (title) {
+          const name = pdfViewerState.fileName || pdfViewerState.drawingNumber || 'Document';
+          const meta = [pdfViewerState.drawingNumber, pdfViewerState.scale, pdfViewerState.category].filter(Boolean).join(' • ');
+          title.textContent = `📐 ${name}` + (meta ? ` — ${meta}` : '');
+        }
+
+        if (overlay) overlay.classList.add('active');
+        if (container) container.classList.add('active');
+
+        updatePdfViewer();
+      }
+
+      function closePdfViewer() {
+        const overlay = document.getElementById('pdfViewerOverlay');
+        const container = document.getElementById('pdfViewerContainer');
+        const frame = document.getElementById('pdfViewerFrame');
+        if (overlay) overlay.classList.remove('active');
+        if (container) container.classList.remove('active');
+        if (frame) frame.src = '';
+      }
+
+      function nextPage() {
+        pdfViewerState.page = (pdfViewerState.page || 1) + 1;
+        updatePdfViewer();
+      }
+      function prevPage() {
+        pdfViewerState.page = Math.max(1, (pdfViewerState.page || 1) - 1);
+        updatePdfViewer();
+      }
+      function zoomIn() {
+        pdfViewerState.zoom = Math.min(300, (pdfViewerState.zoom || 100) + 25);
+        updatePdfViewer();
+      }
+      function zoomOut() {
+        pdfViewerState.zoom = Math.max(25, (pdfViewerState.zoom || 100) - 25);
+        updatePdfViewer();
+      }
+      function openInNewTab() {
+        const url = buildPdfJsUrl(pdfViewerState.url, pdfViewerState.page, pdfViewerState.zoom);
+        window.open(url, '_blank', 'noopener');
+      }
+      function downloadPdf() {
+        try {
+          const a = document.createElement('a');
+          a.href = pdfViewerState.url;
+          a.download = pdfViewerState.fileName || 'document.pdf';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } catch (e) {
+          window.open(pdfViewerState.url, '_blank', 'noopener');
+        }
       }
 
       // Create Client button handler
