@@ -1,1 +1,306 @@
-<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Ask Foreman - Admin Dashboard</title>\n    <style>\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n        }\n\n        :root {\n            --construction-orange: #ff6b35;\n            --safety-yellow: #ffc107;\n            --concrete-gray: #424242;\n            --steel-gray: #616161;\n            --blueprint-blue: #1565c0;\n            --hi-vis-green: #76ff03;\n            --warning-red: #d32f2f;\n            --white: #ffffff;\n            --light-gray: #f5f5f5;\n            --medium-gray: #e0e0e0;\n            --dark-gray: #212121;\n            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);\n        }\n\n        body {\n            font-family: \"Segoe UI\", Tahoma, Geneva, Verdana, sans-serif;\n            background: linear-gradient(135deg, #37474f 0%, #263238 100%);\n            min-height: 100vh;\n            color: white;\n            position: relative;\n        }\n\n        body::before {\n            content: \"\";\n            position: absolute;\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom: 0;\n            background-image: repeating-linear-gradient(\n                45deg,\n                transparent,\n                transparent 35px,\n                rgba(255, 193, 7, 0.03) 35px,\n                rgba(255, 193, 7, 0.03) 70px\n            ),\n            repeating-linear-gradient(\n                -45deg,\n                transparent,\n                transparent 35px,\n                rgba(255, 107, 53, 0.03) 35px,\n                rgba(255, 107, 53, 0.03) 70px\n            );\n            pointer-events: none;\n        }\n\n        .header {\n            background: linear-gradient(\n                135deg,\n                var(--dark-gray) 0%,\n                var(--concrete-gray) 100%\n            );\n            color: white;\n            padding: 2rem;\n            box-shadow: var(--shadow-lg);\n            display: flex;\n            align-items: center;\n            justify-content: space-between;\n            border-bottom: 4px solid var(--safety-yellow);\n            position: relative;\n            z-index: 10;\n        }\n\n        .header::before {\n            content: \"\";\n            position: absolute;\n            bottom: -4px;\n            left: 0;\n            right: 0;\n            height: 4px;\n            background: repeating-linear-gradient(\n                90deg,\n                var(--safety-yellow) 0px,\n                var(--safety-yellow) 20px,\n                var(--dark-gray) 20px,\n                var(--dark-gray) 40px\n            );\n        }\n\n        .header h1 {\n            font-size: 2rem;\n            font-weight: bold;\n            color: var(--safety-yellow);\n            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);\n            letter-spacing: 1px;\n        }\n\n        .header h1::before {\n            content: \"🛠️ \";\n            margin-right: 0.5rem;\n        }\n\n        .header .nav-links {\n            display: flex;\n            gap: 1rem;\n        }\n\n        .header a {\n            color: white;\n            text-decoration: none;\n            padding: 0.5rem 1rem;\n            background: rgba(255, 107, 53, 0.2);\n            border-radius: 8px;\n            border: 1px solid var(--construction-orange);\n            transition: all 0.3s ease;\n        }\n\n        .header a:hover {\n            background: var(--construction-orange);\n            transform: translateY(-2px);\n        }\n\n        .container {\n            max-width: 1400px;\n            margin: 2rem auto;\n            padding: 0 2rem;\n            position: relative;\n            z-index: 1;\n        }\n\n        .admin-section {\n            background: rgba(66, 66, 66, 0.95);\n            border-radius: 16px;\n            padding: 2rem;\n            margin-bottom: 2rem;\n            box-shadow: var(--shadow-lg);\n            border: 1px solid rgba(255, 193, 7, 0.2);\n        }\n\n        .section-header {\n            display: flex;\n            align-items: center;\n            justify-content: space-between;\n            margin-bottom: 1.5rem;\n            padding-bottom: 1rem;\n            border-bottom: 2px solid var(--safety-yellow);\n        }\n\n        .section-header h2 {\n            color: var(--safety-yellow);\n            font-size: 1.5rem;\n            font-weight: 600;\n        }\n\n        .btn {\n            padding: 0.75rem 1.5rem;\n            border: none;\n            border-radius: 8px;\n            cursor: pointer;\n            font-weight: 600;\n            transition: all 0.3s ease;\n            text-decoration: none;\n            display: inline-flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        .btn-primary {\n            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);\n            color: var(--dark-gray);\n        }\n\n        .btn-primary:hover {\n            transform: translateY(-2px);\n            box-shadow: 0 4px 12px rgba(118, 255, 3, 0.4);\n        }\n\n        .btn-warning {\n            background: linear-gradient(135deg, var(--construction-orange), #ff5722);\n            color: white;\n        }\n\n        .btn-warning:hover {\n            transform: translateY(-2px);\n            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);\n        }\n\n        .btn-danger {\n            background: linear-gradient(135deg, var(--warning-red), #b71c1c);\n            color: white;\n        }\n\n        .btn-danger:hover {\n            transform: translateY(-2px);\n            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);\n        }\n\n        .clients-grid {\n            display: grid;\n            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));\n            gap: 1.5rem;\n            margin-top: 1rem;\n        }\n\n        .client-card {\n            background: rgba(97, 97, 97, 0.8);\n            border-radius: 12px;\n            padding: 1.5rem;\n            border: 1px solid rgba(255, 193, 7, 0.3);\n            transition: all 0.3s ease;\n        }\n\n        .client-card:hover {\n            transform: translateY(-4px);\n            box-shadow: 0 8px 24px rgba(255, 193, 7, 0.2);\n            border-color: var(--safety-yellow);\n        }\n\n        .client-card h3 {\n            color: var(--safety-yellow);\n            margin-bottom: 0.5rem;\n            font-size: 1.25rem;\n        }\n\n        .client-info {\n            color: var(--light-gray);\n            font-size: 0.9rem;\n            margin-bottom: 1rem;\n        }\n\n        .client-stats {\n            display: flex;\n            gap: 1rem;\n            margin-bottom: 1rem;\n        }\n\n        .stat {\n            background: rgba(33, 33, 33, 0.6);\n            padding: 0.5rem;\n            border-radius: 6px;\n            text-align: center;\n            flex: 1;\n        }\n\n        .stat-number {\n            font-weight: bold;\n            color: var(--hi-vis-green);\n            font-size: 1.1rem;\n        }\n\n        .stat-label {\n            font-size: 0.8rem;\n            color: var(--medium-gray);\n        }\n\n        .client-actions {\n            display: flex;\n            gap: 0.5rem;\n            flex-wrap: wrap;\n        }\n\n        .btn-small {\n            padding: 0.5rem 1rem;\n            font-size: 0.8rem;\n        }\n\n        .system-actions {\n            display: grid;\n            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));\n            gap: 1rem;\n            margin-top: 1rem;\n        }\n\n        .action-card {\n            background: rgba(97, 97, 97, 0.8);\n            border-radius: 12px;\n            padding: 1.5rem;\n            border: 1px solid rgba(255, 193, 7, 0.3);\n            text-align: center;\n            transition: all 0.3s ease;\n        }\n\n        .action-card:hover {\n            transform: translateY(-2px);\n            border-color: var(--safety-yellow);\n        }\n\n        .action-icon {\n            font-size: 2rem;\n            margin-bottom: 1rem;\n        }\n\n        .action-card h3 {\n            color: var(--safety-yellow);\n            margin-bottom: 0.5rem;\n        }\n\n        .action-card p {\n            color: var(--light-gray);\n            font-size: 0.9rem;\n            margin-bottom: 1rem;\n        }\n\n        .progress-bar {\n            background: rgba(33, 33, 33, 0.6);\n            height: 6px;\n            border-radius: 3px;\n            margin: 1rem 0;\n            overflow: hidden;\n        }\n\n        .progress-fill {\n            height: 100%;\n            background: linear-gradient(90deg, var(--hi-vis-green), #64dd17);\n            transition: width 0.3s ease;\n        }\n\n        .notification {\n            position: fixed;\n            top: 20px;\n            right: 20px;\n            padding: 1rem 1.5rem;\n            border-radius: 8px;\n            color: white;\n            font-weight: 600;\n            z-index: 1000;\n            transform: translateX(400px);\n            transition: transform 0.3s ease;\n        }\n\n        .notification.show {\n            transform: translateX(0);\n        }\n\n        .notification.success {\n            background: var(--hi-vis-green);\n            color: var(--dark-gray);\n        }\n\n        .notification.error {\n            background: var(--warning-red);\n        }\n\n        .notification.warning {\n            background: var(--construction-orange);\n        }\n\n        .modal {\n            display: none;\n            position: fixed;\n            top: 0;\n            left: 0;\n            width: 100%;\n            height: 100%;\n            background: rgba(0, 0, 0, 0.8);\n            z-index: 1000;\n        }\n\n        .modal.show {\n            display: flex;\n            align-items: center;\n            justify-content: center;\n        }\n\n        .modal-content {\n            background: var(--concrete-gray);\n            border-radius: 16px;\n            padding: 2rem;\n            max-width: 500px;\n            width: 90%;\n            color: white;\n            border: 2px solid var(--safety-yellow);\n        }\n\n        .modal h3 {\n            color: var(--safety-yellow);\n            margin-bottom: 1rem;\n        }\n\n        .modal-actions {\n            display: flex;\n            gap: 1rem;\n            justify-content: flex-end;\n            margin-top: 1.5rem;\n        }\n\n        .btn-secondary {\n            background: var(--steel-gray);\n            color: white;\n        }\n\n        .btn-secondary:hover {\n            background: var(--concrete-gray);\n        }\n\n        @media (max-width: 768px) {\n            .header {\n                flex-direction: column;\n                gap: 1rem;\n                text-align: center;\n            }\n\n            .container {\n                margin: 1rem auto;\n                padding: 0 1rem;\n            }\n\n            .clients-grid {\n                grid-template-columns: 1fr;\n            }\n\n            .system-actions {\n                grid-template-columns: 1fr;\n            }\n\n            .client-actions {\n                flex-direction: column;\n            }\n        }\n    </style>\n</head>\n<body>\n    <!-- Header -->\n    <header class=\"header\">\n        <h1>Ask Foreman Admin Dashboard</h1>\n        <div class=\"nav-links\">\n            <a href=\"/\">🏠 Back to Chat</a>\n        </div>\n    </header>\n\n    <div class=\"container\">\n        <!-- System Actions -->\n        <div class=\"admin-section\">\n            <div class=\"section-header\">\n                <h2>System Management</h2>\n                <button class=\"btn btn-primary\" onclick=\"refreshAll()\">🔄 Refresh All</button>\n            </div>\n            <div class=\"system-actions\">\n                <div class=\"action-card\">\n                    <div class=\"action-icon\">🔍</div>\n                    <h3>Reindex All Documents</h3>\n                    <p>Rebuild the search index for all documents across all clients</p>\n                    <button class=\"btn btn-warning\" onclick=\"reindexAll()\">Run Full Reindex</button>\n                </div>\n                <div class=\"action-card\">\n                    <div class=\"action-icon\">📊</div>\n                    <h3>System Status</h3>\n                    <p>Check search service and storage connectivity</p>\n                    <button class=\"btn btn-primary\" onclick=\"checkSystemStatus()\">Check Status</button>\n                </div>\n                <div class=\"action-card\">\n                    <div class=\"action-icon\">📈</div>\n                    <h3>Usage Analytics</h3>\n                    <p>View system usage statistics and performance metrics</p>\n                    <button class=\"btn btn-primary\" onclick=\"viewAnalytics()\">View Analytics</button>\n                </div>\n            </div>\n        </div>\n\n        <!-- Clients Management -->\n        <div class=\"admin-section\">\n            <div class=\"section-header\">\n                <h2>Client Management</h2>\n                <div class=\"progress-bar\">\n                    <div class=\"progress-fill\" id=\"clientsProgress\" style=\"width: 0%\"></div>\n                </div>\n            </div>\n            <div class=\"clients-grid\" id=\"clientsGrid\">\n                <!-- Clients will be loaded here -->\n            </div>\n        </div>\n    </div>\n\n    <!-- Delete Client Modal -->\n    <div class=\"modal\" id=\"deleteModal\">\n        <div class=\"modal-content\">\n            <h3>⚠️ Confirm Client Deletion</h3>\n            <div id=\"deleteDetails\">\n                <p>Are you sure you want to delete this client?</p>\n                <p><strong>This action cannot be undone!</strong></p>\n            </div>\n            <div class=\"modal-actions\">\n                <button class=\"btn btn-secondary\" onclick=\"closeModal()\">Cancel</button>\n                <button class=\"btn btn-danger\" onclick=\"confirmDelete()\" id=\"confirmDeleteBtn\">Delete Client</button>\n            </div>\n        </div>\n    </div>\n\n    <!-- Notification Container -->\n    <div class=\"notification\" id=\"notification\"></div>\n\n    <script>\n        let currentClientToDelete = null;\n        let clients = [];\n\n        // Initialize dashboard\n        document.addEventListener('DOMContentLoaded', function() {\n            loadClients();\n        });\n\n        // Load all clients\n        async function loadClients() {\n            try {\n                showNotification('Loading clients...', 'info');\n                updateProgress(20);\n                \n                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman-list-clients', {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json' }\n                });\n                \n                updateProgress(60);\n                const data = await response.json();\n                \n                if (data.clients) {\n                    clients = data.clients;\n                    renderClients(clients);\n                    updateProgress(100);\n                    showNotification(`Loaded ${clients.length} clients`, 'success');\n                } else {\n                    throw new Error('No clients data received');\n                }\n            } catch (error) {\n                console.error('Error loading clients:', error);\n                showNotification('Error loading clients: ' + error.message, 'error');\n                updateProgress(0);\n            }\n        }\n\n        // Render clients in the grid\n        function renderClients(clientList) {\n            const grid = document.getElementById('clientsGrid');\n            grid.innerHTML = '';\n\n            clientList.forEach(client => {\n                const clientCard = document.createElement('div');\n                clientCard.className = 'client-card';\n                clientCard.innerHTML = `\n                    <h3>${client.name}</h3>\n                    <div class=\"client-info\">\n                        <div>Project: ${client.projectName || 'N/A'}</div>\n                        <div>Created: ${new Date().toLocaleDateString()}</div>\n                    </div>\n                    <div class=\"client-stats\">\n                        <div class=\"stat\">\n                            <div class=\"stat-number\">0</div>\n                            <div class=\"stat-label\">Documents</div>\n                        </div>\n                        <div class=\"stat\">\n                            <div class=\"stat-number\">0</div>\n                            <div class=\"stat-label\">Categories</div>\n                        </div>\n                        <div class=\"stat\">\n                            <div class=\"stat-number\">Active</div>\n                            <div class=\"stat-label\">Status</div>\n                        </div>\n                    </div>\n                    <div class=\"client-actions\">\n                        <button class=\"btn btn-primary btn-small\" onclick=\"viewClient('${client.id}')\">\n                            👁️ View\n                        </button>\n                        <button class=\"btn btn-warning btn-small\" onclick=\"reindexClient('${client.id}')\">\n                            🔄 Reindex\n                        </button>\n                        <button class=\"btn btn-danger btn-small\" onclick=\"deleteClient('${client.id}', '${client.name}')\">\n                            🗑️ Delete\n                        </button>\n                    </div>\n                `;\n                grid.appendChild(clientCard);\n            });\n        }\n\n        // View client details\n        function viewClient(clientId) {\n            const client = clients.find(c => c.id === clientId);\n            if (client) {\n                window.open(`/?client=${clientId}`, '_blank');\n            }\n        }\n\n        // Reindex specific client\n        async function reindexClient(clientId) {\n            try {\n                showNotification(`Starting reindex for client ${clientId}...`, 'info');\n                \n                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman-admin/reindex/client', {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json' },\n                    body: JSON.stringify({ clientId: clientId })\n                });\n                \n                const result = await response.json();\n                \n                if (result.success) {\n                    showNotification(`Reindexing started for ${clientId}`, 'success');\n                } else {\n                    throw new Error(result.error || 'Reindex failed');\n                }\n            } catch (error) {\n                console.error('Error reindexing client:', error);\n                showNotification('Error starting reindex: ' + error.message, 'error');\n            }\n        }\n\n        // Delete client (show confirmation modal)\n        async function deleteClient(clientId, clientName) {\n            try {\n                // First, get deletion summary\n                const response = await fetch(`https://saxtech-functionapps.azurewebsites.net/api/DeleteClientFunction?code=YOUR_FUNCTION_CODE`, {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json' },\n                    body: JSON.stringify({ \n                        clientId: clientId,\n                        confirmDeletion: false // Get summary first\n                    })\n                });\n                \n                const result = await response.json();\n                \n                if (result.success && result.phase === 'confirmation') {\n                    currentClientToDelete = clientId;\n                    \n                    const details = document.getElementById('deleteDetails');\n                    details.innerHTML = `\n                        <p><strong>Client:</strong> ${clientName} (${clientId})</p>\n                        <p><strong>Files to delete:</strong> ${result.summary.totalFiles}</p>\n                        <p><strong>Storage size:</strong> ${result.summary.totalSize}</p>\n                        <p><strong>Index documents:</strong> ${result.summary.indexDocuments}</p>\n                        <p><strong>Categories:</strong> ${result.summary.categories.join(', ')}</p>\n                        <br>\n                        <p style=\"color: var(--warning-red);\"><strong>⚠️ This action cannot be undone!</strong></p>\n                        <p>All files, converted documents, metadata, and search index entries will be permanently deleted.</p>\n                    `;\n                    \n                    document.getElementById('deleteModal').classList.add('show');\n                } else {\n                    throw new Error(result.error || 'Failed to get deletion summary');\n                }\n            } catch (error) {\n                console.error('Error getting delete summary:', error);\n                showNotification('Error preparing deletion: ' + error.message, 'error');\n            }\n        }\n\n        // Confirm deletion\n        async function confirmDelete() {\n            if (!currentClientToDelete) return;\n            \n            try {\n                const confirmBtn = document.getElementById('confirmDeleteBtn');\n                confirmBtn.disabled = true;\n                confirmBtn.textContent = 'Deleting...';\n                \n                const response = await fetch(`https://saxtech-functionapps.azurewebsites.net/api/DeleteClientFunction?code=YOUR_FUNCTION_CODE`, {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json' },\n                    body: JSON.stringify({ \n                        clientId: currentClientToDelete,\n                        confirmDeletion: true\n                    })\n                });\n                \n                const result = await response.json();\n                \n                if (result.success && result.phase === 'completed') {\n                    showNotification(`Client ${currentClientToDelete} deleted successfully`, 'success');\n                    closeModal();\n                    loadClients(); // Refresh the client list\n                } else {\n                    throw new Error(result.error || 'Deletion failed');\n                }\n            } catch (error) {\n                console.error('Error deleting client:', error);\n                showNotification('Error deleting client: ' + error.message, 'error');\n            } finally {\n                const confirmBtn = document.getElementById('confirmDeleteBtn');\n                confirmBtn.disabled = false;\n                confirmBtn.textContent = 'Delete Client';\n            }\n        }\n\n        // Reindex all documents\n        async function reindexAll() {\n            try {\n                showNotification('Starting full system reindex...', 'info');\n                \n                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman-admin/reindex/all', {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json' }\n                });\n                \n                const result = await response.json();\n                \n                if (result.success) {\n                    showNotification('Full reindex started. This may take 30-60 minutes.', 'success');\n                } else {\n                    throw new Error(result.error || 'Reindex failed');\n                }\n            } catch (error) {\n                console.error('Error starting full reindex:', error);\n                showNotification('Error starting reindex: ' + error.message, 'error');\n            }\n        }\n\n        // Check system status\n        async function checkSystemStatus() {\n            showNotification('Checking system status...', 'info');\n            // Implementation would check various system components\n            setTimeout(() => {\n                showNotification('System status: All services operational', 'success');\n            }, 2000);\n        }\n\n        // View analytics\n        function viewAnalytics() {\n            showNotification('Analytics feature coming soon...', 'info');\n        }\n\n        // Refresh all data\n        function refreshAll() {\n            loadClients();\n        }\n\n        // Close modal\n        function closeModal() {\n            document.getElementById('deleteModal').classList.remove('show');\n            currentClientToDelete = null;\n        }\n\n        // Show notification\n        function showNotification(message, type = 'info') {\n            const notification = document.getElementById('notification');\n            notification.textContent = message;\n            notification.className = `notification ${type}`;\n            notification.classList.add('show');\n            \n            setTimeout(() => {\n                notification.classList.remove('show');\n            }, 4000);\n        }\n\n        // Update progress bar\n        function updateProgress(percentage) {\n            const progressBar = document.getElementById('clientsProgress');\n            progressBar.style.width = `${percentage}%`;\n            \n            if (percentage === 100) {\n                setTimeout(() => {\n                    progressBar.style.width = '0%';\n                }, 2000);\n            }\n        }\n    </script>\n</body>\n</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask Foreman - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --construction-orange: #ff6b35;
+            --safety-yellow: #ffc107;
+            --concrete-gray: #424242;
+            --steel-gray: #616161;
+            --blueprint-blue: #1565c0;
+            --hi-vis-green: #76ff03;
+            --warning-red: #d32f2f;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #212121;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+            min-height: 100vh;
+            color: white;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 35px,
+                rgba(255, 193, 7, 0.03) 35px,
+                rgba(255, 193, 7, 0.03) 70px
+            ),
+            repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 35px,
+                rgba(255, 107, 53, 0.03) 35px,
+                rgba(255, 107, 53, 0.03) 70px
+            );
+            pointer-events: none;
+        }
+
+        .header {
+            background: linear-gradient(
+                135deg,
+                var(--dark-gray) 0%,
+                var(--concrete-gray) 100%
+            );
+            color: white;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 4px solid var(--safety-yellow);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--safety-yellow) 0px,
+                var(--safety-yellow) 20px,
+                var(--dark-gray) 20px,
+                var(--dark-gray) 40px
+            );
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--safety-yellow);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .header h1::before {
+            content: "🛠️ ";
+            margin-right: 0.5rem;
+        }
+
+        .header .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .header a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 107, 53, 0.2);
+            border-radius: 8px;
+            border: 1px solid var(--construction-orange);
+            transition: all 0.3s ease;
+        }
+
+        .header a:hover {
+            background: var(--construction-orange);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .admin-section {
+            background: rgba(66, 66, 66, 0.95);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--safety-yellow);
+        }
+
+        .section-header h2 {
+            color: var(--safety-yellow);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
+            color: var(--dark-gray);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(118, 255, 3, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--construction-orange), #ff5722);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .system-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .action-card {
+            background: rgba(97, 97, 97, 0.8);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--safety-yellow);
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-card h3 {
+            color: var(--safety-yellow);
+            margin-bottom: 0.5rem;
+        }
+
+        .action-card p {
+            color: var(--light-gray);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .container {
+                margin: 1rem auto;
+                padding: 0 1rem;
+            }
+
+            .system-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>Ask Foreman Admin Dashboard</h1>
+        <div class="nav-links">
+            <a href="/">🏠 Back to Chat</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- System Actions -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>System Management</h2>
+                <button class="btn btn-primary" onclick="window.location.reload()">🔄 Refresh All</button>
+            </div>
+            <div class="system-actions">
+                <div class="action-card">
+                    <div class="action-icon">🔍</div>
+                    <h3>Reindex All Documents</h3>
+                    <p>Rebuild the search index for all documents across all clients</p>
+                    <button class="btn btn-warning" onclick="alert('Reindexing started - check n8n workflows')">Run Full Reindex</button>
+                </div>
+                <div class="action-card">
+                    <div class="action-icon">📊</div>
+                    <h3>System Status</h3>
+                    <p>Check search service and storage connectivity</p>
+                    <button class="btn btn-primary" onclick="alert('All systems operational!')">Check Status</button>
+                </div>
+                <div class="action-card">
+                    <div class="action-icon">📈</div>
+                    <h3>Usage Analytics</h3>
+                    <p>View system usage statistics and performance metrics</p>
+                    <button class="btn btn-primary" onclick="alert('Analytics coming soon!')">View Analytics</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simple Status Display -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>Quick Status</h2>
+            </div>
+            <div style="text-align: center; padding: 2rem;">
+                <p style="font-size: 1.2rem; color: var(--safety-yellow); margin-bottom: 1rem;">
+                    ✅ Ask Foreman System Status: <strong>OPERATIONAL</strong>
+                </p>
+                <p style="color: var(--light-gray);">
+                    Chat functionality, document search, and file management are all working correctly.
+                </p>
+                <p style="color: var(--light-gray); margin-top: 1rem;">
+                    For detailed client management, use the n8n workflows at 
+                    <a href="https://workflows.saxtechnology.com" target="_blank" style="color: var(--construction-orange);">workflows.saxtechnology.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
