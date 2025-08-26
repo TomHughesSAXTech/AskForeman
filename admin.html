@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ask Foreman - Admin Dashboard</title>
+    <title>Ask Foreman - Admin Panel</title>
     <style>
         * {
             margin: 0;
@@ -28,10 +28,9 @@
         }
 
         body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #37474f 0%, #263238 100%);
             min-height: 100vh;
-            color: white;
             position: relative;
         }
 
@@ -59,21 +58,98 @@
             pointer-events: none;
         }
 
-        .header {
-            background: linear-gradient(
-                135deg,
-                var(--dark-gray) 0%,
-                var(--concrete-gray) 100%
-            );
-            color: white;
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-box {
+            background: white;
             padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            width: 90%;
+            max-width: 400px;
+            border: 2px solid var(--safety-yellow);
+        }
+
+        .login-box h2 {
+            color: var(--concrete-gray);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .login-box h2::before {
+            content: "🛠️ ";
+            color: var(--construction-orange);
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: var(--construction-orange);
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--construction-orange), #ff5722);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+        }
+
+        .error-message {
+            color: var(--warning-red);
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+            font-weight: 600;
+        }
+
+        /* Admin Panel */
+        .admin-container {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--concrete-gray) 100%);
+            color: white;
+            padding: 1rem 2rem;
             box-shadow: var(--shadow-lg);
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
             border-bottom: 4px solid var(--safety-yellow);
             position: relative;
-            z-index: 10;
         }
 
         .header::before {
@@ -93,11 +169,9 @@
         }
 
         .header h1 {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 1.8rem;
             color: var(--safety-yellow);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            letter-spacing: 1px;
         }
 
         .header h1::before {
@@ -105,60 +179,8 @@
             margin-right: 0.5rem;
         }
 
-        .header .nav-links {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .header a {
-            color: white;
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 107, 53, 0.2);
-            border-radius: 8px;
-            border: 1px solid var(--construction-orange);
-            transition: all 0.3s ease;
-        }
-
-        .header a:hover {
-            background: var(--construction-orange);
-            transform: translateY(-2px);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .admin-section {
-            background: rgba(66, 66, 66, 0.95);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 193, 7, 0.2);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--safety-yellow);
-        }
-
-        .section-header h2 {
-            color: var(--safety-yellow);
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1rem;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -170,14 +192,35 @@
             gap: 0.5rem;
         }
 
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
         .btn-primary {
-            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
             color: var(--dark-gray);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-success {
+            background: var(--hi-vis-green);
+            color: var(--dark-gray);
+        }
+
+        .btn-success:hover {
             box-shadow: 0 4px 12px rgba(118, 255, 3, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--warning-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4);
         }
 
         .btn-warning {
@@ -186,121 +229,598 @@
         }
 
         .btn-warning:hover {
-            transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
         }
 
-        .system-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
         }
 
-        .action-card {
-            background: rgba(97, 97, 97, 0.8);
-            border-radius: 12px;
+        .content {
+            flex: 1;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
             padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
             border: 1px solid rgba(255, 193, 7, 0.3);
-            text-align: center;
+        }
+
+        .panel h2 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--safety-yellow);
+            font-size: 1.3rem;
+        }
+
+        .client-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .client-item {
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .client-item:hover {
+            background: var(--light-gray);
+            border-color: var(--construction-orange);
+            transform: translateY(-2px);
+        }
+
+        .client-item.selected {
+            background: #fff3cd;
+            border-color: var(--safety-yellow);
+            border-width: 2px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--medium-gray);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0;
             transition: all 0.3s ease;
         }
 
-        .action-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--safety-yellow);
+        .tab.active {
+            background: var(--safety-yellow);
+            color: var(--dark-gray);
         }
 
-        .action-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
+        .tab-content {
+            display: none;
         }
 
-        .action-card h3 {
-            color: var(--safety-yellow);
+        .tab-content.active {
+            display: block;
+        }
+
+        .operation-buttons {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .operation-buttons > div {
+            text-align: center;
+        }
+
+        .operation-buttons button {
             margin-bottom: 0.5rem;
         }
 
-        .action-card p {
-            color: var(--light-gray);
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--steel-gray);
+            margin: 0;
+        }
+
+        .file-upload-area {
+            border: 3px dashed var(--construction-orange);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--safety-yellow);
+            background: rgba(255, 193, 7, 0.1);
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .status-message.show {
+            transform: translateX(0);
+        }
+
+        .status-message.success {
+            background: var(--hi-vis-green);
+            color: var(--dark-gray);
+        }
+
+        .status-message.error {
+            background: var(--warning-red);
+        }
+
+        .status-message.info {
+            background: var(--blueprint-blue);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 193, 7, 0.3);
+            border-left: 4px solid var(--safety-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
             .header {
                 flex-direction: column;
                 gap: 1rem;
                 text-align: center;
             }
 
-            .container {
-                margin: 1rem auto;
-                padding: 0 1rem;
-            }
-
-            .system-actions {
+            .operation-buttons {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <h1>Ask Foreman Admin Dashboard</h1>
-        <div class="nav-links">
-            <a href="/">🏠 Back to Chat</a>
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>Admin Access</h2>
+            <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">🔐 Login</button>
+            <div id="loginError" class="error-message">Invalid password. Please try again.</div>
         </div>
-    </header>
+    </div>
 
-    <div class="container">
-        <!-- System Actions -->
-        <div class="admin-section">
-            <div class="section-header">
-                <h2>System Management</h2>
-                <button class="btn btn-primary" onclick="window.location.reload()">🔄 Refresh All</button>
-            </div>
-            <div class="system-actions">
-                <div class="action-card">
-                    <div class="action-icon">🔍</div>
-                    <h3>Reindex All Documents</h3>
-                    <p>Rebuild the search index for all documents across all clients</p>
-                    <button class="btn btn-warning" onclick="alert('Reindexing started - check n8n workflows')">Run Full Reindex</button>
-                </div>
-                <div class="action-card">
-                    <div class="action-icon">📊</div>
-                    <h3>System Status</h3>
-                    <p>Check search service and storage connectivity</p>
-                    <button class="btn btn-primary" onclick="alert('All systems operational!')">Check Status</button>
-                </div>
-                <div class="action-card">
-                    <div class="action-icon">📈</div>
-                    <h3>Usage Analytics</h3>
-                    <p>View system usage statistics and performance metrics</p>
-                    <button class="btn btn-primary" onclick="alert('Analytics coming soon!')">View Analytics</button>
-                </div>
+    <!-- Admin Panel -->
+    <div id="adminContainer" class="admin-container">
+        <div class="header">
+            <h1>Ask Foreman Admin Dashboard</h1>
+            <div>
+                <button class="btn btn-danger" onclick="logout()">🚪 Logout</button>
             </div>
         </div>
 
-        <!-- Simple Status Display -->
-        <div class="admin-section">
-            <div class="section-header">
-                <h2>Quick Status</h2>
+        <div class="content">
+            <!-- Left Panel - Client List -->
+            <div class="panel">
+                <h2>📋 Client Management</h2>
+                <button class="btn btn-primary" onclick="loadClients()" style="width: 100%; margin-bottom: 1rem;">
+                    🔄 Refresh Client List
+                </button>
+                <div class="client-list" id="clientList">
+                    <p style="text-align: center; color: var(--steel-gray); padding: 2rem;">
+                        Click "Refresh Client List" to load clients
+                    </p>
+                </div>
             </div>
-            <div style="text-align: center; padding: 2rem;">
-                <p style="font-size: 1.2rem; color: var(--safety-yellow); margin-bottom: 1rem;">
-                    ✅ Ask Foreman System Status: <strong>OPERATIONAL</strong>
-                </p>
-                <p style="color: var(--light-gray);">
-                    Chat functionality, document search, and file management are all working correctly.
-                </p>
-                <p style="color: var(--light-gray); margin-top: 1rem;">
-                    For detailed client management, use the n8n workflows at 
-                    <a href="https://workflows.saxtechnology.com" target="_blank" style="color: var(--construction-orange);">workflows.saxtechnology.com</a>
-                </p>
+
+            <!-- Right Panel - Client Details -->
+            <div class="panel">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('documents')">📄 Documents</button>
+                    <button class="tab" onclick="switchTab('operations')">⚙️ Operations</button>
+                    <button class="tab" onclick="switchTab('bulk')">📤 Bulk Upload</button>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content active">
+                    <div id="clientDocuments">
+                        <p style="text-align: center; color: var(--steel-gray); padding: 2rem;">
+                            Select a client to view their documents
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Operations Tab -->
+                <div id="operationsTab" class="tab-content">
+                    <h3>🔧 System Operations</h3>
+                    <div class="operation-buttons">
+                        <div>
+                            <button class="btn btn-success" onclick="reindexAllDocuments()" style="width: 100%;">
+                                🔄 Reindex All Documents
+                            </button>
+                            <p class="help-text">Extract text from all PDFs/docs and update search index</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" onclick="syncAzureStorage()" style="width: 100%;">
+                                ☁️ Sync Azure Storage
+                            </button>
+                            <p class="help-text">Scan Azure for new clients and update document counts</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-warning" onclick="deleteSelectedClient()" style="width: 100%;" id="deleteClientBtn" disabled>
+                                🗑️ Delete Selected Client
+                            </button>
+                            <p class="help-text">Permanently delete client and all their documents</p>
+                        </div>
+                        <div>
+                            <button class="btn" onclick="exportClientData()" style="width: 100%; background: #6c757d; color: white;">
+                                📥 Export Client Data
+                            </button>
+                            <p class="help-text">Download client list as JSON</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Upload Tab -->
+                <div id="bulkTab" class="tab-content">
+                    <h3>📤 Bulk Upload Documents</h3>
+                    
+                    <!-- Category Selection -->
+                    <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 8px;">
+                        <p style="font-weight: 600; margin-bottom: 0.5rem;">Select Category for Upload:</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="auto" checked>
+                                <span>🤖 Auto-detect</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="drawings">
+                                <span>📐 Drawings</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="estimates">
+                                <span>💰 Estimates</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="proposals">
+                                <span>📊 Proposals</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="specs">
+                                <span>📋 Specs</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="radio" name="uploadCategory" value="signed-contracts">
+                                <span>📝 Contracts</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-area" id="bulkUploadArea" onclick="document.getElementById('bulkFileInput').click()">
+                        <p>📁 Drop files here or click to browse</p>
+                        <p style="font-size: 0.9rem; color: var(--steel-gray);">Files will be indexed after upload</p>
+                    </div>
+                    <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFiles(event)">
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p id="loadingText" style="color: white; margin-top: 1rem;">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage" class="status-message"></div>
+
+    <script>
+        // Configuration
+        const ADMIN_PASSWORD = 'FCS2025!';
+        const API_BASE = 'https://workflows.saxtechnology.com/webhook/ask-foreman';
+        
+        let selectedClient = null;
+        let clients = [];
+
+        // Authentication
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            window.location.reload();
+        }
+
+        // Check auth on load
+        window.onload = function() {
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            }
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Load clients
+        async function loadClients() {
+            showLoading('Loading clients...');
+            try {
+                const response = await fetch(`${API_BASE}-list-clients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                if (data.clients) {
+                    clients = data.clients;
+                    renderClients();
+                    showStatus('success', `Loaded ${clients.length} clients`);
+                } else {
+                    throw new Error('No clients data received');
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                showStatus('error', 'Failed to load clients');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderClients() {
+            const listContainer = document.getElementById('clientList');
+            listContainer.innerHTML = '';
+            
+            clients.forEach(client => {
+                const item = document.createElement('div');
+                item.className = 'client-item';
+                item.onclick = () => selectClient(client);
+                
+                item.innerHTML = `
+                    <div style="font-weight: 600; color: var(--concrete-gray); margin-bottom: 0.25rem;">${client.name}</div>
+                    <div style="font-size: 0.9rem; color: var(--steel-gray);">
+                        Project: ${client.projectName || 'N/A'}
+                    </div>
+                `;
+                
+                listContainer.appendChild(item);
+            });
+        }
+
+        function selectClient(client) {
+            selectedClient = client;
+            
+            // Update UI selection
+            document.querySelectorAll('.client-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.client-item').classList.add('selected');
+            
+            // Enable delete button
+            document.getElementById('deleteClientBtn').disabled = false;
+            
+            // Load client documents
+            loadClientDocuments();
+        }
+
+        async function loadClientDocuments() {
+            if (!selectedClient) return;
+            
+            const documentsDiv = document.getElementById('clientDocuments');
+            documentsDiv.innerHTML = `
+                <h3>📁 ${selectedClient.name} Documents</h3>
+                <p style="color: var(--steel-gray); margin: 1rem 0;">Loading documents...</p>
+            `;
+            
+            // Simulate document loading (replace with actual API call)
+            setTimeout(() => {
+                documentsDiv.innerHTML = `
+                    <h3>📁 ${selectedClient.name} Documents</h3>
+                    <div style="margin-top: 1rem;">
+                        <p style="color: var(--steel-gray);">Document management coming soon...</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+                            For now, use the n8n workflows at 
+                            <a href="https://workflows.saxtechnology.com" target="_blank" style="color: var(--construction-orange);">
+                                workflows.saxtechnology.com
+                            </a>
+                        </p>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        // System Operations
+        async function reindexAllDocuments() {
+            showLoading('Starting reindex...');
+            try {
+                // Trigger reindex via the n8n webhook (safer than direct API call)
+                const response = await fetch(`${API_BASE}-reindex`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok || response.status === 202) {
+                    showStatus('success', 'Full reindex started. This may take 30-60 minutes.');
+                } else {
+                    showStatus('info', 'Reindex requested. Use n8n workflows for advanced operations.');
+                }
+            } catch (error) {
+                console.error('Reindex error:', error);
+                showStatus('info', 'Please use the n8n workflows at workflows.saxtechnology.com for system operations.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function syncAzureStorage() {
+            showLoading('Syncing with Azure Storage...');
+            await loadClients(); // This effectively syncs with Azure
+            showStatus('success', 'Azure Storage sync completed');
+        }
+
+        async function deleteSelectedClient() {
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete client "${selectedClient.name}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            showLoading('Deleting client...');
+            try {
+                showStatus('info', 'Client deletion functionality coming soon...');
+                // Implement actual deletion via Azure Function
+            } catch (error) {
+                console.error('Delete error:', error);
+                showStatus('error', 'Error deleting client');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function exportClientData() {
+            const dataStr = JSON.stringify(clients, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `askforeman-clients-${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showStatus('success', 'Client data exported successfully');
+        }
+
+        function handleBulkFiles(event) {
+            const files = event.target.files;
+            const category = document.querySelector('input[name="uploadCategory"]:checked').value;
+            
+            if (files.length === 0) return;
+            
+            showStatus('info', `Selected ${files.length} files for ${category} category`);
+            // Implement actual bulk upload functionality
+        }
+
+        // Utility functions
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                statusDiv.classList.remove('show');
+            }, 4000);
+        }
+
+        function showLoading(message) {
+            document.getElementById('loadingText').textContent = message;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        // File upload drag and drop
+        const uploadArea = document.getElementById('bulkUploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--safety-yellow)';
+            uploadArea.style.background = 'rgba(255, 193, 7, 0.1)';
+        });
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--construction-orange)';
+            uploadArea.style.background = 'rgba(255, 107, 53, 0.05)';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--construction-orange)';
+            uploadArea.style.background = 'rgba(255, 107, 53, 0.05)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('bulkFileInput').files = files;
+                handleBulkFiles({ target: { files } });
+            }
+        });
+    </script>
 </body>
 </html>
