@@ -422,9 +422,9 @@
                         <div style="margin-top: 2rem;">
                             <h4>📤 Bulk Upload Documents</h4>
                             
-                            <!-- Category Selection -->
+                            <!-- Global Category Selection -->
                             <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
-                                <p style="font-weight: 600; margin-bottom: 0.5rem;">Select Category for Upload:</p>
+                                <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
                                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
                                         <input type="radio" name="uploadCategory" value="auto" checked>
@@ -455,9 +455,19 @@
                             
                             <div class="file-upload-area" id="bulkUploadArea" onclick="document.getElementById('bulkFileInput').click()">
                                 <p>📁 Drop files here or click to browse</p>
-                                <p style="font-size: 0.9rem; color: var(--steel-gray);">Files will be indexed after upload</p>
+                                <p style="font-size: 0.9rem; color: var(--steel-gray);">You can customize category for each file after selection</p>
                             </div>
-                            <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFiles(event)">
+                            <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFilesWithPreview(event)">
+                            
+                            <!-- File Preview Area -->
+                            <div id="filePreviewArea" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
+                                <h5 style="margin-bottom: 1rem;">📋 Files to Upload:</h5>
+                                <div id="fileList"></div>
+                                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-success" onclick="uploadFilesWithCategories()">📤 Upload All Files</button>
+                                    <button class="btn btn-danger" onclick="clearFileSelection()">❌ Clear Selection</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -664,53 +674,129 @@
                 const xmlDoc = parser.parseFromString(xmlText, "text/xml");
                 const blobs = xmlDoc.getElementsByTagName("Blob");
                 
-                let html = `<h3>📄 Documents for ${selectedClient.name}</h3>`;
+                // Organize documents by category/folder
+                const documentsByCategory = {
+                    'drawings': [],
+                    'estimates': [],
+                    'proposals': [],
+                    'specs': [],
+                    'signed-contracts': [],
+                    'documents': [],
+                    'other': []
+                };
                 
-                if (blobs.length === 0) {
-                    html += '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">No documents found</p>';
-                } else {
-                    html += '<table class="document-table">';
-                    html += '<thead><tr><th>File Name</th><th>Size</th><th>Modified</th><th>Actions</th></tr></thead>';
-                    html += '<tbody>';
+                // Parse and categorize documents
+                for (let i = 0; i < blobs.length; i++) {
+                    const nameEl = blobs[i].getElementsByTagName("Name")[0];
+                    const propsEl = blobs[i].getElementsByTagName("Properties")[0];
                     
-                    for (let i = 0; i < blobs.length; i++) {
-                        const nameEl = blobs[i].getElementsByTagName("Name")[0];
-                        const propsEl = blobs[i].getElementsByTagName("Properties")[0];
+                    if (nameEl) {
+                        const fullPath = nameEl.textContent;
+                        const pathParts = fullPath.split('/');
                         
-                        if (nameEl) {
-                            const fullPath = nameEl.textContent;
-                            const fileName = fullPath.split('/').pop();
+                        // Skip if it's just the folder itself or metadata
+                        if (pathParts.length < 3 || fullPath.includes('.metadata')) continue;
+                        
+                        const category = pathParts[2]; // FCS-OriginalClients/ClientName/Category/file.pdf
+                        const fileName = pathParts[pathParts.length - 1];
+                        
+                        if (fileName && fileName.length > 0 && !fileName.startsWith('.')) {
+                            let size = '0 KB';
+                            let modified = 'Unknown';
                             
-                            if (fileName && fileName.length > 0) {
-                                let size = '0 KB';
-                                let modified = 'Unknown';
+                            if (propsEl) {
+                                const sizeEl = propsEl.getElementsByTagName("Content-Length")[0];
+                                const modEl = propsEl.getElementsByTagName("Last-Modified")[0];
                                 
-                                if (propsEl) {
-                                    const sizeEl = propsEl.getElementsByTagName("Content-Length")[0];
-                                    const modEl = propsEl.getElementsByTagName("Last-Modified")[0];
-                                    
-                                    if (sizeEl) {
-                                        const bytes = parseInt(sizeEl.textContent) || 0;
-                                        size = formatFileSize(bytes);
-                                    }
-                                    if (modEl) {
-                                        modified = new Date(modEl.textContent).toLocaleDateString();
-                                    }
+                                if (sizeEl) {
+                                    const bytes = parseInt(sizeEl.textContent) || 0;
+                                    size = formatFileSize(bytes);
                                 }
-                                
-                                html += `<tr>`;
-                                html += `<td>${fileName}</td>`;
-                                html += `<td>${size}</td>`;
-                                html += `<td>${modified}</td>`;
-                                html += `<td>`;
-                                html += `<button class="btn btn-small btn-success" onclick="reindexDocument('${fullPath}')">🔄 Reindex</button> `;
-                                html += `<button class="btn btn-small btn-danger" onclick="deleteDocument('${fullPath}')">🗑️ Delete</button>`;
-                                html += `</td></tr>`;
+                                if (modEl) {
+                                    modified = new Date(modEl.textContent).toLocaleDateString();
+                                }
+                            }
+                            
+                            const doc = {
+                                fullPath: fullPath,
+                                fileName: fileName,
+                                size: size,
+                                modified: modified,
+                                category: category
+                            };
+                            
+                            // Add to appropriate category
+                            if (documentsByCategory[category]) {
+                                documentsByCategory[category].push(doc);
+                            } else {
+                                documentsByCategory['other'].push(doc);
                             }
                         }
                     }
+                }
+                
+                // Build HTML with categorized documents
+                let html = `<h3>📄 Documents for ${selectedClient.name}</h3>`;
+                
+                const totalDocs = Object.values(documentsByCategory).reduce((sum, docs) => sum + docs.length, 0);
+                
+                if (totalDocs === 0) {
+                    html += '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">No documents found</p>';
+                } else {
+                    // Category display names and icons
+                    const categoryInfo = {
+                        'drawings': { name: 'Drawings', icon: '📐' },
+                        'estimates': { name: 'Estimates', icon: '💰' },
+                        'proposals': { name: 'Proposals', icon: '📊' },
+                        'specs': { name: 'Specifications', icon: '📋' },
+                        'signed-contracts': { name: 'Signed Contracts', icon: '📝' },
+                        'documents': { name: 'General Documents', icon: '📁' },
+                        'other': { name: 'Other Files', icon: '📎' }
+                    };
                     
-                    html += '</tbody></table>';
+                    // Display each category
+                    for (const [category, docs] of Object.entries(documentsByCategory)) {
+                        if (docs.length === 0) continue;
+                        
+                        const info = categoryInfo[category] || { name: category, icon: '📄' };
+                        
+                        html += `
+                            <div style="margin-top: 2rem;">
+                                <h4 style="color: var(--concrete-gray); border-bottom: 2px solid var(--safety-yellow); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                                    ${info.icon} ${info.name} (${docs.length} files)
+                                </h4>
+                                <table class="document-table">
+                                    <thead>
+                                        <tr>
+                                            <th>File Name</th>
+                                            <th>Size</th>
+                                            <th>Modified</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        for (const doc of docs) {
+                            html += `
+                                <tr>
+                                    <td>${doc.fileName}</td>
+                                    <td>${doc.size}</td>
+                                    <td>${doc.modified}</td>
+                                    <td>
+                                        <button class="btn btn-small btn-success" onclick="reindexDocument('${doc.fullPath}')">🔄 Reindex</button>
+                                        <button class="btn btn-small btn-danger" onclick="deleteDocument('${doc.fullPath}')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                        
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
                 }
                 
                 documentsContainer.innerHTML = html;
@@ -777,7 +863,29 @@
                 return;
             }
             
-            showStatus('error', 'Client deletion requires server-side implementation to delete all Azure blobs');
+            showLoading('Deleting client and all associated files...');
+            try {
+                const response = await fetch(`https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code=8XXgu4-yK7kAdNVShD2f1a_lCYqqtU-iEcn7mRWUbnOnAzFuxl8RJA==`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.Success) {
+                    showStatus('success', `Client deleted successfully. ${result.Summary.TotalDeleted} files removed.`);
+                    selectedClient = null;
+                    loadClients();
+                    // Clear the details panel
+                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
+                    document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
+                } else {
+                    showStatus('error', `Failed to delete client: ${result.Error}`);
+                }
+            } catch (error) {
+                showStatus('error', `Failed to delete client: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
         }
 
         function createNewClient() {
@@ -866,6 +974,165 @@
             showStatus('success', 'Client data exported');
         }
 
+        // Store selected files for preview
+        let selectedFiles = [];
+        
+        // Enhanced bulk upload with preview
+        function handleBulkFilesWithPreview(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                event.target.value = '';
+                return;
+            }
+            
+            // Store files for preview
+            selectedFiles = Array.from(files);
+            
+            // Get default category
+            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
+            
+            // Build preview UI
+            const fileListContainer = document.getElementById('fileList');
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">File Name</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Size</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Category</th>';
+            html += '</tr></thead><tbody>';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileName = file.name;
+                const fileSize = formatFileSize(file.size);
+                
+                // Auto-detect category if default is 'auto'
+                let autoCategory = 'documents';
+                if (defaultCategory === 'auto') {
+                    const lowerName = fileName.toLowerCase();
+                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
+                        autoCategory = 'drawings';
+                    } else if (lowerName.includes('estimate')) {
+                        autoCategory = 'estimates';
+                    } else if (lowerName.includes('proposal')) {
+                        autoCategory = 'proposals';
+                    } else if (lowerName.includes('spec')) {
+                        autoCategory = 'specs';
+                    } else if (lowerName.includes('contract')) {
+                        autoCategory = 'signed-contracts';
+                    }
+                }
+                
+                const selectedCategory = defaultCategory === 'auto' ? autoCategory : defaultCategory;
+                
+                html += '<tr>';
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileSize}</td>`;
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">`;
+                html += `<select id="fileCategory_${index}" style="padding: 0.25rem; border: 1px solid var(--medium-gray); border-radius: 3px;">`;
+                html += `<option value="drawings" ${selectedCategory === 'drawings' ? 'selected' : ''}>📐 Drawings</option>`;
+                html += `<option value="estimates" ${selectedCategory === 'estimates' ? 'selected' : ''}>💰 Estimates</option>`;
+                html += `<option value="proposals" ${selectedCategory === 'proposals' ? 'selected' : ''}>📊 Proposals</option>`;
+                html += `<option value="specs" ${selectedCategory === 'specs' ? 'selected' : ''}>📋 Specs</option>`;
+                html += `<option value="signed-contracts" ${selectedCategory === 'signed-contracts' ? 'selected' : ''}>📝 Contracts</option>`;
+                html += `<option value="documents" ${selectedCategory === 'documents' ? 'selected' : ''}>📁 Documents</option>`;
+                html += `</select>`;
+                html += `</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            fileListContainer.innerHTML = html;
+            
+            // Show preview area
+            document.getElementById('filePreviewArea').style.display = 'block';
+            
+            // Clear file input to allow re-selection
+            event.target.value = '';
+        }
+        
+        // Upload files with individual categories
+        async function uploadFilesWithCategories() {
+            if (!selectedFiles || selectedFiles.length === 0) {
+                showStatus('error', 'No files selected');
+                return;
+            }
+            
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
+            
+            showLoading(`Uploading ${selectedFiles.length} files...`);
+            
+            let successCount = 0;
+            let overwriteCount = 0;
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const fileName = file.name;
+                
+                // Get category from dropdown
+                const categorySelect = document.getElementById(`fileCategory_${i}`);
+                const category = categorySelect ? categorySelect.value : 'documents';
+                
+                const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
+                const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
+                
+                try {
+                    // Check if file exists
+                    const checkResponse = await fetch(uploadUrl, { method: 'HEAD' });
+                    
+                    let shouldUpload = true;
+                    if (checkResponse.ok) {
+                        shouldUpload = confirm(`File '${fileName}' already exists in ${category}. Overwrite?`);
+                        if (shouldUpload) overwriteCount++;
+                    }
+                    
+                    if (shouldUpload) {
+                        const uploadResponse = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'x-ms-blob-type': 'BlockBlob',
+                                'Content-Type': file.type || 'application/octet-stream'
+                            },
+                            body: file
+                        });
+                        
+                        if (uploadResponse.ok || uploadResponse.status === 201) {
+                            successCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error uploading ${fileName}:`, error);
+                }
+                
+                document.getElementById('loadingText').textContent = `Processing file ${i + 1} of ${selectedFiles.length}...`;
+            }
+            
+            hideLoading();
+            
+            let message = `Upload complete: ${successCount} files uploaded`;
+            if (overwriteCount > 0) message += `, ${overwriteCount} overwritten`;
+            message += '. Files will be automatically indexed.';
+            
+            showStatus('success', message);
+            
+            // Clear selection and hide preview
+            clearFileSelection();
+            
+            // Reload documents
+            loadClientDocuments();
+        }
+        
+        // Clear file selection
+        function clearFileSelection() {
+            selectedFiles = [];
+            document.getElementById('filePreviewArea').style.display = 'none';
+            document.getElementById('bulkFileInput').value = '';
+        }
+        
         // Bulk upload
         async function handleBulkFiles(event) {
             const files = event.target.files;
