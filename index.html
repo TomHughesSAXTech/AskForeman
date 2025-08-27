@@ -4,6 +4,61 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ask Foreman - Construction Estimating Assistant</title>
+    
+    <!-- Mobile Detection and Redirection -->
+    <script>
+      (function() {
+        // Function to detect mobile devices
+        function isMobileDevice() {
+          // Check user agent
+          const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+          
+          // Check for mobile devices
+          const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+          
+          // Check screen size as additional validation
+          const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+          const isMobileScreen = screenWidth <= 768;
+          
+          // Check if it's a touch device
+          const isTouchDevice = ('ontouchstart' in window) || 
+                              (navigator.maxTouchPoints > 0) || 
+                              (navigator.msMaxTouchPoints > 0);
+          
+          // Return true if mobile user agent AND (mobile screen OR touch device)
+          return mobileRegex.test(userAgent.toLowerCase()) && (isMobileScreen || isTouchDevice);
+        }
+        
+        // Function to get URL parameter
+        function getUrlParameter(name) {
+          name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+          const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+          const results = regex.exec(location.search);
+          return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        
+        // Check if user forced desktop or mobile view
+        const forceDesktop = getUrlParameter('desktop') === 'true';
+        const forceMobile = getUrlParameter('mobile') === 'true';
+        
+        // Store user preference if explicitly set
+        if (forceDesktop) {
+          localStorage.setItem('viewPreference', 'desktop');
+        } else if (forceMobile) {
+          localStorage.setItem('viewPreference', 'mobile');
+        }
+        
+        // Get stored preference
+        const viewPreference = localStorage.getItem('viewPreference');
+        
+        // Determine where to redirect - redirect to the mobile site hosted on Azure
+        if (!forceDesktop && (forceMobile || (isMobileDevice() && viewPreference !== 'desktop'))) {
+          // Redirect to mobile version hosted on Azure Static Web Apps
+          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/mobile-chat.html');
+        }
+        // If it's desktop or forced desktop, continue loading this page normally
+      })();
+    </script>
     <style>
       * {
         margin: 0;
