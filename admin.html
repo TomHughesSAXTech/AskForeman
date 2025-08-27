@@ -726,53 +726,7 @@
             `).join('');
         }
 
-        // Create Client
-        document.getElementById('createClientForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const clientName = document.getElementById('clientName').value.trim();
-            const projectName = document.getElementById('projectName').value.trim();
-            const projectDescription = document.getElementById('projectDescription').value.trim();
-            
-            if (!clientName) {
-                showStatus('Client name is required', 'error');
-                return;
-            }
-            
-            log(`Creating new client: ${clientName}`);
-            
-            try {
-                const response = await fetch(`${API_BASE}/clients/create`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        clientName: clientName,
-                        projectName: projectName,
-                        projectDescription: projectDescription
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                log(`Client created successfully: ${clientName}`, 'success');
-                showStatus(`Client "${clientName}" created successfully!`, 'success');
-                
-                // Clear form
-                document.getElementById('createClientForm').reset();
-                
-                // Reload clients list
-                loadClients();
-                
-            } catch (error) {
-                log(`Failed to create client: ${error.message}`, 'error');
-                showStatus('Failed to create client: ' + error.message, 'error');
-            }
-        });
+        // Note: Client creation form removed from admin panel - clients created through main app
 
         // Edit Client - Show modal
         function editClient(clientId, clientName, projectName) {
