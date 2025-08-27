@@ -578,6 +578,14 @@
         let selectedClient = null;
         let clients = [];
 
+        // Mock data for testing while CORS is configured
+        const mockClients = [
+            { name: "SAX Technology", projectName: "Office Renovation", id: "sax-tech" },
+            { name: "Downtown Construction", projectName: "Residential Complex", id: "downtown" },
+            { name: "Harbor View LLC", projectName: "Waterfront Development", id: "harbor" },
+            { name: "Metro Building Corp", projectName: "Commercial Tower", id: "metro" }
+        ];
+
         // Authentication
         function login() {
             const password = document.getElementById('passwordInput').value;
@@ -619,22 +627,34 @@
         async function loadClients() {
             showLoading('Loading clients...');
             try {
-                const response = await fetch(`${API_BASE}-list-clients`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                const data = await response.json();
-                if (data.clients) {
-                    clients = data.clients;
-                    renderClients();
-                    showStatus('success', `Loaded ${clients.length} clients`);
-                } else {
-                    throw new Error('No clients data received');
+                // First try the API, fallback to mock data if CORS fails
+                try {
+                    const response = await fetch(`${API_BASE}-list-clients`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.clients) {
+                        clients = data.clients;
+                        renderClients();
+                        showStatus('success', `Loaded ${clients.length} clients from Azure`);
+                        return;
+                    }
+                } catch (apiError) {
+                    console.log('API call failed, using demo data:', apiError);
                 }
+                
+                // Fallback to mock data
+                clients = mockClients;
+                renderClients();
+                showStatus('info', `Loaded ${clients.length} demo clients (CORS issue - contact admin to configure webhook headers)`);
+                
             } catch (error) {
                 console.error('Error loading clients:', error);
                 showStatus('error', 'Failed to load clients');
+                clients = mockClients; // Always show something
+                renderClients();
             } finally {
                 hideLoading();
             }
