@@ -488,28 +488,22 @@
                     <h3>🔧 System Operations</h3>
                     <div class="operation-buttons">
                         <div>
-                            <button class="btn btn-primary" onclick="openN8nWorkflows()" style="width: 100%;">
-                                🚀 Open n8n Dashboard
+                            <button class="btn btn-success" onclick="reindexAllDocuments()" style="width: 100%;">
+                                🔄 Reindex All Documents
                             </button>
-                            <p class="help-text">Manage workflows, triggers, and document processing</p>
+                            <p class="help-text">Reset and rebuild the search index for all clients</p>
                         </div>
                         <div>
-                            <button class="btn btn-success" onclick="testSystemHealth()" style="width: 100%;">
-                                ❤️ Test System Health
+                            <button class="btn btn-warning" onclick="deleteSelectedClient()" style="width: 100%;" id="deleteClientBtn" disabled>
+                                🗑️ Delete Selected Client
                             </button>
-                            <p class="help-text">Check if webhooks and Azure storage are responding</p>
+                            <p class="help-text">Permanently delete client and all their documents</p>
                         </div>
                         <div>
-                            <button class="btn" onclick="viewSystemLogs()" style="width: 100%; background: var(--blueprint-blue); color: white;">
-                                📊 View System Status
+                            <button class="btn" onclick="viewSystemStats()" style="width: 100%; background: var(--blueprint-blue); color: white;">
+                                📊 View System Statistics
                             </button>
-                            <p class="help-text">Show recent activity and system information</p>
-                        </div>
-                        <div>
-                            <button class="btn btn-warning" onclick="clearCache()" style="width: 100%;">
-                                🧹 Clear Session Cache
-                            </button>
-                            <p class="help-text">Reset stored client data and force refresh</p>
+                            <p class="help-text">Show usage metrics, queries, and system performance</p>
                         </div>
                     </div>
                 </div>
@@ -628,7 +622,7 @@
             document.getElementById(tabName + 'Tab').classList.add('active');
         }
 
-        // Load clients from n8n webhook (now fixed)
+        // Load clients from backend API
         async function loadClients() {
             showLoading('Loading clients...');
             try {
@@ -684,8 +678,8 @@
             document.querySelectorAll('.client-item').forEach(item => item.classList.remove('selected'));
             event.target.closest('.client-item').classList.add('selected');
             
-            // Enable operations that require a selected client
-            // (No delete button anymore, but we keep this for future operations)
+            // Enable delete button
+            document.getElementById('deleteClientBtn').disabled = false;
             
             // Load client documents
             loadClientDocuments();
@@ -700,135 +694,238 @@
                 <p style="color: var(--steel-gray); margin: 1rem 0;">Loading documents...</p>
             `;
             
-            // Simulate document loading (replace with actual API call)
-            setTimeout(() => {
-                documentsDiv.innerHTML = `
-                    <h3>📁 ${selectedClient.name} Documents</h3>
-                    <div style="margin-top: 1rem;">
-                        <p style="color: var(--steel-gray);">Document management coming soon...</p>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
-                            For now, use the n8n workflows at 
-                            <a href="https://workflows.saxtechnology.com" target="_blank" style="color: var(--construction-orange);">
-                                workflows.saxtechnology.com
-                            </a>
-                        </p>
-                    </div>
-                `;
-            }, 1000);
+            // Load actual documents for the client
+            loadClientDocumentsList();
         }
 
         // System Operations
-        function openN8nWorkflows() {
-            window.open('https://workflows.saxtechnology.com', '_blank');
-            showStatus('info', 'Opening n8n dashboard in new tab');
-        }
-        
-        async function testSystemHealth() {
-            showLoading('Testing system health...');
-            const healthResults = [];
+        async function reindexAllDocuments() {
+            if (!confirm('This will reset and rebuild the entire document index. This process may take 30-60 minutes. Continue?')) {
+                return;
+            }
             
+            showLoading('Starting full document reindex...');
             try {
-                // Test webhook endpoint
-                try {
-                    const webhookResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    healthResults.push(`🟢 Webhook: ${webhookResponse.status === 200 ? 'OK' : 'Issues detected'}`);
-                } catch (e) {
-                    healthResults.push('🔴 Webhook: Failed to connect');
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/reindex', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'full_reindex' })
+                });
+                
+                if (response.ok) {
+                    showStatus('success', 'Document reindex started. This may take 30-60 minutes to complete.');
+                } else {
+                    throw new Error(`Reindex failed: ${response.status}`);
                 }
-                
-                // Test Azure Storage access
-                try {
-                    const azureUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&maxresults=1`;
-                    const azureResponse = await fetch(azureUrl);
-                    healthResults.push(`🟢 Azure Storage: ${azureResponse.status === 200 ? 'Accessible' : 'Access issues'}`);
-                } catch (e) {
-                    healthResults.push('🔴 Azure Storage: Connection failed');
-                }
-                
-                // Show results
-                const resultsHtml = `
-                    <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
-                        <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">🏥 System Health Check</h4>
-                        ${healthResults.map(result => `<div style="margin: 0.5rem 0; font-family: monospace;">${result}</div>`).join('')}
-                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--steel-gray);">
-                            Last checked: ${new Date().toLocaleString()}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('clientDocuments').innerHTML = resultsHtml;
-                showStatus('success', 'System health check completed');
-                
             } catch (error) {
-                console.error('Health check error:', error);
-                showStatus('error', 'Health check failed');
+                console.error('Reindex error:', error);
+                showStatus('error', `Failed to start reindex: ${error.message}`);
             } finally {
                 hideLoading();
             }
         }
         
-        function viewSystemLogs() {
-            const systemInfo = {
-                'Last Client Refresh': clients.length > 0 ? 'Recently loaded' : 'Not loaded',
-                'Selected Client': selectedClient ? selectedClient.name : 'None',
-                'Session Status': sessionStorage.getItem('adminAuth') ? 'Authenticated' : 'Not authenticated',
-                'Browser': navigator.userAgent.split(')')[0] + ')',
-                'Timestamp': new Date().toISOString()
-            };
+        async function deleteSelectedClient() {
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
             
-            const logsHtml = `
-                <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
-                    <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">📊 System Status</h4>
-                    ${Object.entries(systemInfo).map(([key, value]) => `
-                        <div style="margin: 0.5rem 0; display: flex; justify-content: space-between;">
-                            <strong>${key}:</strong>
-                            <span style="font-family: monospace; color: var(--steel-gray);">${value}</span>
+            const clientName = selectedClient.name;
+            if (!confirm(`Are you sure you want to PERMANENTLY DELETE client "${clientName}"?\n\nThis will delete:\n- All documents from both folders\n- All metadata\n- Search index entries\n\nThis action CANNOT be undone!`)) {
+                return;
+            }
+            
+            if (!confirm(`Type "DELETE ${clientName}" in the next dialog to confirm.`) || 
+                prompt(`Type "DELETE ${clientName}" to confirm:`) !== `DELETE ${clientName}`) {
+                showStatus('info', 'Client deletion cancelled');
+                return;
+            }
+            
+            showLoading(`Deleting client "${clientName}"...`);
+            try {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/delete-client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        client_name: clientName,
+                        delete_original: true,
+                        delete_converted: true,
+                        update_index: true
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('success', `Client "${clientName}" has been permanently deleted`);
+                    // Remove from local list and refresh UI
+                    clients = clients.filter(c => c.name !== clientName);
+                    selectedClient = null;
+                    renderClients();
+                    document.getElementById('clientDocuments').innerHTML = '<p style="text-align: center; color: var(--steel-gray); padding: 2rem;">Select a client to view their documents</p>';
+                    document.getElementById('deleteClientBtn').disabled = true;
+                } else {
+                    throw new Error(`Delete failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                showStatus('error', `Failed to delete client: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function viewSystemStats() {
+            showLoading('Loading system statistics...');
+            try {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/stats', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    const statsHtml = `
+                        <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
+                            <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">📊 System Statistics</h4>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                                <div style="background: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--construction-orange);">${stats.total_queries || 'N/A'}</div>
+                                    <div style="font-size: 0.9rem; color: var(--steel-gray);">Total Queries</div>
+                                </div>
+                                <div style="background: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--blueprint-blue);">${stats.total_documents || 'N/A'}</div>
+                                    <div style="font-size: 0.9rem; color: var(--steel-gray);">Total Documents</div>
+                                </div>
+                                <div style="background: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--hi-vis-green);">${stats.tokens_used || 'N/A'}</div>
+                                    <div style="font-size: 0.9rem; color: var(--steel-gray);">Tokens Used</div>
+                                </div>
+                                <div style="background: white; padding: 1rem; border-radius: 8px; text-align: center;">
+                                    <div style="font-size: 2rem; font-weight: 600; color: var(--safety-yellow);">${stats.avg_response_time || 'N/A'}s</div>
+                                    <div style="font-size: 0.9rem; color: var(--steel-gray);">Avg Response Time</div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--steel-gray);">
+                                Last updated: ${new Date().toLocaleString()}
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('clientDocuments').innerHTML = statsHtml;
+                    showStatus('success', 'System statistics loaded');
+                } else {
+                    throw new Error(`Stats request failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Stats error:', error);
+                // Show placeholder stats if API fails
+                const fallbackHtml = `
+                    <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
+                        <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">📊 System Statistics</h4>
+                        <p style="color: var(--warning-red);">Unable to load statistics at this time.</p>
+                        <p style="font-size: 0.9rem; color: var(--steel-gray);">Error: ${error.message}</p>
+                    </div>
+                `;
+                document.getElementById('clientDocuments').innerHTML = fallbackHtml;
+                showStatus('error', `Failed to load statistics: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function loadClientDocumentsList() {
+            if (!selectedClient) return;
+            
+            showLoading('Loading client documents...');
+            try {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/list-documents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_name: selectedClient.name })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    renderClientDocuments(data.documents || []);
+                } else {
+                    throw new Error(`Failed to load documents: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Documents load error:', error);
+                document.getElementById('clientDocuments').innerHTML = `
+                    <h3>📁 ${selectedClient.name} Documents</h3>
+                    <p style="color: var(--warning-red); margin: 1rem 0;">Error loading documents: ${error.message}</p>
+                `;
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function renderClientDocuments(documents) {
+            const documentsDiv = document.getElementById('clientDocuments');
+            
+            if (!documents || documents.length === 0) {
+                documentsDiv.innerHTML = `
+                    <h3>📁 ${selectedClient.name} Documents</h3>
+                    <p style="color: var(--steel-gray); margin: 1rem 0;">No documents found for this client.</p>
+                `;
+                return;
+            }
+            
+            const documentsHtml = `
+                <h3>📁 ${selectedClient.name} Documents (${documents.length})</h3>
+                <div style="margin-top: 1rem; max-height: 400px; overflow-y: auto;">
+                    ${documents.map(doc => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 8px; border: 1px solid var(--medium-gray);">
+                            <div>
+                                <div style="font-weight: 600; color: var(--concrete-gray);">${doc.name}</div>
+                                <div style="font-size: 0.8rem; color: var(--steel-gray);">
+                                    ${doc.category || 'Uncategorized'} • ${formatFileSize(doc.size || 0)} • ${doc.type || 'Unknown'}
+                                </div>
+                            </div>
+                            <button onclick="deleteDocument('${selectedClient.name}', '${doc.name}')" 
+                                    style="background: var(--warning-red); color: white; border: none; border-radius: 4px; padding: 0.5rem; cursor: pointer; font-size: 0.8rem;">
+                                🗑️ Delete
+                            </button>
                         </div>
                     `).join('')}
-                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--medium-gray);">
-                        <strong>Configuration:</strong><br>
-                        <span style="font-size: 0.8rem; color: var(--steel-gray); font-family: monospace;">
-                            Storage: ${AZURE_STORAGE.account}.blob.core.windows.net<br>
-                            Container: ${AZURE_STORAGE.container}<br>
-                            Webhook: workflows.saxtechnology.com
-                        </span>
-                    </div>
                 </div>
             `;
             
-            document.getElementById('clientDocuments').innerHTML = logsHtml;
-            showStatus('info', 'System status displayed');
+            documentsDiv.innerHTML = documentsHtml;
         }
         
-        function clearCache() {
-            if (confirm('Clear all cached data and force refresh? This will reload the client list.')) {
-                // Clear variables
-                clients = [];
-                selectedClient = null;
-                selectedFiles = [];
+        async function deleteDocument(clientName, documentName) {
+            if (!confirm(`Delete "${documentName}" from ${clientName}?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            showLoading(`Deleting document "${documentName}"...`);
+            try {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/delete-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        client_name: clientName,
+                        document_name: documentName
+                    })
+                });
                 
-                // Reset UI
-                document.getElementById('clientList').innerHTML = '<p style="text-align: center; color: var(--steel-gray); padding: 2rem;">Cache cleared. Click "Refresh Client List" to reload</p>';
-                document.getElementById('clientDocuments').innerHTML = '<p style="text-align: center; color: var(--steel-gray); padding: 2rem;">Select a client to view their documents</p>';
-                document.getElementById('selectedFilesDisplay').style.display = 'none';
-                document.getElementById('bulkFileInput').value = '';
-                document.getElementById('deleteClientBtn').disabled = true;
-                
-                // Clear any browser cache related to this session
-                if ('caches' in window) {
-                    caches.keys().then(names => {
-                        names.forEach(name => {
-                            if (name.includes('askforeman')) {
-                                caches.delete(name);
-                            }
-                        });
-                    });
+                if (response.ok) {
+                    showStatus('success', `Document "${documentName}" has been deleted`);
+                    // Reload the documents list
+                    loadClientDocumentsList();
+                } else {
+                    throw new Error(`Delete failed: ${response.status}`);
                 }
-                
-                showStatus('success', 'Cache cleared successfully');
+            } catch (error) {
+                console.error('Document delete error:', error);
+                showStatus('error', `Failed to delete document: ${error.message}`);
+            } finally {
+                hideLoading();
             }
         }
 
@@ -921,7 +1018,7 @@
                 document.getElementById('selectedFilesDisplay').style.display = 'none';
                 document.getElementById('bulkFileInput').value = '';
                 
-                // TODO: Implement actual upload to Azure via n8n webhook
+                // TODO: Implement actual upload to backend
                 // const formData = new FormData();
                 // selectedFiles.forEach((file, index) => {
                 //     formData.append(`file${index}`, file);
@@ -929,7 +1026,7 @@
                 // formData.append('client', selectedClient.name);
                 // formData.append('category', category);
                 
-                // const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/upload', {
+                // const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/upload', {
                 //     method: 'POST',
                 //     body: formData
                 // });
