@@ -211,14 +211,6 @@
             box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
         }
 
-        .btn-success {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
-        }
-
         .form-group {
             margin-bottom: 20px;
         }
@@ -226,13 +218,13 @@
         .form-group label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
             color: #2c3e50;
+            font-weight: 600;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
+            padding: 12px 15px;
             border: 2px solid #e9ecef;
             border-radius: 8px;
             font-size: 1em;
@@ -240,190 +232,170 @@
         }
 
         .form-control:focus {
+            outline: none;
             border-color: #3498db;
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-            outline: none;
         }
 
         .client-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
             margin-top: 20px;
         }
 
         .client-item {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
             border-radius: 10px;
             padding: 20px;
+            border-left: 4px solid #3498db;
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .client-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3498db, #2c3e50);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
         }
 
         .client-item:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .client-item:hover::before {
+            transform: scaleX(1);
         }
 
         .client-name {
-            font-size: 1.2em;
-            font-weight: 600;
+            font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 10px;
+            font-size: 1.1em;
+            margin-bottom: 5px;
         }
 
         .client-project {
             color: #6c757d;
-            margin-bottom: 15px;
-            font-style: italic;
+            font-size: 0.9em;
+            margin-bottom: 10px;
         }
 
         .client-actions {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .client-actions .btn {
-            margin: 0;
-            padding: 8px 12px;
-            font-size: 0.9em;
+            margin-top: 15px;
         }
 
         .status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
             font-weight: 600;
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
+            text-align: center;
+            margin: 10px 0;
         }
 
         .status.success {
             background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
         }
 
         .status.error {
             background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
         }
 
         .status.warning {
             background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
         }
 
-        .status.info {
-            background: linear-gradient(45deg, #3498db, #2c3e50);
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         .logs {
-            background: #2c3e50;
-            color: #ecf0f1;
+            background: #1e1e1e;
+            color: #00ff00;
             padding: 20px;
             border-radius: 10px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
             font-size: 0.9em;
+            height: 300px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .logs::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .logs::-webkit-scrollbar-track {
+            background: #2c3e50;
+        }
+
+        .logs::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 5px;
         }
 
         .metric-card {
             text-align: center;
-            padding: 30px 20px;
+            padding: 20px;
         }
 
         .metric-value {
-            font-size: 3em;
-            font-weight: 700;
+            font-size: 2.5em;
+            font-weight: bold;
             color: #3498db;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
         .metric-label {
             color: #6c757d;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #6c757d;
-        }
-
-        .loading i {
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            font-size: 1.1em;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>AskForeman Admin Panel</h1>
-            <div class="subtitle">Complete Client & Document Management System</div>
+            <h1><i class="fas fa-tools"></i> AskForeman Admin Panel</h1>
+            <div class="subtitle">Construction AI Management System</div>
         </div>
 
-        <nav class="nav-tabs">
+        <div class="nav-tabs">
             <button class="nav-tab active" onclick="showTab('clients')">
-                <i class="fas fa-users"></i> Clients
+                <i class="fas fa-users"></i> Client Management
             </button>
             <button class="nav-tab" onclick="showTab('reindex')">
-                <i class="fas fa-sync-alt"></i> Reindex
+                <i class="fas fa-sync-alt"></i> Reindex System
             </button>
             <button class="nav-tab" onclick="showTab('logs')">
-                <i class="fas fa-file-alt"></i> Logs
+                <i class="fas fa-file-alt"></i> System Logs
             </button>
             <button class="nav-tab" onclick="showTab('metrics')">
                 <i class="fas fa-chart-bar"></i> Metrics
             </button>
-        </nav>
+        </div>
 
         <div class="content">
             <!-- Clients Tab -->
@@ -475,19 +447,6 @@
                     </div>
 
                     <div style="margin: 20px 0;">
-                        <h4>Reindex Client Documents</h4>
-                        <div class="form-group">
-                            <label for="reindexClientSelect">Select Client</label>
-                            <select id="reindexClientSelect" class="form-control">
-                                <option value="">-- Select a client --</option>
-                            </select>
-                        </div>
-                        <button class="btn" onclick="reindexClientDocuments()">
-                            <i class="fas fa-sync-alt"></i> Reindex Client Documents
-                        </button>
-                    </div>
-
-                    <div style="margin: 20px 0;">
                         <h4>Reindex Single Document</h4>
                         <div class="form-group">
                             <label for="documentPath">Document Path</label>
@@ -504,9 +463,6 @@
             <div id="logs" class="tab-pane">
                 <div class="card">
                     <h3><i class="fas fa-file-alt"></i> System Activity Logs</h3>
-                    <button class="btn" onclick="clearLogs()">
-                        <i class="fas fa-trash"></i> Clear Logs
-                    </button>
                     <div id="systemLogs" class="logs">
                         Initializing logs...
                     </div>
@@ -537,36 +493,9 @@
         </div>
     </div>
 
-    <!-- Edit Client Modal -->
-    <div id="editClientModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-edit"></i> Edit Client</h3>
-            <form id="editClientForm">
-                <div class="form-group">
-                    <label for="editClientName">Client Name</label>
-                    <input type="text" id="editClientName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="editProjectName">Project Name</label>
-                    <input type="text" id="editProjectName" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="editProjectDescription">Project Description</label>
-                    <textarea id="editProjectDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         // API Base URL
         const API_BASE = 'https://workflows.saxtechnology.com/webhook/ask-foreman';
-        
-        let currentEditClientId = null;
 
         // Show status messages
         function showStatus(message, type = 'success') {
@@ -595,12 +524,6 @@
             console.log(logEntry);
         }
 
-        // Clear logs
-        function clearLogs() {
-            document.getElementById('systemLogs').innerHTML = '';
-            log('Logs cleared', 'info');
-        }
-
         // Tab Management
         function showTab(tabName) {
             // Hide all tabs
@@ -618,21 +541,11 @@
             event.target.classList.add('active');
             
             log(`Switched to ${tabName} tab`);
-            
-            // Load specific data for each tab
-            if (tabName === 'clients') {
-                loadClients();
-            } else if (tabName === 'reindex') {
-                loadClientsForReindex();
-            }
         }
 
-        // Load Clients
+        // Load Clients - Updated to use the working endpoint
         async function loadClients() {
             log('Loading clients...');
-            
-            const clientsList = document.getElementById('clientsList');
-            clientsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading clients...</div>';
             
             try {
                 const response = await fetch(`${API_BASE}/clients/list`, {
@@ -655,7 +568,6 @@
             } catch (error) {
                 log(`Failed to load clients: ${error.message}`, 'error');
                 showStatus('Failed to load clients: ' + error.message, 'error');
-                clientsList.innerHTML = '<p style="text-align: center; color: #e74c3c;">Failed to load clients. Please try again.</p>';
             }
         }
 
@@ -677,21 +589,21 @@
                         <i class="fas fa-project-diagram"></i> ${client.projectName || 'No project specified'}
                     </div>
                     <div class="client-actions">
-                        <button class="btn" onclick="editClient('${client.id}', '${client.name}', '${client.projectName || ''}')" title="Edit Client">
-                            <i class="fas fa-edit"></i> Edit
+                        <button class="btn" onclick="editClient('${client.id}')" title="Edit Client">
+                            <i class="fas fa-edit"></i>
                         </button>
                         <button class="btn btn-warning" onclick="reindexClient('${client.id}')" title="Reindex Client Documents">
-                            <i class="fas fa-sync-alt"></i> Reindex
+                            <i class="fas fa-sync-alt"></i>
                         </button>
                         <button class="btn btn-danger" onclick="deleteClient('${client.id}', '${client.name}')" title="Delete Client">
-                            <i class="fas fa-trash"></i> Delete
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Create Client
+        // Create Client - Updated to use working endpoint
         document.getElementById('createClientForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -739,288 +651,44 @@
             }
         });
 
-        // Edit Client - Show modal
-        function editClient(clientId, clientName, projectName) {
-            currentEditClientId = clientId;
-            document.getElementById('editClientName').value = clientName;
-            document.getElementById('editProjectName').value = projectName === 'N/A' ? '' : projectName;
-            document.getElementById('editProjectDescription').value = '';
-            document.getElementById('editClientModal').style.display = 'block';
-            log(`Opening edit dialog for client: ${clientName}`);
+        // Edit Client (placeholder for now since update functionality needs to be implemented)
+        function editClient(clientId) {
+            showStatus('Edit functionality coming soon!', 'warning');
+            log(`Edit client requested: ${clientId}`, 'info');
         }
 
-        // Close edit modal
-        function closeEditModal() {
-            document.getElementById('editClientModal').style.display = 'none';
-            currentEditClientId = null;
-        }
-
-        // Handle edit form submission
-        document.getElementById('editClientForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!currentEditClientId) {
-                showStatus('No client selected for editing', 'error');
-                return;
-            }
-
-            const clientName = document.getElementById('editClientName').value.trim();
-            const projectName = document.getElementById('editProjectName').value.trim();
-            const projectDescription = document.getElementById('editProjectDescription').value.trim();
-            
-            if (!clientName) {
-                showStatus('Client name is required', 'error');
-                return;
-            }
-            
-            log(`Updating client: ${currentEditClientId}`);
-            
-            try {
-                // Since there's no direct update endpoint, we'll simulate it
-                // In a real implementation, you'd need to check if the n8n workflow has an update endpoint
-                
-                showStatus(`Client "${clientName}" updated successfully!`, 'success');
-                log(`Client updated successfully: ${clientName}`, 'success');
-                
-                closeEditModal();
-                loadClients();
-                
-            } catch (error) {
-                log(`Failed to update client: ${error.message}`, 'error');
-                showStatus('Failed to update client: ' + error.message, 'error');
-            }
-        });
-
-        // Delete Client with proper implementation
-        async function deleteClient(clientId, clientName) {
-            if (!confirm(`Are you sure you want to delete client "${clientName}"? This action cannot be undone.`)) {
-                return;
-            }
-            
-            log(`Attempting to delete client: ${clientId} (${clientName})`);
-            
-            try {
-                // Try multiple possible delete endpoint patterns
-                const possibleEndpoints = [
-                    `${API_BASE}/clients/delete`,
-                    `${API_BASE}/clients/${clientId}/delete`,
-                    `${API_BASE}/admin/clients/delete`
-                ];
-                
-                let success = false;
-                let lastError = null;
-                
-                for (const endpoint of possibleEndpoints) {
-                    try {
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                clientId: clientId,
-                                clientName: clientName
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            success = true;
-                            log(`Client deleted successfully using endpoint: ${endpoint}`, 'success');
-                            showStatus(`Client "${clientName}" deleted successfully!`, 'success');
-                            loadClients();
-                            break;
-                        } else {
-                            lastError = `HTTP ${response.status}`;
-                        }
-                    } catch (err) {
-                        lastError = err.message;
-                        continue;
-                    }
-                }
-                
-                if (!success) {
-                    // If all endpoints fail, try DELETE method
-                    try {
-                        const response = await fetch(`${API_BASE}/clients/${clientId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            log(`Client deleted successfully using DELETE method`, 'success');
-                            showStatus(`Client "${clientName}" deleted successfully!`, 'success');
-                            loadClients();
-                            return;
-                        }
-                    } catch (err) {
-                        // Ignore this error and show the general warning
-                    }
-                    
-                    log(`Failed to delete client - no working endpoint found. Last error: ${lastError}`, 'warning');
-                    showStatus(`Delete endpoint not implemented yet. Contact system administrator to remove "${clientName}".`, 'warning');
-                }
-                
-            } catch (error) {
-                log(`Failed to delete client: ${error.message}`, 'error');
-                showStatus('Failed to delete client: ' + error.message, 'error');
+        // Delete Client (placeholder for now since delete functionality needs to be implemented)
+        function deleteClient(clientId, clientName) {
+            if (confirm(`Are you sure you want to delete client "${clientName}"? This action cannot be undone.`)) {
+                showStatus('Delete functionality coming soon!', 'warning');
+                log(`Delete client requested: ${clientId} (${clientName})`, 'warning');
             }
         }
 
-        // Load clients for reindex dropdown
-        async function loadClientsForReindex() {
-            try {
-                const response = await fetch(`${API_BASE}/clients/list`);
-                if (!response.ok) return;
-                
-                const data = await response.json();
-                const select = document.getElementById('reindexClientSelect');
-                select.innerHTML = '<option value="">-- Select a client --</option>';
-                
-                data.clients.forEach(client => {
-                    const option = document.createElement('option');
-                    option.value = client.id;
-                    option.textContent = client.name;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                log(`Failed to load clients for reindex: ${error.message}`, 'error');
+        // Reindex Client (placeholder for now)
+        function reindexClient(clientId) {
+            showStatus('Client reindex functionality coming soon!', 'warning');
+            log(`Reindex client requested: ${clientId}`, 'info');
+        }
+
+        // Reindex All Documents (placeholder for now)
+        function reindexAllDocuments() {
+            if (confirm('Are you sure you want to reindex all documents? This may take several minutes.')) {
+                showStatus('Full system reindex functionality coming soon!', 'warning');
+                log('Full system reindex requested', 'info');
             }
         }
 
-        // Reindex Client Documents
-        async function reindexClient(clientId) {
-            if (!confirm('Are you sure you want to reindex all documents for this client? This may take several minutes.')) {
-                return;
-            }
-            
-            log(`Starting reindex for client: ${clientId}`);
-            showStatus('Starting client document reindex...', 'info');
-            
-            try {
-                const possibleEndpoints = [
-                    `${API_BASE}/reindex/client`,
-                    `${API_BASE}/admin/reindex`,
-                    `${API_BASE}/documents/reindex`
-                ];
-                
-                let success = false;
-                
-                for (const endpoint of possibleEndpoints) {
-                    try {
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                clientId: clientId,
-                                action: 'reindex_client'
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            success = true;
-                            log(`Client reindex started successfully using: ${endpoint}`, 'success');
-                            showStatus('Client document reindex started successfully!', 'success');
-                            break;
-                        }
-                    } catch (err) {
-                        continue;
-                    }
-                }
-                
-                if (!success) {
-                    log('Reindex endpoint not found - using fallback notification', 'warning');
-                    showStatus('Reindex functionality not yet implemented. Contact system administrator.', 'warning');
-                }
-                
-            } catch (error) {
-                log(`Failed to start client reindex: ${error.message}`, 'error');
-                showStatus('Failed to start reindex: ' + error.message, 'error');
-            }
-        }
-
-        // Reindex Client Documents (from dropdown)
-        async function reindexClientDocuments() {
-            const clientId = document.getElementById('reindexClientSelect').value;
-            if (!clientId) {
-                showStatus('Please select a client first', 'error');
-                return;
-            }
-            
-            await reindexClient(clientId);
-        }
-
-        // Reindex All Documents
-        async function reindexAllDocuments() {
-            if (!confirm('Are you sure you want to reindex all documents? This may take several minutes and impact system performance.')) {
-                return;
-            }
-            
-            log('Starting full system reindex');
-            showStatus('Starting full system reindex...', 'info');
-            
-            try {
-                const response = await fetch(`${API_BASE}/reindex/all`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'reindex_all'
-                    })
-                });
-                
-                if (response.ok) {
-                    log('Full system reindex started successfully', 'success');
-                    showStatus('Full system reindex started! This may take several minutes.', 'success');
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-            } catch (error) {
-                log(`Failed to start full reindex: ${error.message}`, 'error');
-                showStatus('Reindex all functionality not yet implemented. Contact system administrator.', 'warning');
-            }
-        }
-
-        // Reindex Single Document
-        async function reindexSingleDocument() {
+        // Reindex Single Document (placeholder for now)
+        function reindexSingleDocument() {
             const documentPath = document.getElementById('documentPath').value.trim();
             if (!documentPath) {
                 showStatus('Please enter a document path', 'error');
                 return;
             }
             
-            log(`Starting single document reindex: ${documentPath}`);
-            showStatus('Starting document reindex...', 'info');
-            
-            try {
-                const response = await fetch(`${API_BASE}/reindex/document`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        documentPath: documentPath,
-                        action: 'reindex_document'
-                    })
-                });
-                
-                if (response.ok) {
-                    log(`Document reindex started successfully: ${documentPath}`, 'success');
-                    showStatus('Document reindex started successfully!', 'success');
-                    document.getElementById('documentPath').value = '';
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-            } catch (error) {
-                log(`Failed to start document reindex: ${error.message}`, 'error');
-                showStatus('Single document reindex functionality not yet implemented. Contact system administrator.', 'warning');
-            }
+            showStatus('Single document reindex functionality coming soon!', 'warning');
+            log(`Single document reindex requested: ${documentPath}`, 'info');
         }
 
         // Update Metrics
@@ -1031,31 +699,22 @@
             document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
         }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('editClientModal');
-            if (event.target === modal) {
-                closeEditModal();
-            }
-        }
-
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            log('Admin panel initialized - Enhanced Version');
+            log('Admin panel initialized');
             loadClients();
-            loadClientsForReindex();
             
             // Set up periodic metrics update
             setInterval(() => {
                 document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-            }, 30000);
+            }, 30000); // Update every 30 seconds
         });
 
-        // Add some initial logs
+        // Add some demo logs
         setTimeout(() => {
             log('System initialization complete');
             log('API endpoints configured');
-            log('Enhanced admin panel ready with full CRUD functionality', 'success');
+            log('Admin panel ready for use', 'success');
         }, 1000);
     </script>
 </body>
