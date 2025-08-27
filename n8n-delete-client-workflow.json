@@ -40,7 +40,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"status\": \"{{ $json.status }}\",\n  \"operation\": \"{{ $json.operation }}\",\n  \"clientId\": \"{{ $json.clientId }}\",\n  \"clientName\": \"{{ $json.clientName }}\",\n  \"deletedCount\": {{ $json.deletedCount }},\n  \"message\": \"{{ $json.message }}\",\n  \"timestamp\": \"{{ $json.timestamp }}\",\n  \"deletedItems\": {{ JSON.stringify($json.deletedItems) }}\n}",
+        "responseBody": "={\n  \"status\": \"{{ $json.status }}\",\n  \"operation\": \"{{ $json.operation }}\",\n  \"clientId\": \"{{ $json.clientId }}\",\n  \"clientName\": \"{{ $json.clientName }}\",\n  \"deletedCount\": {{ $json.deletedCount }},\n  \"message\": \"{{ $json.message }}\",\n  \"timestamp\": \"{{ $json.timestamp }}\"\n}",
         "options": {}
       },
       "id": "delete-response-node",
