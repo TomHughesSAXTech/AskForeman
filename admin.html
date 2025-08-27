@@ -1068,6 +1068,120 @@
             log('API endpoints configured');
             log('Enhanced admin panel ready with full CRUD functionality', 'success');
         }, 1000);
+
+        // Handle Bulk Document Upload
+        document.getElementById('bulkUploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const clientId = document.getElementById('uploadClient').value;
+            const clientName = document.getElementById('uploadClient').options[document.getElementById('uploadClient').selectedIndex].text;
+            const category = document.getElementById('uploadCategory').value;
+            const files = document.getElementById('documentFiles').files;
+            const processWithWorkflow = document.getElementById('processDocuments').checked;
+            
+            if (!clientId) {
+                showStatus('Please select a client', 'error');
+                return;
+            }
+            
+            if (!category) {
+                showStatus('Please select a document category', 'error');
+                return;
+            }
+            
+            if (files.length === 0) {
+                showStatus('Please select at least one file to upload', 'error');
+                return;
+            }
+            
+            if (files.length > 10) {
+                showStatus('Maximum 10 files allowed per upload (rate limiting)', 'error');
+                return;
+            }
+            
+            log(`Bulk upload started: ${files.length} files for client ${clientName}/${category}`);
+            showStatus(`Uploading ${files.length} files to ${clientName}/${category}...`, 'info');
+            
+            // Show progress bar
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            document.getElementById('uploadProgress').style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.textContent = 'Preparing files...';
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('clientName', clientName);
+            formData.append('category', category);
+            formData.append('processWithWorkflow', processWithWorkflow);
+            
+            // Add files to form data
+            for (let i = 0; i < files.length; i++) {
+                formData.append(`file${i}`, files[i]);
+            }
+            
+            try {
+                // Update progress
+                progressBar.style.width = '30%';
+                progressText.textContent = 'Uploading files...';
+                
+                // Send to bulk upload endpoint
+                const response = await fetch(`${API_BASE}/bulk-upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Update progress
+                progressBar.style.width = '70%';
+                progressText.textContent = 'Processing uploaded files...';
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Complete progress
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Upload complete!';
+                
+                // Log and show status
+                const successMsg = result.message || `Successfully uploaded ${result.successCount || files.length} files`;
+                log(`Bulk upload completed: ${successMsg}`, 'success');
+                showStatus(successMsg, 'success');
+                
+                if (result.failedCount && result.failedCount > 0) {
+                    log(`Warning: ${result.failedCount} files failed to upload`, 'warning');
+                }
+                
+                if (result.convertedCount && result.convertedCount > 0) {
+                    log(`${result.convertedCount} files processed for search indexing`, 'info');
+                }
+                
+                // Reset form
+                document.getElementById('bulkUploadForm').reset();
+                
+                // Hide progress after delay
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                }, 3000);
+                
+            } catch (error) {
+                // Error handling
+                progressBar.style.width = '100%';
+                progressBar.style.background = '#e74c3c';
+                progressText.textContent = 'Upload failed!';
+                
+                log(`Bulk upload failed: ${error.message}`, 'error');
+                showStatus(`Upload failed: ${error.message}`, 'error');
+                
+                // Hide progress after delay
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                    progressBar.style.background = '#3498db';
+                }, 3000);
+            }
+        });
     </script>
 </body>
 </html>

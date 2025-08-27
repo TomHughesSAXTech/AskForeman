@@ -1,0 +1,337 @@
+{
+  "name": "Bulk Document Upload with Search Index",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/bulk-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "bulk-upload-webhook-node",
+      "name": "Bulk Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "bulk-upload-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\nconst files = $json.files || []; // Expect array of files from FormData\n\n// Validate input\nif (!body.clientName || body.clientName.trim() === '') {\n  throw new Error('Client name is required');\n}\n\nif (!body.category || body.category.trim() === '') {\n  throw new Error('Document category is required');\n}\n\nif (!files || files.length === 0) {\n  throw new Error('At least one file is required for bulk upload');\n}\n\nconst clientName = body.clientName.trim();\nconst category = body.category.toLowerCase();\nconst processWithWorkflow = body.processWithWorkflow === 'true' || body.processWithWorkflow === true;\n\n// Log bulk upload request\nconsole.log(`Bulk upload request for client: ${clientName}, category: ${category}, files: ${files.length}, processWithWorkflow: ${processWithWorkflow}`);\n\n// Validate category against allowed categories\nconst allowedCategories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];\nif (!allowedCategories.includes(category)) {\n  throw new Error(`Invalid category: ${category}. Must be one of: ${allowedCategories.join(', ')}`);\n}\n\n// Rate limiting - max 10 files per batch\nif (files.length > 10) {\n  throw new Error('Maximum 10 files allowed per bulk upload batch');\n}\n\n// Prepare upload data for each file\nconst uploadData = {\n  clientName: clientName,\n  category: category,\n  processWithWorkflow: processWithWorkflow,\n  files: files,\n  totalFiles: files.length,\n  timestamp: new Date().toISOString(),\n  operation: 'BULK_UPLOAD'\n};\n\nconsole.log(`Prepared bulk upload for ${files.length} files to client: ${clientName}/${category}`);\n\nreturn [{\n  json: uploadData\n}];"
+      },
+      "id": "validate-bulk-upload-node",
+      "name": "Validate Bulk Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const uploadData = $json;\n\n// Create individual upload operations for each file\nconst uploadOperations = uploadData.files.map((file, index) => {\n  // Generate unique filename with timestamp to avoid conflicts\n  const timestamp = Date.now();\n  const safeFileName = file.filename.replace(/[^a-zA-Z0-9.-]/g, '_');\n  const uniqueFileName = `${timestamp}_${index}_${safeFileName}`;\n  \n  // Create blob path\n  const blobPath = `FCS-OriginalClients/${uploadData.clientName}/${uploadData.category}/${uniqueFileName}`;\n  const uploadUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients/${blobPath}?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D`;\n  \n  return {\n    json: {\n      fileIndex: index + 1,\n      totalFiles: uploadData.totalFiles,\n      clientName: uploadData.clientName,\n      category: uploadData.category,\n      originalFileName: file.filename,\n      uniqueFileName: uniqueFileName,\n      blobPath: blobPath,\n      uploadUrl: uploadUrl,\n      fileContent: file.content, // Base64 or binary data\n      mimeType: file.mimetype || 'application/octet-stream',\n      processWithWorkflow: uploadData.processWithWorkflow,\n      timestamp: uploadData.timestamp\n    }\n  };\n});\n\nconsole.log(`Created ${uploadOperations.length} individual upload operations`);\n\n// Add delay between operations for rate limiting\nreturn uploadOperations;"
+      },
+      "id": "prepare-individual-uploads-node",
+      "name": "Prepare Individual Uploads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "id": "rate-limit-delay-node",
+      "name": "Rate Limit Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.uploadUrl }}",
+        "method": "PUT",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "={{ $json.mimeType }}",
+        "body": "={{ $json.fileContent }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-version",
+              "value": "2024-11-04"
+            },
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "upload-file-to-blob-node",
+      "name": "Upload File to Blob",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process upload result\nconst statusCode = $json.statusCode || 0;\nconst uploadData = $('Rate Limit Delay').first().json;\n\nconst uploadResult = {\n  ...uploadData,\n  uploadStatus: statusCode === 201 ? 'success' : 'failed',\n  statusCode: statusCode,\n  uploadTimestamp: new Date().toISOString()\n};\n\nif (statusCode === 201) {\n  console.log(`Successfully uploaded ${uploadData.originalFileName} as ${uploadData.uniqueFileName}`);\n} else {\n  console.error(`Failed to upload ${uploadData.originalFileName}: HTTP ${statusCode}`);\n}\n\nreturn [{\n  json: uploadResult\n}];"
+      },
+      "id": "process-upload-result-node",
+      "name": "Process Upload Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.uploadStatus }}",
+              "value2": "success"
+            },
+            {
+              "value1": "={{ $json.processWithWorkflow }}",
+              "value2": true
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          }
+        },
+        "combineOperation": "all"
+      },
+      "id": "check-conversion-needed-node",
+      "name": "Check Conversion Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5678/webhook/ask-foreman/document-upload",
+        "method": "POST",
+        "sendBody": true,
+        "specifyContentType": true,
+        "contentType": "json",
+        "jsonBody": "={{ {\n  \"documentName\": $json.originalFileName,\n  \"clientName\": $json.clientName,\n  \"category\": $json.category,\n  \"blobPath\": $json.blobPath,\n  \"mimeType\": $json.mimeType,\n  \"processForSearch\": true\n} }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "trigger-conversion-workflow-node",
+      "name": "Trigger Conversion Workflow",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all upload results\nconst allResults = [];\nlet clientName = 'unknown';\nlet category = 'unknown';\nlet totalFiles = 0;\n\n// Process results from both conversion and non-conversion branches\nfor (const item of $input.all()) {\n  if (item.json.clientName) clientName = item.json.clientName;\n  if (item.json.category) category = item.json.category;\n  if (item.json.totalFiles) totalFiles = item.json.totalFiles;\n  \n  allResults.push({\n    fileIndex: item.json.fileIndex,\n    originalFileName: item.json.originalFileName,\n    uniqueFileName: item.json.uniqueFileName,\n    uploadStatus: item.json.uploadStatus,\n    conversionTriggered: !!item.json.conversionResult,\n    timestamp: item.json.uploadTimestamp\n  });\n}\n\n// Calculate final statistics\nconst successCount = allResults.filter(r => r.uploadStatus === 'success').length;\nconst failedCount = allResults.filter(r => r.uploadStatus === 'failed').length;\nconst convertedCount = allResults.filter(r => r.conversionTriggered).length;\n\nconst finalResult = {\n  status: failedCount === 0 ? 'success' : 'partial_success',\n  operation: 'BULK_UPLOAD',\n  clientName: clientName,\n  category: category,\n  totalFiles: totalFiles,\n  successCount: successCount,\n  failedCount: failedCount,\n  convertedCount: convertedCount,\n  message: failedCount === 0\n    ? `Successfully uploaded ${successCount} files to ${clientName}/${category}${convertedCount > 0 ? ` (${convertedCount} processed for search)` : ''}`\n    : `Partially uploaded files to ${clientName}/${category}: ${successCount} successful, ${failedCount} failed`,\n  timestamp: new Date().toISOString(),\n  details: allResults\n};\n\nconsole.log(`Bulk upload completed: ${successCount} successful, ${failedCount} failed, ${convertedCount} processed for search`);\n\nreturn [{\n  json: finalResult\n}];"
+      },
+      "id": "finalize-bulk-upload-node",
+      "name": "Finalize Bulk Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Access-Control-Allow-Origin",
+              "value": "*"
+            },
+            {
+              "name": "Access-Control-Allow-Methods",
+              "value": "GET, POST, PUT, DELETE, OPTIONS"
+            },
+            {
+              "name": "Access-Control-Allow-Headers",
+              "value": "Content-Type, Authorization, X-Requested-With"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bulk-upload-response-node",
+      "name": "Bulk Upload Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle successful upload without conversion\nconst uploadResult = $json;\n\n// Mark as not requiring conversion\nconst result = {\n  ...uploadResult,\n  conversionResult: null,\n  conversionTriggered: false\n};\n\nconsole.log(`Upload completed without conversion for ${uploadResult.originalFileName}`);\n\nreturn [{\n  json: result\n}];"
+      },
+      "id": "handle-no-conversion-node",
+      "name": "Handle No Conversion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Handle conversion workflow result\nconst uploadResult = $('Process Upload Result').first().json;\nconst conversionResult = $json;\n\n// Combine upload and conversion results\nconst result = {\n  ...uploadResult,\n  conversionResult: conversionResult,\n  conversionTriggered: true,\n  conversionStatus: conversionResult.statusCode === 200 ? 'success' : 'failed'\n};\n\nconst conversionStatus = conversionResult.statusCode === 200 ? 'succeeded' : 'failed';\nconsole.log(`Conversion workflow ${conversionStatus} for ${uploadResult.originalFileName}`);\n\nreturn [{\n  json: result\n}];"
+      },
+      "id": "handle-conversion-result-node",
+      "name": "Handle Conversion Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 240]
+    }
+  ],
+  "connections": {
+    "Bulk Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Bulk Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Bulk Upload": {
+      "main": [
+        [
+          {
+            "node": "Prepare Individual Uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Individual Uploads": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Delay": {
+      "main": [
+        [
+          {
+            "node": "Upload File to Blob",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload File to Blob": {
+      "main": [
+        [
+          {
+            "node": "Process Upload Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Upload Result": {
+      "main": [
+        [
+          {
+            "node": "Check Conversion Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Conversion Needed": {
+      "main": [
+        [
+          {
+            "node": "Trigger Conversion Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle No Conversion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Conversion Workflow": {
+      "main": [
+        [
+          {
+            "node": "Handle Conversion Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle No Conversion": {
+      "main": [
+        [
+          {
+            "node": "Finalize Bulk Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Conversion Result": {
+      "main": [
+        [
+          {
+            "node": "Finalize Bulk Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Bulk Upload": {
+      "main": [
+        [
+          {
+            "node": "Bulk Upload Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

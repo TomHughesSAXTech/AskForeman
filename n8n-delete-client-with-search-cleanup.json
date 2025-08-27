@@ -1,5 +1,5 @@
 {
-  "name": "Delete Client Webhook - ENHANCED",
+  "name": "Delete Client with Search Index Cleanup",
   "nodes": [
     {
       "parameters": {
@@ -104,7 +104,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1560, 300]
-    }
+    },
     {
       "parameters": {
         "respondWith": "json",
@@ -131,7 +131,7 @@
       "name": "Delete Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1340, 300]
+      "position": [1780, 300]
     }
   ],
   "connections": {
@@ -180,6 +180,28 @@
       ]
     },
     "Process Delete Results": {
+      "main": [
+        [
+          {
+            "node": "Cleanup Search Index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cleanup Search Index": {
+      "main": [
+        [
+          {
+            "node": "Finalize Delete Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Delete Result": {
       "main": [
         [
           {
