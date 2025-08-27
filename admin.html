@@ -619,27 +619,40 @@
             document.getElementById(tabName + 'Tab').classList.add('active');
         }
 
-        // Load clients from n8n webhook
+        // Load clients from Azure Blob Storage (EXACT same method that was working before)
         async function loadClients() {
             showLoading('Loading clients...');
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.clients) {
-                        clients = data.clients;
-                        renderClients();
-                        showStatus('success', `Loaded ${clients.length} clients from Azure`);
-                    } else {
-                        throw new Error('No clients data received');
+                const response = await fetch(url);
+                const xmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+                
+                clients = [];
+                for (let i = 0; i < prefixes.length; i++) {
+                    const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+                    if (nameElement) {
+                        const fullPath = nameElement.textContent.replace(/\/$/, '');
+                        const pathParts = fullPath.split('/');
+                        if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                            const clientName = pathParts[1];
+                            clients.push({
+                                id: clientName.toLowerCase(),
+                                name: clientName,
+                                projectName: clientName,
+                                folder: clientName,
+                                projectType: 'Commercial'
+                            });
+                        }
                     }
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                
+                renderClients();
+                showStatus('success', `Loaded ${clients.length} clients from Azure Storage`);
             } catch (error) {
                 console.error('Error loading clients:', error);
                 showStatus('error', `Failed to load clients: ${error.message}`);
