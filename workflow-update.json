@@ -1,0 +1,63 @@
+{
+  "id": "nC5gkystSoLrrKkN",
+  "name": "SAXTech Foreman AI",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "dd24abeb-9c57-4361-9e3b-a6cc5cecc714",
+      "name": "Chat Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-1504, 352],
+      "webhookId": "ask-foreman-chat"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.all()[0];\n\n// Correct path: inputData.json.body.message\nconst message = inputData.json && inputData.json.body && inputData.json.body.message \n  ? inputData.json.body.message \n  : \"No message found\";\n\nconst client = inputData.json && inputData.json.body && inputData.json.body.client \n  ? inputData.json.body.client \n  : \"general\";\n\nreturn [{\n    json: {\n        chatInput: message,\n        client: client,\n        conversationId: `conv_${client}_${Date.now()}`,\n        sessionId: client,\n        timestamp: new Date().toISOString(),\n        isGeneralQuery: client === \"general\"\n    }\n}];"
+      },
+      "id": "b665ea1c-98b8-4c27-a14d-29a00c3dc95d",
+      "name": "Prepare Chat Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1264, 352]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods", 
+                "value": "POST, GET, OPTIONS, PUT, DELETE"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization, X-Requested-With"
+              },
+              {
+                "name": "Access-Control-Max-Age",
+                "value": "86400"
+              }
+            ]
+          }
+        }
+      },
+      "id": "01128a0b-f4e4-4e3e-acb2-49f25cd5102c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [672, 1120]
+    }
+  ],
+  "connections": {}
+}
