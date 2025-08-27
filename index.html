@@ -4066,8 +4066,8 @@
         fileList.appendChild(loadingDiv);
         
         try {
-          // Construct the Azure Blob Storage URL to list files for this client
-          const actualClientName = clientSelect.options[clientSelect.selectedIndex].text.split(' - ')[0];
+          // Use the actual client ID (which preserves original case) instead of display text
+          const actualClientName = clientName; // Use the passed clientName which is the ID
           const prefix = `FCS-OriginalClients/${actualClientName}/`;
           const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
           
