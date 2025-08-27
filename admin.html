@@ -800,71 +800,47 @@
             log(`Attempting to delete client: ${clientId} (${clientName})`);
             
             try {
-                // Try multiple possible delete endpoint patterns
-                const possibleEndpoints = [
-                    `${API_BASE}/clients/delete`,
-                    `${API_BASE}/clients/${clientId}/delete`,
-                    `${API_BASE}/admin/clients/delete`
-                ];
+                // Try the primary delete endpoint first
+                const response = await fetch(`${API_BASE}/clients/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        clientId: clientId,
+                        clientName: clientName
+                    })
+                });
                 
-                let success = false;
-                let lastError = null;
-                
-                for (const endpoint of possibleEndpoints) {
-                    try {
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                clientId: clientId,
-                                clientName: clientName
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            success = true;
-                            log(`Client deleted successfully using endpoint: ${endpoint}`, 'success');
-                            showStatus(`Client "${clientName}" deleted successfully!`, 'success');
-                            loadClients();
-                            break;
-                        } else {
-                            lastError = `HTTP ${response.status}`;
-                        }
-                    } catch (err) {
-                        lastError = err.message;
-                        continue;
+                if (response.ok) {
+                    const result = await response.json();
+                    log(`Client deleted successfully: ${JSON.stringify(result)}`, 'success');
+                    showStatus(`Client "${clientName}" deleted successfully!`, 'success');
+                    if (result.searchIndexNote) {
+                        log(`Note: ${result.searchIndexNote}`, 'warning');
                     }
+                    loadClients();
+                    return;
                 }
                 
-                if (!success) {
-                    // If all endpoints fail, try DELETE method
-                    try {
-                        const response = await fetch(`${API_BASE}/clients/${clientId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            log(`Client deleted successfully using DELETE method`, 'success');
-                            showStatus(`Client "${clientName}" deleted successfully!`, 'success');
-                            loadClients();
-                            return;
-                        }
-                    } catch (err) {
-                        // Ignore this error and show the general warning
-                    }
-                    
-                    log(`Failed to delete client - no working endpoint found. Last error: ${lastError}`, 'warning');
-                    showStatus(`Delete endpoint not implemented yet. Contact system administrator to remove "${clientName}".`, 'warning');
+                // If we get here, the endpoint exists but returned an error
+                const errorData = await response.text();
+                log(`Delete failed with HTTP ${response.status}: ${errorData}`, 'error');
+                
+                if (response.status === 500) {
+                    showStatus(`Server error during deletion. The delete endpoint may have issues. Check logs.`, 'error');
+                } else {
+                    showStatus(`Delete failed: HTTP ${response.status}`, 'error');
                 }
                 
             } catch (error) {
-                log(`Failed to delete client: ${error.message}`, 'error');
-                showStatus('Failed to delete client: ' + error.message, 'error');
+                log(`Delete request failed: ${error.message}`, 'error');
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    showStatus(`Delete endpoint not available or network error. Contact system administrator.`, 'warning');
+                } else {
+                    showStatus('Failed to delete client: ' + error.message, 'error');
+                }
             }
         }
 
