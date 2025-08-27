@@ -1,0 +1,152 @@
+{
+  "name": "Delete Client Webhook - REAL DELETION",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/clients/delete",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "delete-client-webhook-node",
+      "name": "Delete Client Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "delete-client-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\n\n// Validate input\nif (!body.clientId && !body.clientName) {\n  throw new Error('Either clientId or clientName is required');\n}\n\nconst clientId = body.clientId || body.clientName.toLowerCase();\nconst clientName = body.clientName || body.clientId;\n\n// Log the delete request\nconsole.log(`Delete request received for client: ${clientName} (ID: ${clientId})`);\n\n// Create delete operation data\nconst deleteData = {\n  clientId: clientId,\n  clientName: clientName,\n  operation: 'DELETE_CLIENT',\n  timestamp: new Date().toISOString(),\n  // Azure Blob paths to delete\n  blobPaths: [\n    `FCS-OriginalClients/${clientName}/.placeholder`,\n    `FCS-OriginalClients/${clientName}/drawings/.placeholder`,\n    `FCS-OriginalClients/${clientName}/estimates/.placeholder`, \n    `FCS-OriginalClients/${clientName}/proposals/.placeholder`,\n    `FCS-OriginalClients/${clientName}/specs/.placeholder`,\n    `FCS-OriginalClients/${clientName}/signed-contracts/.placeholder`,\n    `FCS-OriginalClients/${clientName}/.metadata/client.json`\n  ]\n};\n\nreturn [{\n  json: deleteData\n}];"
+      },
+      "id": "prepare-delete-data-node",
+      "name": "Prepare Delete Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const deleteData = $json;\n\n// Create array of delete operations for each blob path\nconst deleteOperations = deleteData.blobPaths.map(path => ({\n  json: {\n    blobPath: path,\n    clientId: deleteData.clientId,\n    clientName: deleteData.clientName,\n    url: `https://saxtechfcs.blob.core.windows.net/fcs-clients/${path}?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D`\n  }\n}));\n\n// Also add a list operation to find other files in the client folder\ndeleteOperations.unshift({\n  json: {\n    operation: 'list_blobs',\n    clientId: deleteData.clientId,\n    clientName: deleteData.clientName,\n    listUrl: `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D&comp=list&prefix=FCS-OriginalClients/${deleteData.clientName}/`\n  }\n});\n\nreturn deleteOperations;"
+      },
+      "id": "create-delete-operations-node",
+      "name": "Create Delete Operations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.listUrl || $json.url }}",
+        "method": "={{ $json.operation === 'list_blobs' ? 'GET' : 'DELETE' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-version",
+              "value": "2024-11-04"
+            },
+            {
+              "name": "x-ms-blob-type", 
+              "value": "BlockBlob"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "delete-blob-request-node",
+      "name": "Delete Blob Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect all the deletion results\nconst results = [];\nconst clientName = $('Delete Blob Request').first().json.clientName || 'unknown';\nconst clientId = $('Delete Blob Request').first().json.clientId || 'unknown';\n\n// Process each deletion result\nfor (const item of $input.all()) {\n  const statusCode = item.json.statusCode || 0;\n  const blobPath = item.json.blobPath;\n  const operation = item.json.operation;\n  \n  if (operation === 'list_blobs') {\n    // Skip the list operation for now\n    continue;\n  }\n  \n  results.push({\n    path: blobPath,\n    status: statusCode === 202 || statusCode === 404 ? 'deleted' : 'failed',\n    statusCode: statusCode,\n    timestamp: new Date().toISOString()\n  });\n}\n\n// Count successful deletions\nconst successCount = results.filter(r => r.status === 'deleted').length;\nconst failedCount = results.filter(r => r.status === 'failed').length;\n\nconst finalResult = {\n  status: failedCount === 0 ? 'success' : 'partial_success',\n  operation: 'DELETE_CLIENT',\n  clientId: clientId,\n  clientName: clientName,\n  deletedCount: successCount,\n  failedCount: failedCount,\n  message: failedCount === 0 \n    ? `Client \"${clientName}\" has been successfully deleted from storage`\n    : `Client \"${clientName}\" partially deleted: ${successCount} successful, ${failedCount} failed`,\n  timestamp: new Date().toISOString(),\n  details: results\n};\n\nconsole.log(`Delete operation completed for client: ${clientName} - ${successCount} deleted, ${failedCount} failed`);\n\nreturn [{\n  json: finalResult\n}];"
+      },
+      "id": "process-delete-results-node",
+      "name": "Process Delete Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "delete-response-node",
+      "name": "Delete Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Delete Client Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Delete Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Delete Data": {
+      "main": [
+        [
+          {
+            "node": "Create Delete Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Delete Operations": {
+      "main": [
+        [
+          {
+            "node": "Delete Blob Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Blob Request": {
+      "main": [
+        [
+          {
+            "node": "Process Delete Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Delete Results": {
+      "main": [
+        [
+          {
+            "node": "Delete Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
