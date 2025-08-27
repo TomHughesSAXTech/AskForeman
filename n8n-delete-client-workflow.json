@@ -1,0 +1,91 @@
+{
+  "name": "Delete Client Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/clients/delete",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "delete-client-webhook-node",
+      "name": "Delete Client Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "delete-client-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body;\n\n// Validate input\nif (!body.clientId && !body.clientName) {\n  throw new Error('Either clientId or clientName is required');\n}\n\nconst clientId = body.clientId || body.clientName.toLowerCase();\nconst clientName = body.clientName || body.clientId;\n\n// Log the delete request\nconsole.log(`Delete request received for client: ${clientName} (ID: ${clientId})`);\n\n// Create delete operation data\nconst deleteData = {\n  clientId: clientId,\n  clientName: clientName,\n  operation: 'DELETE_CLIENT',\n  timestamp: new Date().toISOString(),\n  // Paths that would be deleted in a real implementation\n  pathsToDelete: [\n    `FCS-OriginalClients/${clientName}/`,\n    `processed-documents/${clientId}/`,\n    `search-indexes/${clientId}_*`\n  ]\n};\n\nreturn [{\n  json: deleteData\n}];"
+      },
+      "id": "prepare-delete-data-node",
+      "name": "Prepare Delete Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const deleteData = $json;\n\n// Here you would implement the actual deletion logic:\n// 1. Delete from Azure Blob Storage (client folders)\n// 2. Delete from search indexes\n// 3. Delete from any databases\n// 4. Clean up associated documents\n\n// For now, we'll simulate the deletion\nconsole.log(`Executing delete operations for client: ${deleteData.clientName}`);\n\n// Simulate successful deletion of each path\nconst deletedItems = deleteData.pathsToDelete.map(path => ({\n  path: path,\n  status: 'deleted',\n  timestamp: new Date().toISOString()\n}));\n\n// In a real implementation, you might call Azure Storage APIs here:\n// - List and delete blobs in the client folder\n// - Remove search index entries\n// - Update any metadata stores\n\nconst result = {\n  status: 'success',\n  operation: deleteData.operation,\n  clientId: deleteData.clientId,\n  clientName: deleteData.clientName,\n  deletedItems: deletedItems,\n  deletedCount: deletedItems.length,\n  message: `Client \"${deleteData.clientName}\" has been successfully deleted`,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log(`Delete operation completed successfully for client: ${deleteData.clientName}`);\n\nreturn [{\n  json: result\n}];"
+      },
+      "id": "execute-delete-node",
+      "name": "Execute Delete Operations",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"{{ $json.status }}\",\n  \"operation\": \"{{ $json.operation }}\",\n  \"clientId\": \"{{ $json.clientId }}\",\n  \"clientName\": \"{{ $json.clientName }}\",\n  \"deletedCount\": {{ $json.deletedCount }},\n  \"message\": \"{{ $json.message }}\",\n  \"timestamp\": \"{{ $json.timestamp }}\",\n  \"deletedItems\": {{ JSON.stringify($json.deletedItems) }}\n}",
+        "options": {}
+      },
+      "id": "delete-response-node",
+      "name": "Delete Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Delete Client Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Delete Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Delete Data": {
+      "main": [
+        [
+          {
+            "node": "Execute Delete Operations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Delete Operations": {
+      "main": [
+        [
+          {
+            "node": "Delete Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
