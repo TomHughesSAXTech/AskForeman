@@ -742,7 +742,7 @@
             
             showLoading('Starting full document reindex...');
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/reindex/all', {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'reindex', subaction: 'all' })
@@ -780,7 +780,7 @@
             
             showLoading(`Deleting client "${clientName}"...`);
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/delete/client', {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -815,7 +815,7 @@
         async function viewSystemStats() {
             showLoading('Loading system statistics...');
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/stats/system', {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'stats', subaction: 'system' })
@@ -880,7 +880,7 @@
             
             showLoading('Loading client documents...');
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/list/documents', {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -948,7 +948,7 @@
             
             showLoading(`Deleting document "${documentName}"...`);
             try {
-                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/delete/document', {
+                const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -1071,7 +1071,7 @@
                 // formData.append('client', selectedClient.name);
                 // formData.append('category', category);
                 
-                // const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin/upload/bulk', {
+                // const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/admin', {
                 //     method: 'POST',
                 //     body: formData
                 // });
