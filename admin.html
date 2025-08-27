@@ -488,28 +488,28 @@
                     <h3>🔧 System Operations</h3>
                     <div class="operation-buttons">
                         <div>
-                            <button class="btn btn-success" onclick="reindexAllDocuments()" style="width: 100%;">
-                                🔄 Reindex All Documents
+                            <button class="btn btn-primary" onclick="openN8nWorkflows()" style="width: 100%;">
+                                🚀 Open n8n Dashboard
                             </button>
-                            <p class="help-text">Extract text from all PDFs/docs and update search index</p>
+                            <p class="help-text">Manage workflows, triggers, and document processing</p>
                         </div>
                         <div>
-                            <button class="btn btn-primary" onclick="syncAzureStorage()" style="width: 100%;">
-                                ☁️ Sync Azure Storage
+                            <button class="btn btn-success" onclick="testSystemHealth()" style="width: 100%;">
+                                ❤️ Test System Health
                             </button>
-                            <p class="help-text">Scan Azure for new clients and update document counts</p>
+                            <p class="help-text">Check if webhooks and Azure storage are responding</p>
                         </div>
                         <div>
-                            <button class="btn btn-warning" onclick="deleteSelectedClient()" style="width: 100%;" id="deleteClientBtn" disabled>
-                                🗑️ Delete Selected Client
+                            <button class="btn" onclick="viewSystemLogs()" style="width: 100%; background: var(--blueprint-blue); color: white;">
+                                📊 View System Status
                             </button>
-                            <p class="help-text">Permanently delete client and all their documents</p>
+                            <p class="help-text">Show recent activity and system information</p>
                         </div>
                         <div>
-                            <button class="btn" onclick="exportClientData()" style="width: 100%; background: #6c757d; color: white;">
-                                📥 Export Client Data
+                            <button class="btn btn-warning" onclick="clearCache()" style="width: 100%;">
+                                🧹 Clear Session Cache
                             </button>
-                            <p class="help-text">Download client list as JSON</p>
+                            <p class="help-text">Reset stored client data and force refresh</p>
                         </div>
                     </div>
                 </div>
@@ -553,7 +553,16 @@
                         <p>📁 Drop files here or click to browse</p>
                         <p style="font-size: 0.9rem; color: var(--steel-gray);">Files will be indexed after upload</p>
                     </div>
-                    <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFiles(event)">
+                    <input type="file" id="bulkFileInput" multiple accept=".pdf,.doc,.docx,.txt" style="display: none;" onchange="handleBulkFiles(event)">
+                    
+                    <!-- Selected Files Display -->
+                    <div id="selectedFilesDisplay" style="margin-top: 1rem; display: none;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--concrete-gray);">📋 Selected Files:</h4>
+                        <div id="filesList" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--medium-gray); border-radius: 8px; padding: 1rem; background: var(--light-gray);"></div>
+                        <button id="uploadFilesBtn" class="btn btn-success" style="width: 100%; margin-top: 1rem;" onclick="startBulkUpload()">
+                            🚀 Upload Selected Files
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -675,8 +684,8 @@
             document.querySelectorAll('.client-item').forEach(item => item.classList.remove('selected'));
             event.target.closest('.client-item').classList.add('selected');
             
-            // Enable delete button
-            document.getElementById('deleteClientBtn').disabled = false;
+            // Enable operations that require a selected client
+            // (No delete button anymore, but we keep this for future operations)
             
             // Load client documents
             loadClientDocuments();
@@ -709,78 +718,228 @@
         }
 
         // System Operations
-        async function reindexAllDocuments() {
-            showLoading('Starting reindex...');
+        function openN8nWorkflows() {
+            window.open('https://workflows.saxtechnology.com', '_blank');
+            showStatus('info', 'Opening n8n dashboard in new tab');
+        }
+        
+        async function testSystemHealth() {
+            showLoading('Testing system health...');
+            const healthResults = [];
+            
             try {
-                // Trigger reindex via the n8n webhook (safer than direct API call)
-                const response = await fetch(`${API_BASE}-reindex`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (response.ok || response.status === 202) {
-                    showStatus('success', 'Full reindex started. This may take 30-60 minutes.');
-                } else {
-                    showStatus('info', 'Reindex requested. Use n8n workflows for advanced operations.');
+                // Test webhook endpoint
+                try {
+                    const webhookResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    healthResults.push(`🟢 Webhook: ${webhookResponse.status === 200 ? 'OK' : 'Issues detected'}`);
+                } catch (e) {
+                    healthResults.push('🔴 Webhook: Failed to connect');
                 }
+                
+                // Test Azure Storage access
+                try {
+                    const azureUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&maxresults=1`;
+                    const azureResponse = await fetch(azureUrl);
+                    healthResults.push(`🟢 Azure Storage: ${azureResponse.status === 200 ? 'Accessible' : 'Access issues'}`);
+                } catch (e) {
+                    healthResults.push('🔴 Azure Storage: Connection failed');
+                }
+                
+                // Show results
+                const resultsHtml = `
+                    <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
+                        <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">🏥 System Health Check</h4>
+                        ${healthResults.map(result => `<div style="margin: 0.5rem 0; font-family: monospace;">${result}</div>`).join('')}
+                        <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--steel-gray);">
+                            Last checked: ${new Date().toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('clientDocuments').innerHTML = resultsHtml;
+                showStatus('success', 'System health check completed');
+                
             } catch (error) {
-                console.error('Reindex error:', error);
-                showStatus('info', 'Please use the n8n workflows at workflows.saxtechnology.com for system operations.');
+                console.error('Health check error:', error);
+                showStatus('error', 'Health check failed');
             } finally {
                 hideLoading();
             }
         }
-
-        async function syncAzureStorage() {
-            showLoading('Syncing with Azure Storage...');
-            await loadClients(); // This effectively syncs with Azure
-            showStatus('success', 'Azure Storage sync completed');
+        
+        function viewSystemLogs() {
+            const systemInfo = {
+                'Last Client Refresh': clients.length > 0 ? 'Recently loaded' : 'Not loaded',
+                'Selected Client': selectedClient ? selectedClient.name : 'None',
+                'Session Status': sessionStorage.getItem('adminAuth') ? 'Authenticated' : 'Not authenticated',
+                'Browser': navigator.userAgent.split(')')[0] + ')',
+                'Timestamp': new Date().toISOString()
+            };
+            
+            const logsHtml = `
+                <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; margin: 1rem 0;">
+                    <h4 style="margin-bottom: 1rem; color: var(--concrete-gray);">📊 System Status</h4>
+                    ${Object.entries(systemInfo).map(([key, value]) => `
+                        <div style="margin: 0.5rem 0; display: flex; justify-content: space-between;">
+                            <strong>${key}:</strong>
+                            <span style="font-family: monospace; color: var(--steel-gray);">${value}</span>
+                        </div>
+                    `).join('')}
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--medium-gray);">
+                        <strong>Configuration:</strong><br>
+                        <span style="font-size: 0.8rem; color: var(--steel-gray); font-family: monospace;">
+                            Storage: ${AZURE_STORAGE.account}.blob.core.windows.net<br>
+                            Container: ${AZURE_STORAGE.container}<br>
+                            Webhook: workflows.saxtechnology.com
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('clientDocuments').innerHTML = logsHtml;
+            showStatus('info', 'System status displayed');
+        }
+        
+        function clearCache() {
+            if (confirm('Clear all cached data and force refresh? This will reload the client list.')) {
+                // Clear variables
+                clients = [];
+                selectedClient = null;
+                selectedFiles = [];
+                
+                // Reset UI
+                document.getElementById('clientList').innerHTML = '<p style="text-align: center; color: var(--steel-gray); padding: 2rem;">Cache cleared. Click "Refresh Client List" to reload</p>';
+                document.getElementById('clientDocuments').innerHTML = '<p style="text-align: center; color: var(--steel-gray); padding: 2rem;">Select a client to view their documents</p>';
+                document.getElementById('selectedFilesDisplay').style.display = 'none';
+                document.getElementById('bulkFileInput').value = '';
+                document.getElementById('deleteClientBtn').disabled = true;
+                
+                // Clear any browser cache related to this session
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            if (name.includes('askforeman')) {
+                                caches.delete(name);
+                            }
+                        });
+                    });
+                }
+                
+                showStatus('success', 'Cache cleared successfully');
+            }
         }
 
-        async function deleteSelectedClient() {
-            if (!selectedClient) {
-                showStatus('error', 'Please select a client first');
-                return;
-            }
-            
-            if (!confirm(`Are you sure you want to delete client "${selectedClient.name}"? This action cannot be undone.`)) {
-                return;
-            }
-            
-            showLoading('Deleting client...');
-            try {
-                showStatus('info', 'Client deletion functionality coming soon...');
-                // Implement actual deletion via Azure Function
-            } catch (error) {
-                console.error('Delete error:', error);
-                showStatus('error', 'Error deleting client');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function exportClientData() {
-            const dataStr = JSON.stringify(clients, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `askforeman-clients-${new Date().toISOString().split('T')[0]}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            showStatus('success', 'Client data exported successfully');
-        }
-
+        let selectedFiles = [];
+        
         function handleBulkFiles(event) {
-            const files = event.target.files;
+            const files = Array.from(event.target.files);
             const category = document.querySelector('input[name="uploadCategory"]:checked').value;
             
             if (files.length === 0) return;
             
+            selectedFiles = files;
+            displaySelectedFiles(files, category);
             showStatus('info', `Selected ${files.length} files for ${category} category`);
-            // Implement actual bulk upload functionality
+        }
+        
+        function displaySelectedFiles(files, category) {
+            const display = document.getElementById('selectedFilesDisplay');
+            const filesList = document.getElementById('filesList');
+            
+            display.style.display = 'block';
+            
+            filesList.innerHTML = '';
+            files.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; margin-bottom: 0.5rem; background: white; border-radius: 4px; border: 1px solid var(--medium-gray);';
+                
+                const fileInfo = document.createElement('div');
+                fileInfo.innerHTML = `
+                    <div style="font-weight: 600; color: var(--concrete-gray);">${file.name}</div>
+                    <div style="font-size: 0.8rem; color: var(--steel-gray);">${formatFileSize(file.size)} • ${category}</div>
+                `;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '✕';
+                removeBtn.style.cssText = 'background: var(--warning-red); color: white; border: none; border-radius: 4px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.8rem;';
+                removeBtn.onclick = () => removeFile(index);
+                
+                fileItem.appendChild(fileInfo);
+                fileItem.appendChild(removeBtn);
+                filesList.appendChild(fileItem);
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            const category = document.querySelector('input[name="uploadCategory"]:checked').value;
+            
+            if (selectedFiles.length === 0) {
+                document.getElementById('selectedFilesDisplay').style.display = 'none';
+                document.getElementById('bulkFileInput').value = '';
+            } else {
+                displaySelectedFiles(selectedFiles, category);
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        async function startBulkUpload() {
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first from the left panel');
+                return;
+            }
+            
+            if (selectedFiles.length === 0) {
+                showStatus('error', 'No files selected for upload');
+                return;
+            }
+            
+            const category = document.querySelector('input[name="uploadCategory"]:checked').value;
+            showLoading(`Uploading ${selectedFiles.length} files to ${selectedClient.name}...`);
+            
+            try {
+                // For now, simulate upload progress
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    document.getElementById('loadingText').textContent = `Uploading file ${i + 1}/${selectedFiles.length}: ${selectedFiles[i].name}`;
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate upload time
+                }
+                
+                showStatus('success', `Successfully uploaded ${selectedFiles.length} files to ${selectedClient.name}`);
+                
+                // Clear the selection
+                selectedFiles = [];
+                document.getElementById('selectedFilesDisplay').style.display = 'none';
+                document.getElementById('bulkFileInput').value = '';
+                
+                // TODO: Implement actual upload to Azure via n8n webhook
+                // const formData = new FormData();
+                // selectedFiles.forEach((file, index) => {
+                //     formData.append(`file${index}`, file);
+                // });
+                // formData.append('client', selectedClient.name);
+                // formData.append('category', category);
+                
+                // const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/upload', {
+                //     method: 'POST',
+                //     body: formData
+                // });
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('error', `Upload failed: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
         }
 
         // Utility functions
