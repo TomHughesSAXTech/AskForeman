@@ -429,24 +429,47 @@
             <!-- Clients Tab -->
             <div id="clients" class="tab-pane active">
                 <div class="card">
-                    <h3><i class="fas fa-plus-circle"></i> Create New Client</h3>
-                    <form id="createClientForm">
+                    <h3><i class="fas fa-upload"></i> Bulk Document Upload</h3>
+                    <form id="bulkUploadForm" enctype="multipart/form-data">
                         <div class="form-group">
-                            <label for="clientName">Client Name</label>
-                            <input type="text" id="clientName" class="form-control" placeholder="Enter client name" required>
+                            <label for="uploadClient">Select Client</label>
+                            <select id="uploadClient" class="form-control" required>
+                                <option value="">-- Select a client --</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label for="projectName">Project Name (Optional)</label>
-                            <input type="text" id="projectName" class="form-control" placeholder="Enter project name">
+                            <label for="uploadCategory">Document Category</label>
+                            <select id="uploadCategory" class="form-control" required>
+                                <option value="">-- Select category --</option>
+                                <option value="drawings">Drawings</option>
+                                <option value="estimates">Estimates</option>
+                                <option value="proposals">Proposals</option>
+                                <option value="specs">Specifications</option>
+                                <option value="signed-contracts">Signed Contracts</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label for="projectDescription">Project Description (Optional)</label>
-                            <textarea id="projectDescription" class="form-control" placeholder="Enter project description" rows="3"></textarea>
+                            <label for="documentFiles">Select Documents (Multiple files supported)</label>
+                            <input type="file" id="documentFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.png,.jpeg" required>
+                            <small style="color: #6c757d; margin-top: 5px; display: block;">Supported: PDF, DOC, DOCX, TXT, JPG, PNG, JPEG</small>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="processDocuments" checked> 
+                                Process documents through conversion workflow
+                            </label>
+                            <small style="color: #6c757d; margin-top: 5px; display: block;">Converts documents and updates search index automatically</small>
                         </div>
                         <button type="submit" class="btn">
-                            <i class="fas fa-plus"></i> Create Client
+                            <i class="fas fa-upload"></i> Upload Documents
                         </button>
                     </form>
+                    <div id="uploadProgress" style="display: none;">
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <div id="progressBar" style="background: #3498db; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                            <div id="progressText" style="text-align: center; margin-top: 10px;">Uploading...</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -663,21 +686,33 @@
         function displayClients(clients) {
             const clientsList = document.getElementById('clientsList');
             
+            // Also populate upload dropdown
+            const uploadSelect = document.getElementById('uploadClient');
+            uploadSelect.innerHTML = '<option value="">-- Select a client --</option>';
+            
             if (clients.length === 0) {
-                clientsList.innerHTML = '<p style="text-align: center; color: #6c757d; grid-column: 1 / -1;">No clients found. Create your first client above.</p>';
+                clientsList.innerHTML = '<p style="text-align: center; color: #6c757d; grid-column: 1 / -1;">No clients found. Clients must be created through the main application.</p>';
                 return;
             }
+            
+            // Populate upload dropdown
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                option.textContent = client.name;
+                uploadSelect.appendChild(option);
+            });
             
             clientsList.innerHTML = clients.map(client => `
                 <div class="client-item">
                     <div class="client-name">
-                        <i class="fas fa-building"></i> ${client.name}
+                        <i class="fas fa-building"></i> ${client.name} (ID: ${client.id})
                     </div>
                     <div class="client-project">
                         <i class="fas fa-project-diagram"></i> ${client.projectName || 'No project specified'}
                     </div>
                     <div class="client-actions">
-                        <button class="btn" onclick="editClient('${client.id}', '${client.name}', '${client.projectName || ''}')" title="Edit Client">
+                        <button class="btn" onclick="editClient('${client.id}', '${client.name}', '${client.projectName || ''}')" title="Edit Project Details">
                             <i class="fas fa-edit"></i> Edit
                         </button>
                         <button class="btn btn-warning" onclick="reindexClient('${client.id}')" title="Reindex Client Documents">
