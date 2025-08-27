@@ -12,46 +12,103 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --construction-orange: #ff6b35;
+            --safety-yellow: #ffc107;
+            --concrete-gray: #424242;
+            --steel-gray: #616161;
+            --blueprint-blue: #1565c0;
+            --hi-vis-green: #76ff03;
+            --warning-red: #d32f2f;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #212121;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #37474f 0%, #263238 100%);
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 35px,
+                rgba(255, 193, 7, 0.03) 35px,
+                rgba(255, 193, 7, 0.03) 70px
+              ),
+              repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 35px,
+                rgba(255, 107, 53, 0.03) 35px,
+                rgba(255, 107, 53, 0.03) 70px
+              );
+            pointer-events: none;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: var(--white);
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
+            border: 2px solid var(--medium-gray);
+            position: relative;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--construction-orange);
         }
 
         .header {
-            background: linear-gradient(45deg, #2c3e50, #3498db);
+            background: linear-gradient(
+                135deg,
+                var(--dark-gray) 0%,
+                var(--concrete-gray) 100%
+            );
             color: white;
-            padding: 30px;
+            padding: 2rem;
             text-align: center;
             position: relative;
             overflow: hidden;
+            border-bottom: 4px solid var(--safety-yellow);
         }
 
         .header::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 4px;
             background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(255,255,255,0.05) 10px,
-                rgba(255,255,255,0.05) 20px
+                90deg,
+                var(--safety-yellow) 0px,
+                var(--safety-yellow) 20px,
+                var(--dark-gray) 20px,
+                var(--dark-gray) 40px
             );
-            animation: slide 20s linear infinite;
         }
 
         @keyframes slide {
@@ -64,20 +121,32 @@
             z-index: 2;
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: var(--safety-yellow);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .header h1::before {
+            content: '🛠️';
+            font-size: 1.2em;
         }
 
         .header .subtitle {
             position: relative;
             z-index: 2;
             font-size: 1.2em;
-            opacity: 0.9;
+            color: var(--medium-gray);
+            font-weight: 500;
         }
 
         .nav-tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 3px solid #e9ecef;
+            background: var(--light-gray);
+            border-bottom: 3px solid var(--construction-orange);
         }
 
         .nav-tab {
@@ -102,15 +171,15 @@
             left: 50%;
             width: 0;
             height: 3px;
-            background: linear-gradient(45deg, #3498db, #2c3e50);
+            background: var(--construction-orange);
             transition: all 0.3s ease;
             transform: translateX(-50%);
         }
 
         .nav-tab:hover,
         .nav-tab.active {
-            color: #2c3e50;
-            background: rgba(52, 152, 219, 0.1);
+            color: var(--concrete-gray);
+            background: rgba(255, 107, 53, 0.1);
         }
 
         .nav-tab:hover::before,
@@ -152,16 +221,23 @@
         }
 
         .card h3 {
-            color: #2c3e50;
+            color: var(--concrete-gray);
             margin-bottom: 20px;
             font-size: 1.4em;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-weight: bold;
+            border-left: 4px solid var(--construction-orange);
+            padding-left: 15px;
         }
 
         .btn {
-            background: linear-gradient(45deg, #3498db, #2c3e50);
+            background: linear-gradient(
+                135deg,
+                var(--construction-orange) 0%,
+                #ff8a50 100%
+            );
             color: white;
             border: none;
             padding: 12px 24px;
@@ -173,6 +249,8 @@
             margin: 5px;
             position: relative;
             overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn::before {
@@ -192,11 +270,11 @@
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
         }
 
         .btn-danger {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: linear-gradient(135deg, var(--warning-red), #b71c1c);
         }
 
         .btn-danger:hover {
@@ -204,19 +282,19 @@
         }
 
         .btn-warning {
-            background: linear-gradient(45deg, #f39c12, #e67e22);
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
         }
 
         .btn-warning:hover {
-            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
         }
 
         .btn-success {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
         }
 
         .btn-success:hover {
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.4);
+            box-shadow: 0 5px 15px rgba(118, 255, 3, 0.4);
         }
 
         .form-group {
@@ -227,21 +305,23 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--concrete-gray);
         }
 
         .form-control {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--medium-gray);
             border-radius: 8px;
             font-size: 1em;
             transition: all 0.3s ease;
+            background: white;
+            color: var(--concrete-gray);
         }
 
         .form-control:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            border-color: var(--construction-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
             outline: none;
         }
 
@@ -253,27 +333,29 @@
         }
 
         .client-item {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background: var(--light-gray);
+            border: 2px solid var(--medium-gray);
             border-radius: 10px;
             padding: 20px;
             transition: all 0.3s ease;
+            border-left: 4px solid var(--construction-orange);
         }
 
         .client-item:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            border-left-color: var(--safety-yellow);
         }
 
         .client-name {
             font-size: 1.2em;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--concrete-gray);
             margin-bottom: 10px;
         }
 
         .client-project {
-            color: #6c757d;
+            color: var(--steel-gray);
             margin-bottom: 15px;
             font-style: italic;
         }
@@ -303,19 +385,19 @@
         }
 
         .status.success {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
         }
 
         .status.error {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: linear-gradient(135deg, var(--warning-red), #b71c1c);
         }
 
         .status.warning {
-            background: linear-gradient(45deg, #f39c12, #e67e22);
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
         }
 
         .status.info {
-            background: linear-gradient(45deg, #3498db, #2c3e50);
+            background: linear-gradient(135deg, var(--blueprint-blue), #0d47a1);
         }
 
         @keyframes slideIn {
@@ -330,8 +412,8 @@
         }
 
         .logs {
-            background: #2c3e50;
-            color: #ecf0f1;
+            background: var(--dark-gray);
+            color: var(--light-gray);
             padding: 20px;
             border-radius: 10px;
             font-family: 'Monaco', 'Consolas', monospace;
@@ -339,6 +421,7 @@
             overflow-y: auto;
             white-space: pre-wrap;
             font-size: 0.9em;
+            border: 2px solid var(--steel-gray);
         }
 
         .metric-card {
@@ -349,12 +432,13 @@
         .metric-value {
             font-size: 3em;
             font-weight: 700;
-            color: #3498db;
+            color: var(--construction-orange);
             margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .metric-label {
-            color: #6c757d;
+            color: var(--steel-gray);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -363,7 +447,7 @@
         .loading {
             text-align: center;
             padding: 20px;
-            color: #6c757d;
+            color: var(--steel-gray);
         }
 
         .loading i {
@@ -465,8 +549,8 @@
                         </button>
                     </form>
                     <div id="uploadProgress" style="display: none;">
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                            <div id="progressBar" style="background: #3498db; height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+                        <div style="background: var(--light-gray); padding: 15px; border-radius: 8px; margin-top: 15px; border: 2px solid var(--medium-gray);">
+                            <div id="progressBar" style="background: linear-gradient(135deg, var(--construction-orange), var(--safety-yellow)); height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
                             <div id="progressText" style="text-align: center; margin-top: 10px;">Uploading...</div>
                         </div>
                     </div>
@@ -1123,7 +1207,7 @@
             } catch (error) {
                 // Error handling
                 progressBar.style.width = '100%';
-                progressBar.style.background = '#e74c3c';
+                progressBar.style.background = 'linear-gradient(135deg, var(--warning-red), #b71c1c)';
                 progressText.textContent = 'Upload failed!';
                 
                 log(`Bulk upload failed: ${error.message}`, 'error');
@@ -1132,7 +1216,7 @@
                 // Hide progress after delay
                 setTimeout(() => {
                     document.getElementById('uploadProgress').style.display = 'none';
-                    progressBar.style.background = '#3498db';
+                    progressBar.style.background = 'linear-gradient(135deg, var(--construction-orange), var(--safety-yellow))';
                 }, 3000);
             }
         });
