@@ -1309,7 +1309,15 @@
                 });
                 
                 if (searchResponse.ok) {
-                    const searchResults = await searchResponse.json();
+                    let searchResults;
+                    try {
+                        const responseText = await searchResponse.text();
+                        console.log('Raw response:', responseText); // Debug log
+                        searchResults = JSON.parse(responseText);
+                    } catch (parseError) {
+                        console.error('Failed to parse response:', parseError);
+                        searchResults = { value: [] };
+                    }
                     const documents = searchResults.value || [];
                     
                     console.log('Search results:', searchResults); // Debug log
