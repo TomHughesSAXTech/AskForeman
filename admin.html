@@ -375,11 +375,8 @@
         <div class="content">
             <!-- Client List Panel -->
             <div class="panel">
-                <h2>📁 Client Projects</h2>
-                <button class="btn btn-primary" onclick="createNewClient()" style="width: 100%; margin-bottom: 1rem;">
-                    ➕ Create New Client
-                </button>
-                <div id="clientList" class="client-list">
+                <h2>🏗️ Client Projects</h2>
+                <div class="client-list" id="clientList">
                     <!-- Client items will be loaded here -->
                 </div>
             </div>
@@ -429,6 +426,28 @@
                                     📥 Export Client Data
                                 </button>
                                 <p class="help-text">Download client list as JSON</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Index Management Section -->
+                        <div style="margin-top: 2rem; padding: 1rem; background: #fff3e0; border-radius: 5px; border: 2px solid var(--safety-yellow);">
+                            <h4>🔍 Search Index Management</h4>
+                            <div style="margin: 1rem 0;">
+                                <button class="btn btn-primary" onclick="viewIndexContents()" style="margin-right: 0.5rem;">
+                                    📊 View Index Contents
+                                </button>
+                                <button class="btn btn-danger" onclick="confirmClearIndex()">
+                                    🗑️ Clear Entire Index
+                                </button>
+                            </div>
+                            <div id="indexStats" style="margin-top: 1rem; padding: 0.5rem; background: white; border-radius: 3px; display: none;">
+                                <p><strong>Index Statistics:</strong></p>
+                                <p id="indexDocCount">Documents: Loading...</p>
+                                <p id="indexSize">Size: Loading...</p>
+                                <p id="indexLastUpdate">Last Updated: Loading...</p>
+                            </div>
+                            <div id="indexContents" style="margin-top: 1rem; max-height: 400px; overflow-y: auto; display: none;">
+                                <!-- Index contents will be loaded here -->
                             </div>
                         </div>
                         
@@ -1241,6 +1260,296 @@
             setTimeout(() => {
                 statusEl.style.display = 'none';
             }, type === 'warning' ? 7000 : 5000); // Longer display for warnings
+        }
+
+        // Azure Search Index Management Functions
+        const AZURE_SEARCH = {
+            endpoint: 'https://construction-search.search.windows.net',
+            indexName: 'construction-index',
+            apiKey: 'OmQvkQlCRJdPc4vSNQYHLdSGBQoJOwyQyrsKzLTlgfAzSeCAoaJg',
+            apiVersion: '2023-11-01'
+        };
+
+        // View index contents and statistics
+        async function viewIndexContents() {
+            showLoading('Fetching index contents...');
+            
+            try {
+                // Get index statistics
+                const statsUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/stats?api-version=${AZURE_SEARCH.apiVersion}`;
+                const statsResponse = await fetch(statsUrl, {
+                    headers: {
+                        'api-key': AZURE_SEARCH.apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    const indexStats = document.getElementById('indexStats');
+                    document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
+                    document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
+                    document.getElementById('indexLastUpdate').textContent = `Last Updated: ${new Date().toLocaleString()}`;
+                    indexStats.style.display = 'block';
+                }
+                
+                // Search for all documents to view them
+                const searchUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/search?api-version=${AZURE_SEARCH.apiVersion}`;
+                const searchResponse = await fetch(searchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'api-key': AZURE_SEARCH.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        search: '*',
+                        top: 100,
+                        select: 'id,fileName,client,category,uploadDate,content',
+                        orderby: 'uploadDate desc'
+                    })
+                });
+                
+                if (searchResponse.ok) {
+                    const searchResults = await searchResponse.json();
+                    const documents = searchResults.value || [];
+                    
+                    // Build document display
+                    const indexContents = document.getElementById('indexContents');
+                    
+                    if (documents.length === 0) {
+                        indexContents.innerHTML = '<p style="text-align: center; padding: 1rem; color: var(--steel-gray);">No documents in index</p>';
+                    } else {
+                        let html = '<table class="document-table" style="width: 100%;">';
+                        html += '<thead><tr>';
+                        html += '<th style="width: 20px;"><input type="checkbox" id="selectAllDocs" onchange="toggleAllDocuments()"></th>';
+                        html += '<th>File Name</th>';
+                        html += '<th>Client</th>';
+                        html += '<th>Category</th>';
+                        html += '<th>Upload Date</th>';
+                        html += '</tr></thead><tbody>';
+                        
+                        documents.forEach((doc, index) => {
+                            const fileName = doc.fileName || 'Unknown';
+                            const client = doc.client || 'Unknown';
+                            const category = doc.category || 'documents';
+                            const uploadDate = doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Unknown';
+                            
+                            html += '<tr>';
+                            html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}"></td>`;
+                            html += `<td>${fileName}</td>`;
+                            html += `<td>${client}</td>`;
+                            html += `<td>${category}</td>`;
+                            html += `<td>${uploadDate}</td>`;
+                            html += '</tr>';
+                        });
+                        
+                        html += '</tbody></table>';
+                        html += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">';
+                        html += '<button class="btn btn-danger" onclick="deleteSelectedDocuments()">🗑️ Delete Selected</button>';
+                        html += `<span style="color: var(--steel-gray); align-self: center;">Total: ${documents.length} documents</span>`;
+                        html += '</div>';
+                        
+                        indexContents.innerHTML = html;
+                    }
+                    
+                    indexContents.style.display = 'block';
+                } else {
+                    throw new Error('Failed to fetch index contents');
+                }
+                
+            } catch (error) {
+                console.error('Error viewing index:', error);
+                showStatus('error', `Failed to fetch index contents: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Toggle all document checkboxes
+        function toggleAllDocuments() {
+            const selectAll = document.getElementById('selectAllDocs');
+            const checkboxes = document.querySelectorAll('.doc-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        }
+
+        // Delete selected documents from index
+        async function deleteSelectedDocuments() {
+            const checkboxes = document.querySelectorAll('.doc-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showStatus('warning', 'Please select documents to delete');
+                return;
+            }
+            
+            const fileNames = Array.from(checkboxes).map(cb => cb.getAttribute('data-filename')).filter(name => name !== 'Unknown');
+            const confirmMsg = `Delete ${checkboxes.length} selected document(s) from the search index?\n\nFiles:\n${fileNames.slice(0, 5).join('\n')}${fileNames.length > 5 ? `\n... and ${fileNames.length - 5} more` : ''}`;
+            
+            if (!confirm(confirmMsg)) return;
+            
+            showLoading(`Deleting ${checkboxes.length} documents from index...`);
+            
+            try {
+                const documentIds = Array.from(checkboxes).map(cb => cb.value);
+                
+                // Batch delete from Azure Search
+                const deleteUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/index?api-version=${AZURE_SEARCH.apiVersion}`;
+                
+                const batch = {
+                    value: documentIds.map(id => ({
+                        '@search.action': 'delete',
+                        id: id
+                    }))
+                };
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'api-key': AZURE_SEARCH.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(batch)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus('success', `Successfully deleted ${checkboxes.length} document(s) from the index`);
+                    
+                    // Refresh the view
+                    setTimeout(() => viewIndexContents(), 1000);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+                
+            } catch (error) {
+                console.error('Error deleting documents:', error);
+                showStatus('error', `Failed to delete documents: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Clear entire index
+        async function confirmClearIndex() {
+            // First, get the document count
+            showLoading('Checking index...');
+            
+            try {
+                const statsUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/stats?api-version=${AZURE_SEARCH.apiVersion}`;
+                const statsResponse = await fetch(statsUrl, {
+                    headers: {
+                        'api-key': AZURE_SEARCH.apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                let docCount = 0;
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    docCount = stats.documentCount || 0;
+                }
+                
+                hideLoading();
+                
+                if (docCount === 0) {
+                    showStatus('warning', 'The index is already empty');
+                    return;
+                }
+                
+                const confirmMsg = `⚠️ WARNING: Clear the ENTIRE search index?\n\nThis will delete ALL ${docCount} indexed documents from search.\nThe original files in Azure Storage will NOT be affected.\n\nThis action cannot be undone!\n\nType "CLEAR INDEX" to confirm:`;
+                
+                const userConfirmation = prompt(confirmMsg);
+                
+                if (userConfirmation !== 'CLEAR INDEX') {
+                    showStatus('warning', 'Index clear cancelled');
+                    return;
+                }
+                
+                await clearEntireIndex();
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error checking index:', error);
+                showStatus('error', `Failed to check index: ${error.message}`);
+            }
+        }
+
+        // Actually clear the entire index
+        async function clearEntireIndex() {
+            showLoading('Clearing entire index... This may take a moment...');
+            
+            try {
+                // First, get all document IDs
+                const searchUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/search?api-version=${AZURE_SEARCH.apiVersion}`;
+                const searchResponse = await fetch(searchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'api-key': AZURE_SEARCH.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        search: '*',
+                        top: 1000, // Get up to 1000 documents at a time
+                        select: 'id'
+                    })
+                });
+                
+                if (!searchResponse.ok) {
+                    throw new Error('Failed to fetch documents');
+                }
+                
+                const searchResults = await searchResponse.json();
+                const documents = searchResults.value || [];
+                
+                if (documents.length === 0) {
+                    showStatus('warning', 'No documents to clear');
+                    hideLoading();
+                    return;
+                }
+                
+                // Delete all documents in batches
+                const batchSize = 100;
+                let deletedCount = 0;
+                
+                for (let i = 0; i < documents.length; i += batchSize) {
+                    const batch = documents.slice(i, i + batchSize);
+                    
+                    const deleteUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/index?api-version=${AZURE_SEARCH.apiVersion}`;
+                    const deleteBody = {
+                        value: batch.map(doc => ({
+                            '@search.action': 'delete',
+                            id: doc.id
+                        }))
+                    };
+                    
+                    const deleteResponse = await fetch(deleteUrl, {
+                        method: 'POST',
+                        headers: {
+                            'api-key': AZURE_SEARCH.apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(deleteBody)
+                    });
+                    
+                    if (deleteResponse.ok) {
+                        deletedCount += batch.length;
+                        document.getElementById('loadingText').textContent = `Clearing index... Deleted ${deletedCount} of ${documents.length} documents...`;
+                    } else {
+                        console.error('Failed to delete batch:', await deleteResponse.text());
+                    }
+                }
+                
+                hideLoading();
+                showStatus('success', `Successfully cleared the entire index. ${deletedCount} documents removed.`);
+                
+                // Clear the display
+                document.getElementById('indexContents').innerHTML = '<p style="text-align: center; padding: 1rem; color: var(--steel-gray);">Index has been cleared</p>';
+                document.getElementById('indexStats').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error clearing index:', error);
+                showStatus('error', `Failed to clear index: ${error.message}`);
+                hideLoading();
+            }
         }
     </script>
 </body>
