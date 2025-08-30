@@ -1281,16 +1281,19 @@
                 const statsResponse = await fetch(statsUrl, {
                     method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    },
-                    cache: 'no-store'
+                        'Content-Type': 'application/json'
+                        // Removed Pragma and Cache-Control headers that cause CORS issues
+                    }
                 });
                 
                 if (statsResponse.ok) {
-                    const stats = await statsResponse.json();
-                    console.log('Index stats received:', stats); // Debug log
+                    let statsData = await statsResponse.json();
+                    console.log('Raw stats response:', statsData); // Debug log
+                    
+                    // Handle if response is wrapped in array
+                    const stats = Array.isArray(statsData) ? statsData[0] : statsData;
+                    console.log('Index stats parsed:', stats); // Debug log
+                    
                     const indexStats = document.getElementById('indexStats');
                     document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
                     document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
@@ -1305,10 +1308,9 @@
                 const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache'
+                        'Content-Type': 'application/json'
+                        // Removed Cache-Control header that might cause CORS issues
                     },
-                    cache: 'no-store',
                     body: JSON.stringify({
                         search: '*',
                         top: 100,
@@ -1501,7 +1503,9 @@
                 
                 let docCount = 0;
                 if (statsResponse.ok) {
-                    const stats = await statsResponse.json();
+                    let statsData = await statsResponse.json();
+                    // Handle if response is wrapped in array
+                    const stats = Array.isArray(statsData) ? statsData[0] : statsData;
                     docCount = stats.documentCount || 0;
                 }
                 
@@ -1568,7 +1572,9 @@
                         });
                         
                         if (statsResponse.ok) {
-                            const stats = await statsResponse.json();
+                            let statsData = await statsResponse.json();
+                            // Handle if response is wrapped in array
+                            const stats = Array.isArray(statsData) ? statsData[0] : statsData;
                             const indexStats = document.getElementById('indexStats');
                             document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
                             document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
