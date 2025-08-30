@@ -1276,35 +1276,43 @@
             showLoading('Fetching index contents...');
             
             try {
-                // Get index statistics via n8n proxy
-                const statsResponse = await fetch(AZURE_SEARCH_PROXY.statsUrl, {
+                // Get index statistics via n8n proxy with cache busting
+                const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}`;
+                const statsResponse = await fetch(statsUrl, {
                     method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    },
+                    cache: 'no-store'
                 });
                 
                 if (statsResponse.ok) {
                     const stats = await statsResponse.json();
+                    console.log('Index stats received:', stats); // Debug log
                     const indexStats = document.getElementById('indexStats');
                     document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
                     document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
                     document.getElementById('indexLastUpdate').textContent = `Last Updated: ${new Date().toLocaleString()}`;
                     indexStats.style.display = 'block';
+                } else {
+                    console.error('Failed to fetch stats:', await statsResponse.text());
                 }
                 
                 // Search for all documents via n8n proxy
-                // Simplified request without orderby and content field
+                // Request ALL fields to see what's actually in the index
                 const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache'
                     },
+                    cache: 'no-store',
                     body: JSON.stringify({
                         search: '*',
                         top: 100,
-                        select: 'id,fileName,client,category'
-                        // Removed uploadDate, orderby and content fields as they don't exist in index
+                        select: '*'  // Get ALL fields to inspect what's in the index
                     })
                 });
                 
@@ -1341,6 +1349,19 @@
                     
                     console.log('Search results:', searchResults); // Debug log
                     
+                    // Log first document to see what fields are actually stored
+                    if (documents.length > 0) {
+                        console.log('First document structure:', documents[0]);
+                        console.log('Document keys:', Object.keys(documents[0]));
+                        
+                        // Check if content field exists and what it contains
+                        if (documents[0].content) {
+                            console.log('Content field preview (first 500 chars):', documents[0].content.substring(0, 500));
+                        } else {
+                            console.log('No content field found in document');
+                        }
+                    }
+                    
                     // Build document display
                     const indexContents = document.getElementById('indexContents');
                     
@@ -1353,6 +1374,7 @@
                         html += '<th>File Name</th>';
                         html += '<th>Client</th>';
                         html += '<th>Category</th>';
+                        html += '<th>Content Type</th>';
                         html += '</tr></thead><tbody>';
                         
                         documents.forEach((doc, index) => {
@@ -1360,11 +1382,27 @@
                             const client = doc.client || 'Unknown';
                             const category = doc.category || 'documents';
                             
+                            // Check what type of content is stored
+                            let contentType = 'Unknown';
+                            if (doc.content) {
+                                // Check if content looks like JSON
+                                if (doc.content.trim().startsWith('{') || doc.content.trim().startsWith('[')) {
+                                    contentType = '📄 JSON';
+                                } else if (doc.content.includes('\n\n') && doc.content.includes(':')) {
+                                    contentType = '📝 Text/Markdown';
+                                } else {
+                                    contentType = '📃 Text';
+                                }
+                            } else {
+                                contentType = '❌ No content';
+                            }
+                            
                             html += '<tr>';
                             html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}"></td>`;
-                            html += `<td>${fileName}</td>`;
+                            html += `<td title="${fileName}">${fileName}</td>`;
                             html += `<td>${client}</td>`;
                             html += `<td>${category}</td>`;
+                            html += `<td>${contentType}</td>`;
                             html += '</tr>';
                         });
                         
