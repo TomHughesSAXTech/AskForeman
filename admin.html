@@ -1303,8 +1303,8 @@
                     body: JSON.stringify({
                         search: '*',
                         top: 100,
-                        select: 'id,fileName,client,category,uploadDate'
-                        // Removed orderby and content fields to simplify
+                        select: 'id,fileName,client,category'
+                        // Removed uploadDate, orderby and content fields as they don't exist in index
                     })
                 });
                 
@@ -1353,21 +1353,18 @@
                         html += '<th>File Name</th>';
                         html += '<th>Client</th>';
                         html += '<th>Category</th>';
-                        html += '<th>Upload Date</th>';
                         html += '</tr></thead><tbody>';
                         
                         documents.forEach((doc, index) => {
                             const fileName = doc.fileName || 'Unknown';
                             const client = doc.client || 'Unknown';
                             const category = doc.category || 'documents';
-                            const uploadDate = doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Unknown';
                             
                             html += '<tr>';
                             html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}"></td>`;
                             html += `<td>${fileName}</td>`;
                             html += `<td>${client}</td>`;
                             html += `<td>${category}</td>`;
-                            html += `<td>${uploadDate}</td>`;
                             html += '</tr>';
                         });
                         
