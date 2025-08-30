@@ -1113,7 +1113,8 @@
             const errors = [];
             
             // Use n8n webhook for upload and conversion
-            const uploadWebhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/bulk-upload';
+            // Using regular upload endpoint since we're sending files one by one
+            const uploadWebhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/upload';
             
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
