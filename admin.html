@@ -1125,12 +1125,15 @@
                 
                 try {
                     console.log(`Uploading ${fileName} to category: ${category}`);
+                    console.log('Selected client:', selectedClient);
+                    console.log('Client folder:', selectedClient.folder);
                     
                     // Create FormData for n8n webhook
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('category', category);
-                    formData.append('client', selectedClient.folder);
+                    formData.append('client', selectedClient.folder || selectedClient.name);
+                    formData.append('clientName', selectedClient.folder || selectedClient.name); // Add clientName as well
                     formData.append('fileName', fileName);
                     formData.append('source', 'admin-bulk-upload');
                     
