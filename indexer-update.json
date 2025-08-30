@@ -1,0 +1,46 @@
+{
+    "name": "fcs-construction-docs-indexer-v2",
+    "dataSourceName": "fcs-convertedclients-datasource",
+    "targetIndexName": "fcs-construction-docs-index-v2",
+    "skillsetName": "fcs-construction-docs-skillset",
+    "fieldMappings": [
+        {
+            "sourceFieldName": "metadata_storage_path",
+            "targetFieldName": "id",
+            "mappingFunction": {
+                "name": "base64Encode"
+            }
+        },
+        {
+            "sourceFieldName": "metadata_storage_name",
+            "targetFieldName": "fileName"
+        },
+        {
+            "sourceFieldName": "metadata_storage_last_modified",
+            "targetFieldName": "uploadedAt"
+        },
+        {
+            "sourceFieldName": "metadata_storage_path",
+            "targetFieldName": "blobPath"
+        },
+        {
+            "sourceFieldName": "content",
+            "targetFieldName": "content"
+        }
+    ],
+    "outputFieldMappings": [
+        {
+            "sourceFieldName": "/document/contentVector",
+            "targetFieldName": "contentVector"
+        }
+    ],
+    "parameters": {
+        "batchSize": 10,
+        "maxFailedItems": -1,
+        "maxFailedItemsPerBatch": -1,
+        "configuration": {
+            "dataToExtract": "contentAndMetadata",
+            "parsingMode": "default"
+        }
+    }
+}

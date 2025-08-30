@@ -4,6 +4,61 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ask Foreman - Construction Estimating Assistant</title>
+    
+    <!-- Mobile Detection and Redirection -->
+    <script>
+      (function() {
+        // Function to detect mobile devices
+        function isMobileDevice() {
+          // Check user agent
+          const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+          
+          // Check for mobile devices
+          const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i;
+          
+          // Check screen size as additional validation
+          const screenWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+          const isMobileScreen = screenWidth <= 768;
+          
+          // Check if it's a touch device
+          const isTouchDevice = ('ontouchstart' in window) || 
+                              (navigator.maxTouchPoints > 0) || 
+                              (navigator.msMaxTouchPoints > 0);
+          
+          // Return true if mobile user agent AND (mobile screen OR touch device)
+          return mobileRegex.test(userAgent.toLowerCase()) && (isMobileScreen || isTouchDevice);
+        }
+        
+        // Function to get URL parameter
+        function getUrlParameter(name) {
+          name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+          const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+          const results = regex.exec(location.search);
+          return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+        
+        // Check if user forced desktop or mobile view
+        const forceDesktop = getUrlParameter('desktop') === 'true';
+        const forceMobile = getUrlParameter('mobile') === 'true';
+        
+        // Store user preference if explicitly set
+        if (forceDesktop) {
+          localStorage.setItem('viewPreference', 'desktop');
+        } else if (forceMobile) {
+          localStorage.setItem('viewPreference', 'mobile');
+        }
+        
+        // Get stored preference
+        const viewPreference = localStorage.getItem('viewPreference');
+        
+        // Determine where to redirect - redirect to the mobile site hosted on Azure
+        if (!forceDesktop && (forceMobile || (isMobileDevice() && viewPreference !== 'desktop'))) {
+          // Redirect to mobile version hosted on Azure Static Web Apps
+          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/mobile-chat.html');
+        }
+        // If it's desktop or forced desktop, continue loading this page normally
+      })();
+    </script>
     <style>
       * {
         margin: 0;
@@ -1631,7 +1686,7 @@
         chatWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
         uploadWebhookUrl:
-          "https://workflows.saxtechnology.com/webhook/ask-foreman/process",
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
         createClientWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
         listClientsWebhookUrl:
@@ -1642,8 +1697,8 @@
       // Azure Blob Storage Configuration
       const AZURE_STORAGE = {
         account: "saxtechfcs",
-        container: "fcs-clients",
-        sasToken: "?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D"
+        container: "fcs-clients", // Single container with two folders: FCS-OriginalClients and FCS-ConvertedClients
+        sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
       };
 
       // File Management
@@ -2325,17 +2380,6 @@
               </div>
               
               <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Name *</label>
-                <input type="text" id="projectNameInput" placeholder="e.g. Downtown Office Complex" style="
-                  width: 100%;
-                  padding: 0.75rem;
-                  border: 2px solid var(--medium-gray);
-                  border-radius: 5px;
-                  font-size: 1rem;
-                " />
-              </div>
-              
-              <div style="margin-bottom: 1rem;">
                 <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Type</label>
                 <select id="projectTypeSelect" style="
                   width: 100%;
@@ -2405,12 +2449,11 @@
       
       async function createClient() {
         const clientName = document.getElementById('clientNameInput').value.trim();
-        const projectName = document.getElementById('projectNameInput').value.trim();
         const projectType = document.getElementById('projectTypeSelect').value;
         const projectDescription = document.getElementById('projectDescInput').value.trim();
         
-        if (!clientName || !projectName) {
-          alert('Client name and project name are required');
+        if (!clientName) {
+          alert('Client name is required');
           return;
         }
         
@@ -2418,12 +2461,13 @@
         const createBtn = event.target || document.querySelector('#clientModal button[onclick="createClient()"]');
         if (createBtn) {
           createBtn.disabled = true;
-          createBtn.textContent = 'Creating...';
+          createBtn.textContent = 'Creating client folders...';
         }
         
         try {
-          console.log('Creating client:', { clientName, projectName, projectType });
+          console.log('Creating client:', { clientName, projectType });
           
+          // Step 1: Call the webhook to create the client (this should handle n8n workflow)
           const response = await fetch(API_CONFIG.createClientWebhookUrl, {
             method: 'POST',
             headers: {
@@ -2431,7 +2475,7 @@
             },
             body: JSON.stringify({
               clientName: clientName,
-              projectName: projectName,
+              projectName: clientName, // Use client name as project name for backwards compatibility
               projectType: projectType,
               projectDescription: projectDescription
             }),
@@ -2451,27 +2495,64 @@
             console.log('Create client response data:', data);
           } catch (e) {
             console.warn('Response was not JSON, treating as success');
-            data = { client: { id: clientName.toLowerCase().replace(/\s+/g, '-') } };
+            data = { client: { id: clientName.replace(/\s+/g, '-') } };  // Keep original capitalization
           }
+          
+          // Step 2: Create folder structure in both containers
+          if (createBtn) {
+            createBtn.textContent = 'Setting up folders...';
+          }
+          
+          // Create folders in fcs-clients container (for raw documents)
+          const clientFolderName = clientName;
+          const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
+          
+          // Create placeholder files in each category folder in FCS-OriginalClients
+          for (const category of categories) {
+            const placeholderPath = `FCS-OriginalClients/${clientFolderName}/${category}/.placeholder`;
+            await createPlaceholderFile(AZURE_STORAGE.container, placeholderPath);
+          }
+          
+          // Create folder structure in FCS-ConvertedClients (for converted data and metadata)
+          const convertedCategories = ['converted', 'metadata', 'chunks', 'embeddings', 'index'];
+          for (const category of convertedCategories) {
+            const placeholderPath = `FCS-ConvertedClients/${clientFolderName}/${category}/.placeholder`;
+            await createPlaceholderFile(AZURE_STORAGE.container, placeholderPath);
+          }
+          
+          // Create initial metadata file in FCS-ConvertedClients
+          const metadata = {
+            clientName: clientName,
+            projectType: projectType,
+            projectDescription: projectDescription,
+            createdAt: new Date().toISOString(),
+            documentsCount: 0,
+            lastUpdated: new Date().toISOString(),
+            categories: categories,
+            indexStatus: 'initialized'
+          };
+          
+          await createMetadataFile(AZURE_STORAGE.container, `FCS-ConvertedClients/${clientFolderName}/metadata/client-info.json`, metadata);
           
           // Close modal
           closeClientModal();
           
-          // Add success message first
-          addSystemMessage(`✅ Client "${clientName}" created successfully! Project: "${projectName}". The client folder is being created in Azure Storage...`);
+          // Add success message
+          addSystemMessage(`✅ Client "${clientName}" created successfully! Folders have been set up in both storage containers.`);
           
-          // Wait a moment for Azure to create the folder, then reload clients
+          // Wait a moment for Azure to process, then reload clients
           setTimeout(async () => {
             await loadClients();
             
             // Try to set the new client as selected
-            const clientId = data.client?.id || clientName.toLowerCase().replace(/\s+/g, '-');
+            const clientId = data.client?.folderName || data.client?.id || clientName;
             
             // Check if the client appears in the dropdown
             const options = Array.from(clientSelect.options);
             const clientOption = options.find(opt => 
-              opt.value.toLowerCase() === clientId.toLowerCase() || 
-              opt.value.toLowerCase() === clientName.toLowerCase()
+              opt.value === clientId || 
+              opt.value === clientName ||
+              opt.value.toLowerCase() === clientId.toLowerCase()
             );
             
             if (clientOption) {
@@ -2484,7 +2565,7 @@
             }
             
             updateProcessButton();
-          }, 2000); // Wait 2 seconds for Azure to create the folder
+          }, 3000); // Wait 3 seconds for Azure to create the folders
           
         } catch (error) {
           console.error('Create client error:', error);
@@ -2495,6 +2576,66 @@
             createBtn.disabled = false;
             createBtn.textContent = 'Create Client';
           }
+        }
+      }
+      
+      // Helper function to create placeholder files in Azure Blob Storage
+      async function createPlaceholderFile(containerName, path) {
+        try {
+          // Encode path segments properly
+          const pathSegments = path.split('/');
+          const encodedPath = pathSegments.map(segment => encodeURIComponent(segment)).join('/');
+          
+          const placeholderUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${containerName}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+          
+          const response = await fetch(placeholderUrl, {
+            method: 'PUT',
+            headers: {
+              'x-ms-blob-type': 'BlockBlob',
+              'Content-Type': 'text/plain',
+              'Content-Length': '0'
+            },
+            body: '' // Empty placeholder file
+          });
+          
+          if (!response.ok && response.status !== 201) {
+            console.warn(`Failed to create placeholder at ${path}: ${response.status}`);
+          } else {
+            console.log(`Created placeholder: ${containerName}/${path}`);
+          }
+        } catch (error) {
+          console.error(`Error creating placeholder file: ${error.message}`);
+        }
+      }
+      
+      // Helper function to create metadata JSON file in Azure Blob Storage
+      async function createMetadataFile(containerName, path, metadata) {
+        try {
+          // Encode path segments properly
+          const pathSegments = path.split('/');
+          const encodedPath = pathSegments.map(segment => encodeURIComponent(segment)).join('/');
+          
+          const metadataUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${containerName}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+          
+          const metadataContent = JSON.stringify(metadata, null, 2);
+          
+          const response = await fetch(metadataUrl, {
+            method: 'PUT',
+            headers: {
+              'x-ms-blob-type': 'BlockBlob',
+              'Content-Type': 'application/json',
+              'Content-Length': new Blob([metadataContent]).size.toString()
+            },
+            body: metadataContent
+          });
+          
+          if (!response.ok && response.status !== 201) {
+            console.warn(`Failed to create metadata at ${path}: ${response.status}`);
+          } else {
+            console.log(`Created metadata: ${containerName}/${path}`);
+          }
+        } catch (error) {
+          console.error(`Error creating metadata file: ${error.message}`);
         }
       }
       
@@ -2575,9 +2716,8 @@
                   if (!clientSet.has(clientName) && !clientName.startsWith('.') && clientName.length > 0) {
                     clientSet.add(clientName);
                     clients.push({
-                      id: clientName.toLowerCase(),
-                      name: formatClientName(clientName),
-                      projectName: '' // Will be populated if needed
+                      id: clientName,  // Keep original capitalization for folder name
+                      name: formatClientName(clientName)
                     });
                   }
                 }
@@ -2593,9 +2733,8 @@
                 // Skip system folders or hidden folders
                 if (!folderName.startsWith('.') && folderName.length > 0 && folderName !== 'FCS-OriginalClients') {
                   clients.push({
-                    id: folderName.toLowerCase(),
-                    name: formatClientName(folderName),
-                    projectName: '' // Will be populated if needed
+                    id: folderName,  // Keep original capitalization for folder name
+                    name: formatClientName(folderName)
                   });
                 }
               }
@@ -2626,9 +2765,8 @@
             
             uniqueClients.forEach(clientName => {
               clients.push({
-                id: clientName.toLowerCase(),
-                name: formatClientName(clientName),
-                projectName: ''
+                id: clientName,  // Keep original capitalization for folder name
+                name: formatClientName(clientName)
               });
             });
           }
@@ -2686,15 +2824,13 @@
           // Upload dropdown
           const uploadOption = document.createElement('option');
           uploadOption.value = client.id;
-          // Display name based on whether projectName exists
-          uploadOption.textContent = client.projectName ? `${client.name} - ${client.projectName}` : client.name;
+          uploadOption.textContent = client.name;
           clientSelect.appendChild(uploadOption);
           
           // Chat dropdown
           const chatOption = document.createElement('option');
           chatOption.value = client.id;
-          // Display name based on whether projectName exists
-          chatOption.textContent = client.projectName ? `${client.name} - ${client.projectName}` : client.name;
+          chatOption.textContent = client.name;
           chatClientSelect.appendChild(chatOption);
         });
         
@@ -3678,7 +3814,7 @@
           const formData = new FormData();
           formData.append('file', file);
           formData.append('category', category);
-          formData.append('client', clientName.toLowerCase());
+          formData.append('client', clientName);  // Keep original capitalization
           formData.append('action', 'reindex'); // Flag this as a reindex operation
           
           // Call the processing webhook
@@ -3985,8 +4121,8 @@
         fileList.appendChild(loadingDiv);
         
         try {
-          // Construct the Azure Blob Storage URL to list files for this client
-          const actualClientName = clientSelect.options[clientSelect.selectedIndex].text.split(' - ')[0];
+          // Use the actual client ID (which preserves original case) instead of display text
+          const actualClientName = clientName; // Use the passed clientName which is the ID
           const prefix = `FCS-OriginalClients/${actualClientName}/`;
           const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
           
