@@ -1294,6 +1294,7 @@
                 }
                 
                 // Search for all documents via n8n proxy
+                // Simplified request without orderby and content field
                 const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
                     method: 'POST',
                     headers: {
@@ -1302,14 +1303,16 @@
                     body: JSON.stringify({
                         search: '*',
                         top: 100,
-                        select: 'id,fileName,client,category,uploadDate,content',
-                        orderby: 'uploadDate desc'
+                        select: 'id,fileName,client,category,uploadDate'
+                        // Removed orderby and content fields to simplify
                     })
                 });
                 
                 if (searchResponse.ok) {
                     const searchResults = await searchResponse.json();
                     const documents = searchResults.value || [];
+                    
+                    console.log('Search results:', searchResults); // Debug log
                     
                     // Build document display
                     const indexContents = document.getElementById('indexContents');
@@ -1352,7 +1355,9 @@
                     
                     indexContents.style.display = 'block';
                 } else {
-                    throw new Error('Failed to fetch index contents');
+                    const errorText = await searchResponse.text();
+                    console.error('Search API error:', errorText);
+                    throw new Error(`Failed to fetch index contents: ${errorText}`);
                 }
                 
             } catch (error) {
