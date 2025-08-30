@@ -15,7 +15,7 @@ module.exports = async function (context, req) {
         body: {
             azureFunctionKey: azureFunctionKey,
             // Add other configuration items as needed
-            functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net'
+            functionAppUrl: 'https://saxtech-docconverter.azurewebsites.net'
         }
     };
 };

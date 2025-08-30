@@ -40,8 +40,7 @@
         "maxFailedItemsPerBatch": -1,
         "configuration": {
             "dataToExtract": "contentAndMetadata",
-            "parsingMode": "default",
-            "imageAction": "generateNormalizedImages"
+            "parsingMode": "default"
         }
     }
 }

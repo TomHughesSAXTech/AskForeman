@@ -560,7 +560,7 @@
                         console.warn('API endpoint not available, using fallback configuration');
                         // Fallback: prompt for key if needed
                         azureFunctionConfig = {
-                            functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                            functionAppUrl: 'https://saxtech-docconverter.azurewebsites.net',
                             azureFunctionKey: '' // Will be set when needed
                         };
                     }
@@ -568,7 +568,7 @@
                     console.error('Failed to load configuration');
                     // Use fallback configuration
                     azureFunctionConfig = {
-                        functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                        functionAppUrl: 'https://saxtech-docconverter.azurewebsites.net',
                         azureFunctionKey: ''
                     };
                 }
@@ -576,7 +576,7 @@
                 console.error('Error loading configuration:', error);
                 // Use fallback configuration
                 azureFunctionConfig = {
-                    functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                    functionAppUrl: 'https://saxtech-docconverter.azurewebsites.net',
                     azureFunctionKey: ''
                 };
             }
@@ -921,12 +921,12 @@
                 // Fallback configuration when API is not available
                 azureFunctionConfig = azureFunctionConfig || {};
                 azureFunctionConfig.azureFunctionKey = '8XXgu4-yK7kAdNVShD2f1a_lCYqqtU-iEcn7mRWUbnOnAzFuxl8RJA==';
-                azureFunctionConfig.functionAppUrl = 'https://saxtech-functionapps2.azurewebsites.net';
+                azureFunctionConfig.functionAppUrl = 'https://saxtech-docconverter.azurewebsites.net';
             }
             
             showLoading('Deleting client and all associated files...');
             try {
-                const functionUrl = azureFunctionConfig.functionAppUrl || 'https://saxtech-functionapps2.azurewebsites.net';
+                const functionUrl = azureFunctionConfig.functionAppUrl || 'https://saxtech-docconverter.azurewebsites.net';
                 const response = await fetch(`${functionUrl}/api/clients/${selectedClient.folder}?code=${azureFunctionConfig.azureFunctionKey}`, {
                     method: 'DELETE'
                 });
