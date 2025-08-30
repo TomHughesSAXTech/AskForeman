@@ -3735,7 +3735,7 @@
         }
       }
       
-      // Delete file
+      // Delete file using n8n webhook for proper index cleanup
       async function deleteFile(filePath) {
         const fileName = filePath.split('/').pop();
         if (!confirm(`Are you sure you want to delete ${fileName}?`)) {
@@ -3743,21 +3743,51 @@
         }
         
         try {
-          const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+          // Extract file info from path for n8n webhook
+          const pathParts = filePath.split('/');
+          const clientName = pathParts[1];
+          const category = pathParts[2] || 'documents';
           
-          const response = await fetch(deleteUrl, {
+          // Use n8n webhook for file deletion with proper index cleanup
+          const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman-delete-file/ask-foreman/files/${encodeURIComponent(filePath)}`;
+          
+          const response = await fetch(webhookUrl, {
             method: 'DELETE',
             headers: {
-              'x-ms-delete-snapshots': 'include'
-            }
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: filePath,
+              clientName: clientName,
+              category: category,
+              fileName: fileName,
+              source: 'main-app',
+              timestamp: new Date().toISOString()
+            })
           });
           
-          if (response.ok || response.status === 202) {
-            addSystemMessage(`✅ File "${fileName}" deleted successfully!`);
+          if (response.ok) {
+            addSystemMessage(`✅ File "${fileName}" deleted successfully from storage and index!`);
             // Reload the file list
             await loadClientFiles(selectedClient);
           } else {
-            throw new Error(`Delete failed with status ${response.status}`);
+            // Fallback to direct blob deletion if webhook fails
+            console.warn('Webhook deletion failed, attempting direct blob deletion');
+            const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+            
+            const directResponse = await fetch(deleteUrl, {
+              method: 'DELETE',
+              headers: {
+                'x-ms-delete-snapshots': 'include'
+              }
+            });
+            
+            if (directResponse.ok || directResponse.status === 202) {
+              addSystemMessage(`⚠️ File "${fileName}" deleted from storage (index may not be updated)`);
+              await loadClientFiles(selectedClient);
+            } else {
+              throw new Error(`Delete failed with status ${directResponse.status}`);
+            }
           }
         } catch (error) {
           console.error('Error deleting file:', error);
@@ -4204,28 +4234,58 @@
         }
       }
       
-      // Delete a file from Azure Blob Storage
+      // Delete a file using n8n webhook for proper cleanup
       async function deleteClientFile(filePath, clientName) {
-        if (!confirm(`Are you sure you want to delete ${filePath.split('/').pop()}?`)) {
+        const fileName = filePath.split('/').pop();
+        if (!confirm(`Are you sure you want to delete ${fileName}?`)) {
           return;
         }
         
         try {
-          const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+          // Extract category from path
+          const pathParts = filePath.split('/');
+          const category = pathParts[2] || 'documents';
           
-          const response = await fetch(deleteUrl, {
+          // Use n8n webhook for file deletion with proper index cleanup
+          const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman-delete-file/ask-foreman/files/${encodeURIComponent(filePath)}`;
+          
+          const response = await fetch(webhookUrl, {
             method: 'DELETE',
             headers: {
-              'x-ms-delete-snapshots': 'include'
-            }
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: filePath,
+              clientName: clientName,
+              category: category,
+              fileName: fileName,
+              source: 'main-app-file-browser',
+              timestamp: new Date().toISOString()
+            })
           });
           
-          if (response.ok || response.status === 202) {
-            addSystemMessage(`✅ File deleted successfully!`);
+          if (response.ok) {
+            addSystemMessage(`✅ File deleted successfully from storage and index!`);
             // Reload the file list
             await loadClientFiles(clientName);
           } else {
-            throw new Error(`Delete failed with status ${response.status}`);
+            // Fallback to direct blob deletion if webhook fails
+            console.warn('Webhook deletion failed, attempting direct blob deletion');
+            const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+            
+            const directResponse = await fetch(deleteUrl, {
+              method: 'DELETE',
+              headers: {
+                'x-ms-delete-snapshots': 'include'
+              }
+            });
+            
+            if (directResponse.ok || directResponse.status === 202) {
+              addSystemMessage(`⚠️ File deleted from storage (index may not be updated)`);
+              await loadClientFiles(clientName);
+            } else {
+              throw new Error(`Delete failed with status ${directResponse.status}`);
+            }
           }
         } catch (error) {
           console.error('Error deleting file:', error);
