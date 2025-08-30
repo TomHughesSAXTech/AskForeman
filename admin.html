@@ -1311,9 +1311,28 @@
                 if (searchResponse.ok) {
                     let searchResults;
                     try {
+                        // Clone response to read it multiple ways if needed
+                        const clonedResponse = searchResponse.clone();
+                        
+                        // Try to get response text
                         const responseText = await searchResponse.text();
-                        console.log('Raw response:', responseText); // Debug log
-                        searchResults = JSON.parse(responseText);
+                        console.log('Raw response text:', responseText);
+                        console.log('Response length:', responseText.length);
+                        console.log('Response headers:', searchResponse.headers);
+                        
+                        if (!responseText || responseText.length === 0) {
+                            console.error('Empty response received');
+                            // Try reading the cloned response as JSON directly
+                            try {
+                                searchResults = await clonedResponse.json();
+                                console.log('Cloned response JSON:', searchResults);
+                            } catch (e) {
+                                console.error('Cloned response also failed:', e);
+                                searchResults = { value: [] };
+                            }
+                        } else {
+                            searchResults = JSON.parse(responseText);
+                        }
                     } catch (parseError) {
                         console.error('Failed to parse response:', parseError);
                         searchResults = { value: [] };
