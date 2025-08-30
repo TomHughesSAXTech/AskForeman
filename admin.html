@@ -1107,7 +1107,9 @@
             showLoading(`Uploading ${selectedFiles.length} files...`);
             
             let successCount = 0;
+            let failedCount = 0;
             let overwriteCount = 0;
+            let failedFiles = [];
             
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
@@ -1117,8 +1119,12 @@
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
                 const category = categorySelect ? categorySelect.value : 'documents';
                 
+                console.log(`Uploading ${fileName} to category: ${category}`);
+                
                 const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
                 const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
+                
+                console.log(`Upload URL: ${uploadUrl}`);
                 
                 try {
                     // Check if file exists
@@ -1142,9 +1148,18 @@
                         
                         if (uploadResponse.ok || uploadResponse.status === 201) {
                             successCount++;
+                            console.log(`Successfully uploaded ${fileName} to ${category}`);
+                        } else {
+                            failedCount++;
+                            failedFiles.push(`${fileName} (${uploadResponse.status}: ${uploadResponse.statusText})`);
+                            console.error(`Failed to upload ${fileName}: ${uploadResponse.status} ${uploadResponse.statusText}`);
                         }
+                    } else {
+                        console.log(`User skipped overwriting ${fileName}`);
                     }
                 } catch (error) {
+                    failedCount++;
+                    failedFiles.push(`${fileName} (${error.message})`);
                     console.error(`Error uploading ${fileName}:`, error);
                 }
                 
@@ -1154,10 +1169,17 @@
             hideLoading();
             
             let message = `Upload complete: ${successCount} files uploaded`;
+            if (failedCount > 0) {
+                message += `, ${failedCount} failed`;
+                if (failedFiles.length > 0) {
+                    console.error('Failed files:', failedFiles);
+                    message += `. Check console for details.`;
+                }
+            }
             if (overwriteCount > 0) message += `, ${overwriteCount} overwritten`;
-            message += '. Files will be automatically indexed.';
+            if (successCount > 0) message += '. Files will be automatically indexed.';
             
-            showStatus('success', message);
+            showStatus(failedCount > 0 ? 'warning' : 'success', message);
             
             // Clear selection and hide preview
             clearFileSelection();
