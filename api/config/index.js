@@ -3,7 +3,8 @@
 
 module.exports = async function (context, req) {
     // Get the Azure Function key from environment variables
-    const azureFunctionKey = process.env.AZURE_FUNCTION_KEY || '';
+    // Use the correct key for the delete client function
+    const azureFunctionKey = process.env.AZURE_FUNCTION_KEY || 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==';
     
     // Return configuration object
     context.res = {
