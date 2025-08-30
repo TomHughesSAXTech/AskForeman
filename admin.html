@@ -445,7 +445,11 @@
                                 <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
                                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="drawings" checked>
+                                        <input type="radio" name="uploadCategory" value="auto" checked>
+                                        <span>🤖 Auto-detect</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="drawings">
                                         <span>📐 Drawings</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1029,7 +1033,7 @@
             selectedFiles = Array.from(files);
             
             // Get default category
-            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'drawings';
+            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
             
             // Build preview UI
             const fileListContainer = document.getElementById('fileList');
@@ -1044,8 +1048,24 @@
                 const fileName = file.name;
                 const fileSize = formatFileSize(file.size);
                 
-                // Use the default category selected by user
-                const selectedCategory = defaultCategory;
+                // Auto-detect category if default is 'auto'
+                let autoCategory = 'documents';
+                if (defaultCategory === 'auto') {
+                    const lowerName = fileName.toLowerCase();
+                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
+                        autoCategory = 'drawings';
+                    } else if (lowerName.includes('estimate')) {
+                        autoCategory = 'estimates';
+                    } else if (lowerName.includes('proposal')) {
+                        autoCategory = 'proposals';
+                    } else if (lowerName.includes('spec')) {
+                        autoCategory = 'specs';
+                    } else if (lowerName.includes('contract')) {
+                        autoCategory = 'signed-contracts';
+                    }
+                }
+                
+                const selectedCategory = defaultCategory === 'auto' ? autoCategory : defaultCategory;
                 
                 html += '<tr>';
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
@@ -1102,7 +1122,7 @@
                 
                 // Get category from dropdown
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
-                const category = categorySelect ? categorySelect.value : 'drawings';
+                const category = categorySelect ? categorySelect.value : 'documents';
                 
                 try {
                     console.log(`Uploading ${fileName} to category: ${category}`);

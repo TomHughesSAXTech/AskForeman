@@ -1751,23 +1751,8 @@
         content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
         
-        // Handle Azure Blob Storage links specifically - add SAS token if missing
-        const blobUrlRegex = /(https:\/\/saxtechfcs\.blob\.core\.windows\.net\/[^\s<>"]+?)(?![?&])/g;
-        content = content.replace(blobUrlRegex, (match) => {
-          // Check if URL already has query parameters
-          if (match.includes('?')) {
-            const fileName = decodeURIComponent(match.split('/').pop().split('?')[0]);
-            return `<a href="${match}" target="_blank" rel="noopener noreferrer" style="color: var(--blueprint-blue); font-weight: 500;">📄 ${fileName}</a>`;
-          } else {
-            // Append SAS token for authentication
-            const authenticatedUrl = match + AZURE_STORAGE.sasToken;
-            const fileName = decodeURIComponent(match.split('/').pop());
-            return `<a href="${authenticatedUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--blueprint-blue); font-weight: 500;">📄 ${fileName}</a>`;
-          }
-        });
-        
-        // Convert other URLs to clickable links with better styling
-        const urlRegex = /(https?:\/\/(?!saxtechfcs\.blob\.core\.windows\.net)[^\s<>]+)/g;
+        // Convert URLs to clickable links with better styling
+        const urlRegex = /(https?:\/\/[^\s<>]+)/g;
         content = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
         
         // Convert horizontal rules
@@ -2119,129 +2104,6 @@
         }
       }
 
-      // Check if file exists in Azure Blob Storage
-      async function checkFileExists(clientName, category, fileName) {
-        try {
-          const encodedFileName = encodeURIComponent(fileName);
-          const blobPath = `FCS-OriginalClients/${clientName}/${category}/${encodedFileName}`;
-          const checkUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
-          
-          const response = await fetch(checkUrl, {
-            method: 'HEAD'
-          });
-          
-          return response.ok;
-        } catch (error) {
-          console.error('Error checking file existence:', error);
-          return false;
-        }
-      }
-
-      // Check for duplicate files before upload
-      async function checkForDuplicates(files, clientName) {
-        const duplicates = [];
-        
-        for (const file of files) {
-          const exists = await checkFileExists(clientName, file.category, file.name);
-          if (exists) {
-            duplicates.push({
-              name: file.name,
-              category: file.category
-            });
-          }
-        }
-        
-        return duplicates;
-      }
-
-      // Show duplicate files dialog
-      function showDuplicateDialog(duplicates) {
-        return new Promise((resolve) => {
-          const modal = document.createElement('div');
-          modal.id = 'duplicateModal';
-          modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-          `;
-          
-          const duplicateList = duplicates.map(d => `• ${d.name} (${d.category})`).join('\n');
-          
-          modal.innerHTML = `
-            <div style="
-              background: white;
-              padding: 2rem;
-              border-radius: 10px;
-              max-width: 500px;
-              width: 90%;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            ">
-              <h3 style="margin-bottom: 1rem; color: var(--warning-red);">⚠️ Duplicate Files Detected</h3>
-              <p style="margin-bottom: 1rem; color: #666;">The following files already exist in the selected categories:</p>
-              <div style="
-                background: #f8f8f8;
-                padding: 1rem;
-                border-radius: 5px;
-                margin-bottom: 1.5rem;
-                max-height: 200px;
-                overflow-y: auto;
-                font-family: monospace;
-                font-size: 0.9rem;
-                white-space: pre-line;
-              ">${duplicateList}</div>
-              <p style="margin-bottom: 1.5rem; color: #666;"><strong>What would you like to do?</strong></p>
-              <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                <button onclick="window.duplicateChoice='overwrite'" style="
-                  padding: 0.75rem 1.5rem;
-                  background: var(--warning-red);
-                  color: white;
-                  border: none;
-                  border-radius: 5px;
-                  cursor: pointer;
-                  font-weight: 600;
-                ">🔄 Overwrite All</button>
-                <button onclick="window.duplicateChoice='skip'" style="
-                  padding: 0.75rem 1.5rem;
-                  background: var(--safety-yellow);
-                  color: var(--dark-gray);
-                  border: none;
-                  border-radius: 5px;
-                  cursor: pointer;
-                  font-weight: 600;
-                ">⏭️ Skip Duplicates</button>
-                <button onclick="window.duplicateChoice='cancel'" style="
-                  padding: 0.75rem 1.5rem;
-                  background: #f0f0f0;
-                  color: #666;
-                  border: 1px solid #ccc;
-                  border-radius: 5px;
-                  cursor: pointer;
-                  font-weight: 600;
-                ">❌ Cancel Upload</button>
-              </div>
-            </div>
-          `;
-          
-          document.body.appendChild(modal);
-          
-          // Set up button handlers
-          modal.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => {
-              modal.remove();
-              resolve(window.duplicateChoice);
-              delete window.duplicateChoice;
-            });
-          });
-        });
-      }
-
       // Process Documents
       processButton.addEventListener("click", async () => {
         if (!selectedClient) {
@@ -2276,42 +2138,11 @@
           return;
         }
 
-        // Check for duplicates
         processButton.disabled = true;
-        processButton.textContent = "🔍 Checking for duplicates...";
-        
-        const duplicates = await checkForDuplicates(allFiles, selectedClient);
-        
-        let duplicateAction = 'proceed';
-        if (duplicates.length > 0) {
-          duplicateAction = await showDuplicateDialog(duplicates);
-          
-          if (duplicateAction === 'cancel') {
-            processButton.disabled = false;
-            processButton.textContent = "🚧 Process Documents";
-            return;
-          }
-          
-          if (duplicateAction === 'skip') {
-            // Remove duplicates from the upload list
-            const duplicateNames = duplicates.map(d => d.name);
-            allFiles = allFiles.filter(f => !duplicateNames.includes(f.name));
-            
-            if (allFiles.length === 0) {
-              addSystemMessage("⚠️ All files were duplicates and skipped. No files to upload.");
-              processButton.disabled = false;
-              processButton.textContent = "🚧 Process Documents";
-              return;
-            }
-          }
-        }
-
-        processButton.textContent = "📤 Uploading...";
         progressBar.classList.add("active");
 
         let successCount = 0;
         let errorCount = 0;
-        let skippedCount = duplicateAction === 'skip' ? duplicates.length : 0;
 
         for (let i = 0; i < allFiles.length; i++) {
           const file = allFiles[i];
