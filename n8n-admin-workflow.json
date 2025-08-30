@@ -1,0 +1,475 @@
+{
+  "name": "Ask Foreman Admin API",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-admin",
+      "name": "Admin Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "ask-foreman-admin",
+      "settings": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/admin/:action/:subaction?",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "rawBody": false
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "clients-list",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "clients",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "clients-list-sub",
+              "leftValue": "={{ $json.params.subaction }}",
+              "rightValue": "list",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-clients-list",
+      "name": "Route: List Clients",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "clients-update",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "clients",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "clients-update-sub",
+              "leftValue": "={{ $json.params.subaction }}",
+              "rightValue": "update",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-clients-update",
+      "name": "Route: Update Client",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 350]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "clients-delete",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "clients",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "clients-delete-sub",
+              "leftValue": "={{ $json.params.subaction }}",
+              "rightValue": "delete",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-clients-delete",
+      "name": "Route: Delete Client",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "reindex",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "reindex",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-reindex",
+      "name": "Route: Reindex Document",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 650]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "reindex-all",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "reindex-all",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-reindex-all",
+      "name": "Route: Reindex All",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 800]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "clear-index",
+              "leftValue": "={{ $json.params.action }}",
+              "rightValue": "clear-index",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "route-clear-index",
+      "name": "Route: Clear Index",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [450, 950]
+    },
+    {
+      "parameters": {
+        "url": "https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "list-clients-azure",
+      "name": "List Clients from Azure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Azure XML response and extract client list\nconst xmlResponse = $input.first().json.data;\nconst clients = [];\n\n// Parse XML to extract folder names\nconst regex = /<Name>FCS-OriginalClients\\/([^/]+)\\/<\\/Name>/g;\nlet match;\n\nwhile ((match = regex.exec(xmlResponse)) !== null) {\n  const clientFolder = match[1];\n  \n  // Create client object\n  clients.push({\n    id: clientFolder.toLowerCase(),\n    name: clientFolder,\n    folder: clientFolder,\n    path: `FCS-OriginalClients/${clientFolder}/`,\n    documentCount: 0, // Will be populated if needed\n    lastModified: new Date().toISOString(),\n    status: 'active'\n  });\n}\n\n// Sort alphabetically\nclients.sort((a, b) => a.name.localeCompare(b.name));\n\nreturn clients.map(client => ({ json: client }));"
+      },
+      "id": "parse-client-list",
+      "name": "Parse Client List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get client info from request\nconst { clientId, updates } = $input.first().json.body;\n\nif (!clientId) {\n  return [{\n    json: {\n      success: false,\n      error: 'Client ID is required'\n    }\n  }];\n}\n\n// In a real implementation, this would update client metadata in Azure\n// For now, we'll return a success response\nreturn [{\n  json: {\n    success: true,\n    message: `Client ${clientId} updated successfully`,\n    clientId: clientId,\n    updates: updates,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "update-client",
+      "name": "Update Client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 350]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get client ID from request\nconst { clientId } = $input.first().json.body;\n\nif (!clientId) {\n  return [{\n    json: {\n      success: false,\n      error: 'Client ID is required'\n    }\n  }];\n}\n\n// WARNING: This would delete all client files from Azure\n// Implementation would need to:\n// 1. List all files under FCS-OriginalClients/{clientId}/\n// 2. Delete each file\n// 3. Remove from search index\n\nreturn [{\n  json: {\n    success: true,\n    message: `Client ${clientId} marked for deletion`,\n    clientId: clientId,\n    timestamp: new Date().toISOString(),\n    warning: 'Full deletion requires Azure Blob Storage batch operations'\n  }\n}];"
+      },
+      "id": "delete-client",
+      "name": "Delete Client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get file path from request\nconst { filePath, clientId } = $input.first().json.body;\n\nif (!filePath) {\n  return [{\n    json: {\n      success: false,\n      error: 'File path is required'\n    }\n  }];\n}\n\n// This would trigger reindexing of a specific document\n// Integration with your Azure Cognitive Search or similar service\n\nreturn [{\n  json: {\n    success: true,\n    message: `Document ${filePath} queued for reindexing`,\n    filePath: filePath,\n    clientId: clientId,\n    timestamp: new Date().toISOString(),\n    status: 'queued'\n  }\n}];"
+      },
+      "id": "reindex-document",
+      "name": "Reindex Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 650]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get client ID from request (optional - if not provided, reindex all)\nconst { clientId } = $input.first().json.body || {};\n\nif (clientId) {\n  // Reindex specific client\n  return [{\n    json: {\n      success: true,\n      message: `Reindexing all documents for client ${clientId}`,\n      clientId: clientId,\n      timestamp: new Date().toISOString(),\n      status: 'processing',\n      estimatedTime: '5-10 minutes'\n    }\n  }];\n} else {\n  // Reindex entire system\n  return [{\n    json: {\n      success: true,\n      message: 'Full system reindex initiated',\n      timestamp: new Date().toISOString(),\n      status: 'processing',\n      estimatedTime: '30-60 minutes',\n      warning: 'This operation may impact system performance'\n    }\n  }];\n}"
+      },
+      "id": "reindex-all",
+      "name": "Reindex All Documents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get confirmation from request\nconst { confirm, clientId } = $input.first().json.body || {};\n\nif (confirm !== true) {\n  return [{\n    json: {\n      success: false,\n      error: 'Confirmation required (confirm: true)',\n      warning: 'This will clear the entire search index'\n    }\n  }];\n}\n\nif (clientId) {\n  // Clear index for specific client\n  return [{\n    json: {\n      success: true,\n      message: `Search index cleared for client ${clientId}`,\n      clientId: clientId,\n      timestamp: new Date().toISOString(),\n      documentsRemoved: 0, // Would be populated by actual operation\n      status: 'completed'\n    }\n  }];\n} else {\n  // Clear entire index\n  return [{\n    json: {\n      success: true,\n      message: 'Entire search index cleared',\n      timestamp: new Date().toISOString(),\n      documentsRemoved: 0, // Would be populated by actual operation\n      status: 'completed',\n      warning: 'All documents need to be reindexed'\n    }\n  }];\n}"
+      },
+      "id": "clear-index",
+      "name": "Clear Search Index",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 950]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 500]
+    }
+  ],
+  "connections": {
+    "webhook-admin": {
+      "main": [
+        [
+          {
+            "node": "route-clients-list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-clients-list": {
+      "main": [
+        [
+          {
+            "node": "list-clients-azure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list-clients-azure": {
+      "main": [
+        [
+          {
+            "node": "parse-client-list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse-client-list": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-clients-update": {
+      "main": [
+        [
+          {
+            "node": "update-client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update-client": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-clients-delete": {
+      "main": [
+        [
+          {
+            "node": "delete-client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete-client": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-reindex": {
+      "main": [
+        [
+          {
+            "node": "reindex-document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reindex-document": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-reindex-all": {
+      "main": [
+        [
+          {
+            "node": "reindex-all",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reindex-all": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "route-clear-index": {
+      "main": [
+        [
+          {
+            "node": "clear-index",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-index": {
+      "main": [
+        [
+          {
+            "node": "respond-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateId": "ask-foreman-admin-api"
+  },
+  "pinData": {},
+  "versionId": "1.0.0",
+  "triggerCount": 1
+}

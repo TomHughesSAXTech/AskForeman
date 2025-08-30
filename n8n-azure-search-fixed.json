@@ -1,0 +1,460 @@
+{
+  "name": "Azure Search Proxy - FIXED",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "ask-foreman/index/stats",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "stats-webhook",
+      "name": "Stats Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/stats?api-version=2023-11-01",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_AZURE_SEARCH_ADMIN_KEY_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "stats-http",
+      "name": "Get Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 200]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/index/search",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "search-webhook",
+      "name": "Search Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/search?api-version=2023-11-01",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_AZURE_SEARCH_ADMIN_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "id": "search-http",
+      "name": "Search Docs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/index/delete",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "delete-webhook",
+      "name": "Delete Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst documentIds = body.documentIds || [];\n\nconst batch = {\n  value: documentIds.map(id => ({\n    '@search.action': 'delete',\n    id: id\n  }))\n};\n\nreturn batch;"
+      },
+      "id": "delete-prepare",
+      "name": "Prepare Delete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/index?api-version=2023-11-01",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_AZURE_SEARCH_ADMIN_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "delete-http",
+      "name": "Delete Docs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  success: true,\n  deletedCount: $json.value ? $json.value.length : 0\n};"
+      },
+      "id": "delete-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/index/clear",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "clear-webhook",
+      "name": "Clear Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/search?api-version=2023-11-01",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_AZURE_SEARCH_ADMIN_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "{\"search\": \"*\", \"top\": 1000, \"select\": \"id\"}",
+        "options": {}
+      },
+      "id": "clear-search",
+      "name": "Get All IDs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const documents = $json.value || [];\n\nif (documents.length === 0) {\n  return {\n    success: true,\n    deletedCount: 0,\n    message: \"Index is already empty\"\n  };\n}\n\nconst batch = {\n  value: documents.map(doc => ({\n    '@search.action': 'delete',\n    id: doc.id\n  }))\n};\n\nreturn {\n  batch: batch,\n  count: documents.length\n};"
+      },
+      "id": "clear-prepare",
+      "name": "Prepare Clear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 800]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"count\"]}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "clear-if",
+      "name": "IF Has Docs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/index?api-version=2023-11-01",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "YOUR_AZURE_SEARCH_ADMIN_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify($json.batch) }}",
+        "options": {}
+      },
+      "id": "clear-delete",
+      "name": "Delete All",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 750]
+    },
+    {
+      "parameters": {
+        "jsCode": "const count = $('clear-prepare').first().json.count || 0;\nreturn {\n  success: true,\n  deletedCount: count,\n  message: `Cleared ${count} documents from index`\n};"
+      },
+      "id": "clear-success",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 750]
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "success",
+              "value": true
+            },
+            {
+              "name": "deletedCount",
+              "value": 0
+            }
+          ],
+          "string": [
+            {
+              "name": "message",
+              "value": "Index was already empty"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "clear-empty",
+      "name": "Empty Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1050, 850]
+    }
+  ],
+  "connections": {
+    "stats-webhook": {
+      "main": [
+        [
+          {
+            "node": "stats-http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search-webhook": {
+      "main": [
+        [
+          {
+            "node": "search-http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete-webhook": {
+      "main": [
+        [
+          {
+            "node": "delete-prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete-prepare": {
+      "main": [
+        [
+          {
+            "node": "delete-http",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete-http": {
+      "main": [
+        [
+          {
+            "node": "delete-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-webhook": {
+      "main": [
+        [
+          {
+            "node": "clear-search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-search": {
+      "main": [
+        [
+          {
+            "node": "clear-prepare",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-prepare": {
+      "main": [
+        [
+          {
+            "node": "clear-if",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-if": {
+      "main": [
+        [
+          {
+            "node": "clear-delete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "clear-empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "clear-delete": {
+      "main": [
+        [
+          {
+            "node": "clear-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "azure-search-fixed",
+  "tags": []
+}

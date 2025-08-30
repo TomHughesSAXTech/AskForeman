@@ -1432,7 +1432,7 @@
                     const result = await response.json();
                     showStatus('success', `Successfully deleted ${checkboxes.length} document(s) from the index`);
                     
-                    // Refresh the view
+                    // Refresh the entire view including stats
                     setTimeout(() => viewIndexContents(), 1000);
                 } else {
                     const errorText = await response.text();
@@ -1516,9 +1516,31 @@
                 hideLoading();
                 showStatus('success', `Successfully cleared the entire index. ${deletedCount} documents removed.`);
                 
-                // Clear the display
+                // Clear the display and refresh stats
                 document.getElementById('indexContents').innerHTML = '<p style="text-align: center; padding: 1rem; color: var(--steel-gray);">Index has been cleared</p>';
-                document.getElementById('indexStats').style.display = 'none';
+                
+                // Refresh stats to show 0 documents
+                setTimeout(async () => {
+                    try {
+                        const statsResponse = await fetch(AZURE_SEARCH_PROXY.statsUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (statsResponse.ok) {
+                            const stats = await statsResponse.json();
+                            const indexStats = document.getElementById('indexStats');
+                            document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
+                            document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
+                            document.getElementById('indexLastUpdate').textContent = `Last Updated: ${new Date().toLocaleString()}`;
+                            indexStats.style.display = 'block';
+                        }
+                    } catch (error) {
+                        console.error('Error refreshing stats:', error);
+                    }
+                }, 500);
                 
             } catch (error) {
                 console.error('Error clearing index:', error);

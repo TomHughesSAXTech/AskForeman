@@ -1,0 +1,87 @@
+{
+  "name": "Document Upload Fix - FCS-OriginalClients Path",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/process",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "49032e98-eee2-42d5-b64c-2d5a39fc394d",
+      "name": "Document Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [32, 784],
+      "webhookId": "ask-foreman-process"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced file extraction with proper error handling and FCS-OriginalClients path\nconst input = $input.all()[0];\nconst body = input.json?.body || {};\nconst files = input.json?.files || [];\nconst binary = input.binary || {};\n\nlet file = null;\nlet fileName = '';\nlet fileSize = 0;\nlet mimeType = '';\nlet fileData = null;\n\n// Try multiple methods to find the uploaded file\nif (files && files.length > 0) {\n    file = files[0];\n    fileName = file.filename || file.name || 'unknown';\n    fileSize = file.size || 0;\n    mimeType = file.mimetype || file.type || 'application/octet-stream';\n    fileData = file.data || file;\n} else if (binary && Object.keys(binary).length > 0) {\n    const binaryKey = Object.keys(binary)[0];\n    file = binary[binaryKey];\n    fileName = body.fileName || file.fileName || binaryKey || 'unknown';\n    fileSize = file.data ? file.data.length : 0;\n    mimeType = file.mimeType || body.mimeType || 'application/octet-stream';\n    fileData = file.data || file;\n} else if (body.file) {\n    file = body.file;\n    fileName = body.fileName || file.filename || 'unknown';\n    fileSize = body.fileSize || file.size || 0;\n    mimeType = body.mimeType || file.mimetype || 'application/octet-stream';\n    fileData = file;\n}\n\n// Validate required fields\nif (!body.client) {\n    throw new Error('Client is required');\n}\n\nif (!body.category) {\n    throw new Error('Category is required');\n}\n\n// Generate unique file ID and paths\nconst timestamp = Date.now();\nconst sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');\nconst fileId = `${body.client}_${body.category}_${sanitizedFileName}_${timestamp}`;\n\n// Define blob paths - IMPORTANT: Use FCS-OriginalClients prefix\nconst originalBlobPath = `FCS-OriginalClients/${body.client}/${body.category}/${sanitizedFileName}`;\nconst convertedBlobPath = `FCS-OriginalClients/${body.client}/${body.category}/${sanitizedFileName.replace(/\\.[^/.]+$/, '')}.txt`;\nconst metadataPath = `FCS-OriginalClients/${body.client}/.metadata/${fileId}.json`;\n\nreturn [{\n    json: {\n        operation: 'CREATE',\n        fileId: fileId,\n        fileName: fileName,\n        sanitizedFileName: sanitizedFileName,\n        originalFileName: fileName,\n        fileSize: fileSize,\n        mimeType: mimeType,\n        client: body.client,\n        category: body.category,\n        uploadTimestamp: new Date().toISOString(),\n        originalBlobPath: originalBlobPath,\n        convertedBlobPath: convertedBlobPath,\n        metadataPath: metadataPath,\n        blobUrl: `https://saxtechfcs.blob.core.windows.net/fcs-clients/${originalBlobPath}`,\n        convertedUrl: `https://saxtechfcs.blob.core.windows.net/fcs-convertedclients/${convertedBlobPath}`,\n        fileData: fileData\n    },\n    binary: binary\n}];"
+      },
+      "id": "4c4fa525-6e0b-4051-9fc2-99a5ae2b5025",
+      "name": "Extract & Validate Upload Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [256, 784]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.blobUrl }}?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "body",
+              "value": "={{ $json.fileData }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0cd7c053-89c5-4a64-811b-3f876f49b03b",
+      "name": "Upload Original to Blob",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 784]
+    }
+  ],
+  "connections": {
+    "Document Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract & Validate Upload Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract & Validate Upload Data": {
+      "main": [
+        [
+          {
+            "node": "Upload Original to Blob",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
