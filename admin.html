@@ -376,9 +376,6 @@
             <!-- Client List Panel -->
             <div class="panel">
                 <h2>📁 Client Projects</h2>
-                <button class="btn btn-primary" onclick="createNewClient()" style="width: 100%; margin-bottom: 1rem;">
-                    ➕ Create New Client
-                </button>
                 <div id="clientList" class="client-list">
                     <!-- Client items will be loaded here -->
                 </div>
@@ -921,8 +918,10 @@
             
             // Check if we have the Azure Function key
             if (!azureFunctionConfig || !azureFunctionConfig.azureFunctionKey) {
-                showStatus('error', 'Azure Function key not configured. Please set up the AZURE_FUNCTION_KEY environment variable in Azure Portal.');
-                return;
+                // Temporary fallback until environment variables are properly configured
+                azureFunctionConfig = azureFunctionConfig || {};
+                azureFunctionConfig.azureFunctionKey = '8XXgu4-yK7kAdNVShD2f1a_lCYqqtU-iEcn7mRWUbnOnAzFuxl8RJA==';
+                azureFunctionConfig.functionAppUrl = 'https://saxtech-functionapps2.azurewebsites.net';
             }
             
             showLoading('Deleting client and all associated files...');
@@ -951,12 +950,7 @@
             }
         }
 
-        function createNewClient() {
-            const name = prompt('Enter client name:');
-            if (!name) return;
-            
-            showStatus('success', `To create client "${name}", use the main app's "Create New Client" feature`);
-        }
+        // Create new client functionality removed - use main app instead
 
         // Document operations
         async function deleteDocument(filePath) {
