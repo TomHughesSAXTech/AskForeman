@@ -1263,11 +1263,12 @@
         }
 
         // Azure Search Index Management Functions
-        const AZURE_SEARCH = {
-            endpoint: 'https://fcssearchservice.search.windows.net',
-            indexName: 'fcs-construction-docs-index-v2',
-            apiKey: 'UsSBLISH5UsbNGeUkBeCa1YZJ0SJPfRJwXBrAWY7kSAzSeABQBCv',
-            apiVersion: '2023-11-01'
+        // Using n8n webhooks as proxy to avoid CORS issues
+        const AZURE_SEARCH_PROXY = {
+            statsUrl: 'https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats',
+            searchUrl: 'https://workflows.saxtechnology.com/webhook/ask-foreman/index/search',
+            deleteUrl: 'https://workflows.saxtechnology.com/webhook/ask-foreman/index/delete',
+            clearUrl: 'https://workflows.saxtechnology.com/webhook/ask-foreman/index/clear'
         };
 
         // View index contents and statistics
@@ -1275,11 +1276,10 @@
             showLoading('Fetching index contents...');
             
             try {
-                // Get index statistics
-                const statsUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/stats?api-version=${AZURE_SEARCH.apiVersion}`;
-                const statsResponse = await fetch(statsUrl, {
+                // Get index statistics via n8n proxy
+                const statsResponse = await fetch(AZURE_SEARCH_PROXY.statsUrl, {
+                    method: 'GET',
                     headers: {
-                        'api-key': AZURE_SEARCH.apiKey,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -1293,12 +1293,10 @@
                     indexStats.style.display = 'block';
                 }
                 
-                // Search for all documents to view them
-                const searchUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/search?api-version=${AZURE_SEARCH.apiVersion}`;
-                const searchResponse = await fetch(searchUrl, {
+                // Search for all documents via n8n proxy
+                const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
                     method: 'POST',
                     headers: {
-                        'api-key': AZURE_SEARCH.apiKey,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -1390,23 +1388,15 @@
             try {
                 const documentIds = Array.from(checkboxes).map(cb => cb.value);
                 
-                // Batch delete from Azure Search
-                const deleteUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/index?api-version=${AZURE_SEARCH.apiVersion}`;
-                
-                const batch = {
-                    value: documentIds.map(id => ({
-                        '@search.action': 'delete',
-                        id: id
-                    }))
-                };
-                
-                const response = await fetch(deleteUrl, {
+                // Delete via n8n proxy
+                const response = await fetch(AZURE_SEARCH_PROXY.deleteUrl, {
                     method: 'POST',
                     headers: {
-                        'api-key': AZURE_SEARCH.apiKey,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(batch)
+                    body: JSON.stringify({
+                        documentIds: documentIds
+                    })
                 });
                 
                 if (response.ok) {
@@ -1434,10 +1424,10 @@
             showLoading('Checking index...');
             
             try {
-                const statsUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/stats?api-version=${AZURE_SEARCH.apiVersion}`;
-                const statsResponse = await fetch(statsUrl, {
+                // Get stats via n8n proxy
+                const statsResponse = await fetch(AZURE_SEARCH_PROXY.statsUrl, {
+                    method: 'GET',
                     headers: {
-                        'api-key': AZURE_SEARCH.apiKey,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -1478,65 +1468,21 @@
             showLoading('Clearing entire index... This may take a moment...');
             
             try {
-                // First, get all document IDs
-                const searchUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/search?api-version=${AZURE_SEARCH.apiVersion}`;
-                const searchResponse = await fetch(searchUrl, {
+                // Clear entire index via n8n proxy
+                const response = await fetch(AZURE_SEARCH_PROXY.clearUrl, {
                     method: 'POST',
                     headers: {
-                        'api-key': AZURE_SEARCH.apiKey,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        search: '*',
-                        top: 1000, // Get up to 1000 documents at a time
-                        select: 'id'
-                    })
+                    body: JSON.stringify({})
                 });
                 
-                if (!searchResponse.ok) {
-                    throw new Error('Failed to fetch documents');
+                if (!response.ok) {
+                    throw new Error('Failed to clear index');
                 }
                 
-                const searchResults = await searchResponse.json();
-                const documents = searchResults.value || [];
-                
-                if (documents.length === 0) {
-                    showStatus('warning', 'No documents to clear');
-                    hideLoading();
-                    return;
-                }
-                
-                // Delete all documents in batches
-                const batchSize = 100;
-                let deletedCount = 0;
-                
-                for (let i = 0; i < documents.length; i += batchSize) {
-                    const batch = documents.slice(i, i + batchSize);
-                    
-                    const deleteUrl = `${AZURE_SEARCH.endpoint}/indexes/${AZURE_SEARCH.indexName}/docs/index?api-version=${AZURE_SEARCH.apiVersion}`;
-                    const deleteBody = {
-                        value: batch.map(doc => ({
-                            '@search.action': 'delete',
-                            id: doc.id
-                        }))
-                    };
-                    
-                    const deleteResponse = await fetch(deleteUrl, {
-                        method: 'POST',
-                        headers: {
-                            'api-key': AZURE_SEARCH.apiKey,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(deleteBody)
-                    });
-                    
-                    if (deleteResponse.ok) {
-                        deletedCount += batch.length;
-                        document.getElementById('loadingText').textContent = `Clearing index... Deleted ${deletedCount} of ${documents.length} documents...`;
-                    } else {
-                        console.error('Failed to delete batch:', await deleteResponse.text());
-                    }
-                }
+                const result = await response.json();
+                const deletedCount = result.deletedCount || 0;
                 
                 hideLoading();
                 showStatus('success', `Successfully cleared the entire index. ${deletedCount} documents removed.`);
