@@ -916,32 +916,38 @@
                 return;
             }
             
-            // Check if we have the Azure Function key
-            if (!azureFunctionConfig || !azureFunctionConfig.azureFunctionKey) {
-                // Fallback configuration when API is not available
-                azureFunctionConfig = azureFunctionConfig || {};
-                azureFunctionConfig.azureFunctionKey = 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==';
-                azureFunctionConfig.functionAppUrl = 'https://saxtech-docconverter.azurewebsites.net';
-            }
-            
             showLoading('Deleting client and all associated files...');
             try {
-                const functionUrl = azureFunctionConfig.functionAppUrl || 'https://saxtech-docconverter.azurewebsites.net';
-                const response = await fetch(`${functionUrl}/api/clients/${selectedClient.folder}?code=${azureFunctionConfig.azureFunctionKey}`, {
-                    method: 'DELETE'
+                // Use n8n Delete Client webhook instead of Azure Function
+                const n8nWebhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/delete-client';
+                
+                const response = await fetch(n8nWebhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientName: selectedClient.folder,
+                        operation: 'DELETE_CLIENT'
+                    })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
-                if (result.Success) {
-                    showStatus('success', `Client deleted successfully. ${result.Summary.TotalDeleted} files removed.`);
+                if (result.success || result.Success) {
+                    const deletedCount = result.deletedFiles?.length || result.Summary?.TotalDeleted || 0;
+                    showStatus('success', `Client deleted successfully. ${deletedCount} files removed and search index updated.`);
                     selectedClient = null;
                     loadClients();
                     // Clear the details panel
                     document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
                     document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
                 } else {
-                    showStatus('error', `Failed to delete client: ${result.Error}`);
+                    showStatus('error', `Failed to delete client: ${result.error || result.Error || 'Unknown error'}`);
                 }
             } catch (error) {
                 showStatus('error', `Failed to delete client: ${error.message}`);
