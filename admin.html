@@ -554,15 +554,34 @@
             try {
                 const response = await fetch('/api/config');
                 if (response.ok) {
-                    azureFunctionConfig = await response.json();
-                    console.log('Configuration loaded successfully');
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        azureFunctionConfig = await response.json();
+                        console.log('Configuration loaded successfully');
+                    } else {
+                        // API not available, use fallback
+                        console.warn('API endpoint not available, using fallback configuration');
+                        // Fallback: prompt for key if needed
+                        azureFunctionConfig = {
+                            functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                            azureFunctionKey: '' // Will be set when needed
+                        };
+                    }
                 } else {
                     console.error('Failed to load configuration');
-                    showStatus('warning', 'Configuration not loaded. Some features may not work.');
+                    // Use fallback configuration
+                    azureFunctionConfig = {
+                        functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                        azureFunctionKey: ''
+                    };
                 }
             } catch (error) {
                 console.error('Error loading configuration:', error);
-                showStatus('warning', 'Could not load configuration. Delete functionality may be limited.');
+                // Use fallback configuration
+                azureFunctionConfig = {
+                    functionAppUrl: 'https://saxtech-functionapps2.azurewebsites.net',
+                    azureFunctionKey: ''
+                };
             }
         }
 
@@ -902,7 +921,7 @@
             
             // Check if we have the Azure Function key
             if (!azureFunctionConfig || !azureFunctionConfig.azureFunctionKey) {
-                showStatus('error', 'Configuration not loaded. Please refresh the page and try again.');
+                showStatus('error', 'Azure Function key not configured. Please set up the AZURE_FUNCTION_KEY environment variable in Azure Portal.');
                 return;
             }
             
