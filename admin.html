@@ -436,6 +436,9 @@
                                 <button class="btn btn-primary" onclick="viewIndexContents()" style="margin-right: 0.5rem;">
                                     📊 View Index Contents
                                 </button>
+                                <button class="btn btn-primary" onclick="viewIndexContents(true)" style="margin-right: 0.5rem; background: #2196F3;">
+                                    🔄 Force Refresh Stats
+                                </button>
                                 <button class="btn btn-danger" onclick="confirmClearIndex()">
                                     🗑️ Clear Entire Index
                                 </button>
@@ -1272,12 +1275,30 @@
         };
 
         // View index contents and statistics
-        async function viewIndexContents() {
+        async function viewIndexContents(forceRefresh = false) {
             showLoading('Fetching index contents...');
             
             try {
-                // Get index statistics via n8n proxy with cache busting
-                const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}`;
+                // First, if force refresh, try to trigger Azure Search to update its stats
+                if (forceRefresh) {
+                    console.log('Force refreshing index statistics...');
+                    // Make a dummy search query to potentially trigger stats update
+                    try {
+                        await fetch(AZURE_SEARCH_PROXY.searchUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ search: '*', top: 1, count: true })
+                        });
+                    } catch (e) {
+                        console.log('Stats refresh query failed, continuing...');
+                    }
+                    // Small delay to let Azure process
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // Get index statistics via n8n proxy with aggressive cache busting
+                const randomId = Math.random().toString(36).substring(7);
+                const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}&r=${randomId}&force=${forceRefresh}`;
                 const statsResponse = await fetch(statsUrl, {
                     method: 'GET',
                     headers: {
@@ -1289,16 +1310,34 @@
                 if (statsResponse.ok) {
                     let statsData = await statsResponse.json();
                     console.log('Raw stats response:', statsData); // Debug log
+                    console.log('Stats fetch time:', new Date().toISOString());
                     
                     // Handle if response is wrapped in array
                     const stats = Array.isArray(statsData) ? statsData[0] : statsData;
                     console.log('Index stats parsed:', stats); // Debug log
+                    
+                    // Check if stats are stale by comparing with actual document count
+                    const actualDocCount = window.lastKnownDocumentCount || 0;
+                    if (actualDocCount > 0 && stats.documentCount !== actualDocCount) {
+                        console.warn(`Stats mismatch: API says ${stats.documentCount}, but we counted ${actualDocCount} documents`);
+                    }
                     
                     const indexStats = document.getElementById('indexStats');
                     document.getElementById('indexDocCount').textContent = `Documents: ${stats.documentCount || 0}`;
                     document.getElementById('indexSize').textContent = `Size: ${formatFileSize(stats.storageSize || 0)}`;
                     document.getElementById('indexLastUpdate').textContent = `Last Updated: ${new Date().toLocaleString()}`;
                     indexStats.style.display = 'block';
+                    
+                    // Add refresh button if not already there
+                    if (!document.getElementById('refreshStatsBtn')) {
+                        const refreshBtn = document.createElement('button');
+                        refreshBtn.id = 'refreshStatsBtn';
+                        refreshBtn.className = 'btn btn-small';
+                        refreshBtn.style.cssText = 'margin-left: 10px; padding: 2px 8px; font-size: 12px;';
+                        refreshBtn.innerHTML = '🔄 Force Refresh';
+                        refreshBtn.onclick = () => viewIndexContents(true);
+                        document.getElementById('indexDocCount').parentElement.insertBefore(refreshBtn, document.getElementById('indexDocCount').nextSibling);
+                    }
                 } else {
                     console.error('Failed to fetch stats:', await statsResponse.text());
                 }
@@ -1349,7 +1388,11 @@
                     }
                     const documents = searchResults.value || [];
                     
+                    // Store actual document count for comparison with stats
+                    window.lastKnownDocumentCount = documents.length;
+                    
                     console.log('Search results:', searchResults); // Debug log
+                    console.log('Actual document count:', documents.length); // Compare with stats
                     
                     // Log first document to see what fields are actually stored
                     if (documents.length > 0) {
@@ -1472,8 +1515,8 @@
                     const result = await response.json();
                     showStatus('success', `Successfully deleted ${checkboxes.length} document(s) from the index`);
                     
-                    // Refresh the entire view including stats
-                    setTimeout(() => viewIndexContents(), 1000);
+                    // Refresh the entire view including stats with force refresh
+                    setTimeout(() => viewIndexContents(true), 1500);
                 } else {
                     const errorText = await response.text();
                     throw new Error(errorText);
