@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AskForeman Admin Panel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Ask Foreman - Admin Panel</title>
     <style>
         * {
             margin: 0;
@@ -29,429 +28,238 @@
         }
 
         body {
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #37474f 0%, #263238 100%);
             min-height: 100vh;
-            padding: 20px;
-            position: relative;
         }
 
-        body::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 35px,
-                rgba(255, 193, 7, 0.03) 35px,
-                rgba(255, 193, 7, 0.03) 70px
-              ),
-              repeating-linear-gradient(
-                -45deg,
-                transparent,
-                transparent 35px,
-                rgba(255, 107, 53, 0.03) 35px,
-                rgba(255, 107, 53, 0.03) 70px
-              );
-            pointer-events: none;
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--white);
+        .login-box {
+            background: white;
+            padding: 2rem;
             border-radius: 10px;
             box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            border: 2px solid var(--medium-gray);
-            position: relative;
+            width: 90%;
+            max-width: 400px;
         }
 
-        .container::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--construction-orange);
-        }
-
-        .header {
-            background: linear-gradient(
-                135deg,
-                var(--dark-gray) 0%,
-                var(--concrete-gray) 100%
-            );
-            color: white;
-            padding: 2rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            border-bottom: 4px solid var(--safety-yellow);
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--safety-yellow) 0px,
-                var(--safety-yellow) 20px,
-                var(--dark-gray) 20px,
-                var(--dark-gray) 40px
-            );
-        }
-
-        @keyframes slide {
-            0% { transform: translateX(-50px); }
-            100% { transform: translateX(50px); }
-        }
-
-        .header h1 {
-            position: relative;
-            z-index: 2;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            color: var(--safety-yellow);
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-
-        .header h1::before {
-            content: '🛠️';
-            font-size: 1.2em;
-        }
-
-        .header .subtitle {
-            position: relative;
-            z-index: 2;
-            font-size: 1.2em;
-            color: var(--medium-gray);
-            font-weight: 500;
-        }
-
-        .nav-tabs {
-            display: flex;
-            background: var(--light-gray);
-            border-bottom: 3px solid var(--construction-orange);
-        }
-
-        .nav-tab {
-            flex: 1;
-            padding: 20px;
-            text-align: center;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #6c757d;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-tab::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 3px;
-            background: var(--construction-orange);
-            transition: all 0.3s ease;
-            transform: translateX(-50%);
-        }
-
-        .nav-tab:hover,
-        .nav-tab.active {
+        .login-box h2 {
             color: var(--concrete-gray);
-            background: rgba(255, 107, 53, 0.1);
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
 
-        .nav-tab:hover::before,
-        .nav-tab.active::before {
+        .login-box input {
             width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 5px;
+            font-size: 1rem;
         }
 
-        .content {
-            padding: 30px;
+        .login-box button {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+            color: var(--dark-gray);
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
         }
 
-        .tab-pane {
+        .error-message {
+            color: var(--warning-red);
+            text-align: center;
+            margin-top: 1rem;
             display: none;
         }
 
-        .tab-pane.active {
-            display: block;
-            animation: fadeInUp 0.5s ease;
+        /* Admin Panel */
+        .admin-container {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .card h3 {
-            color: var(--concrete-gray);
-            margin-bottom: 20px;
-            font-size: 1.4em;
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--concrete-gray) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            border-left: 4px solid var(--construction-orange);
-            padding-left: 15px;
+            border-bottom: 4px solid var(--warning-red);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--safety-yellow);
         }
 
         .btn {
-            background: linear-gradient(
-                135deg,
-                var(--construction-orange) 0%,
-                #ff8a50 100%
-            );
-            color: white;
+            padding: 0.5rem 1rem;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 1em;
             font-weight: 600;
             transition: all 0.3s ease;
-            margin: 5px;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--warning-red), #b71c1c);
-        }
-
-        .btn-danger:hover {
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
-        }
-
-        .btn-warning {
+        .btn-primary {
             background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
-        }
-
-        .btn-warning:hover {
-            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+            color: var(--dark-gray);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
+            background: var(--hi-vis-green);
+            color: var(--dark-gray);
         }
 
-        .btn-success:hover {
-            box-shadow: 0 5px 15px rgba(118, 255, 3, 0.4);
+        .btn-danger {
+            background: var(--warning-red);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .content {
+            flex: 1;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .panel h2 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--safety-yellow);
+        }
+
+        .client-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .client-item {
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .client-item:hover {
+            background: var(--light-gray);
+            border-color: var(--construction-orange);
+        }
+
+        .client-item.selected {
+            background: #fff3cd;
+            border-color: var(--safety-yellow);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--medium-gray);
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--light-gray);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--steel-gray);
+            border-radius: 5px 5px 0 0;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--concrete-gray);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
             font-weight: 600;
             color: var(--concrete-gray);
+            margin-bottom: 0.25rem;
         }
 
-        .form-control {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid var(--medium-gray);
-            border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s ease;
-            background: white;
-            color: var(--concrete-gray);
+            padding: 0.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
         }
 
-        .form-control:focus {
-            border-color: var(--construction-orange);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-            outline: none;
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
         }
 
-        .client-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .client-item {
-            background: var(--light-gray);
-            border: 2px solid var(--medium-gray);
-            border-radius: 10px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--construction-orange);
-        }
-
-        .client-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            border-left-color: var(--safety-yellow);
-        }
-
-        .client-name {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: var(--concrete-gray);
-            margin-bottom: 10px;
-        }
-
-        .client-project {
-            color: var(--steel-gray);
-            margin-bottom: 15px;
-            font-style: italic;
-        }
-
-        .client-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .client-actions .btn {
-            margin: 0;
-            padding: 8px 12px;
-            font-size: 0.9em;
-        }
-
-        .status {
+        .loading-overlay {
+            display: none;
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
         }
 
-        .status.success {
-            background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
-        }
-
-        .status.error {
-            background: linear-gradient(135deg, var(--warning-red), #b71c1c);
-        }
-
-        .status.warning {
-            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
-        }
-
-        .status.info {
-            background: linear-gradient(135deg, var(--blueprint-blue), #0d47a1);
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        .logs {
-            background: var(--dark-gray);
-            color: var(--light-gray);
-            padding: 20px;
-            border-radius: 10px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            font-size: 0.9em;
-            border: 2px solid var(--steel-gray);
-        }
-
-        .metric-card {
-            text-align: center;
-            padding: 30px 20px;
-        }
-
-        .metric-value {
-            font-size: 3em;
-            font-weight: 700;
-            color: var(--construction-orange);
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .metric-label {
-            color: var(--steel-gray);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: var(--steel-gray);
-        }
-
-        .loading i {
-            animation: spin 2s linear infinite;
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--safety-yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
@@ -459,767 +267,919 @@
             100% { transform: rotate(360deg); }
         }
 
-        .modal {
+        .status-message {
             display: none;
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .document-table {
             width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
+            border-collapse: collapse;
         }
 
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        .document-table th,
+        .document-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--medium-gray);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .document-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--medium-gray);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-area:hover,
+        .file-upload-area.dragover {
+            background: #e3f2fd;
+            border-color: var(--blueprint-blue);
+        }
+
+        .operation-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--steel-gray);
+            margin-top: 0.25rem;
+        }
+
+        .file-limit-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            color: #856404;
+        }
+
+        .file-limit-warning strong {
+            color: #d32f2f;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>AskForeman Admin Panel</h1>
-            <div class="subtitle">Complete Client & Document Management System</div>
+    <!-- Login Screen -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-box">
+            <h2>🔒 Admin Access</h2>
+            <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key==='Enter') login()">
+            <button onclick="login()">Login</button>
+            <div id="loginError" class="error-message">Invalid password. Please try again.</div>
         </div>
+    </div>
 
-        <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('clients')">
-                <i class="fas fa-users"></i> Clients
-            </button>
-            <button class="nav-tab" onclick="showTab('reindex')">
-                <i class="fas fa-sync-alt"></i> Reindex
-            </button>
-            <button class="nav-tab" onclick="showTab('logs')">
-                <i class="fas fa-file-alt"></i> Logs
-            </button>
-            <button class="nav-tab" onclick="showTab('metrics')">
-                <i class="fas fa-chart-bar"></i> Metrics
-            </button>
-        </nav>
+    <!-- Admin Panel -->
+    <div id="adminContainer" class="admin-container">
+        <header class="header">
+            <h1>🛠️ Ask Foreman Admin Panel</h1>
+            <div>
+                <button class="btn btn-primary" onclick="window.location.href='index.html'">← Back to App</button>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+            </div>
+        </header>
 
         <div class="content">
-            <!-- Clients Tab -->
-            <div id="clients" class="tab-pane active">
-                <div class="card">
-                    <h3><i class="fas fa-upload"></i> Bulk Document Upload</h3>
-                    <form id="bulkUploadForm" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="uploadClient">Select Client</label>
-                            <select id="uploadClient" class="form-control" required>
-                                <option value="">-- Select a client --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="uploadCategory">Document Category</label>
-                            <select id="uploadCategory" class="form-control" required>
-                                <option value="">-- Select category --</option>
-                                <option value="drawings">Drawings</option>
-                                <option value="estimates">Estimates</option>
-                                <option value="proposals">Proposals</option>
-                                <option value="specs">Specifications</option>
-                                <option value="signed-contracts">Signed Contracts</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="documentFiles">Select Documents (Multiple files supported)</label>
-                            <input type="file" id="documentFiles" class="form-control" multiple accept=".pdf,.doc,.docx,.txt,.jpg,.png,.jpeg" required>
-                            <small style="color: #6c757d; margin-top: 5px; display: block;">Supported: PDF, DOC, DOCX, TXT, JPG, PNG, JPEG</small>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="processDocuments" checked> 
-                                Process documents through conversion workflow
-                            </label>
-                            <small style="color: #6c757d; margin-top: 5px; display: block;">Converts documents and updates search index automatically</small>
-                        </div>
-                        <button type="submit" class="btn">
-                            <i class="fas fa-upload"></i> Upload Documents
-                        </button>
-                    </form>
-                    <div id="uploadProgress" style="display: none;">
-                        <div style="background: var(--light-gray); padding: 15px; border-radius: 8px; margin-top: 15px; border: 2px solid var(--medium-gray);">
-                            <div id="progressBar" style="background: linear-gradient(135deg, var(--construction-orange), var(--safety-yellow)); height: 20px; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
-                            <div id="progressText" style="text-align: center; margin-top: 10px;">Uploading...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3><i class="fas fa-list"></i> Existing Clients</h3>
-                    <button class="btn" onclick="loadClients()">
-                        <i class="fas fa-refresh"></i> Refresh List
-                    </button>
-                    <div id="clientsList" class="client-list">
-                        <!-- Clients will be loaded here -->
-                    </div>
+            <!-- Client List Panel -->
+            <div class="panel">
+                <h2>📁 Client Projects</h2>
+                <button class="btn btn-primary" onclick="createNewClient()" style="width: 100%; margin-bottom: 1rem;">
+                    ➕ Create New Client
+                </button>
+                <div id="clientList" class="client-list">
+                    <!-- Client items will be loaded here -->
                 </div>
             </div>
 
-            <!-- Reindex Tab -->
-            <div id="reindex" class="tab-pane">
-                <div class="card">
-                    <h3><i class="fas fa-sync-alt"></i> Reindex Documents</h3>
-                    <p>Use these tools to rebuild the search index for documents in the system.</p>
-                    
-                    <div style="margin: 20px 0;">
-                        <h4>Reindex All Documents</h4>
-                        <p>This will rebuild the entire search index. Use this if documents are missing from search results.</p>
-                        <button class="btn btn-warning" onclick="reindexAllDocuments()">
-                            <i class="fas fa-database"></i> Reindex All Documents
-                        </button>
-                    </div>
+            <!-- Client Details Panel -->
+            <div class="panel">
+                <h2>📋 Client Management</h2>
+                
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('details')">Details</button>
+                    <button class="tab" onclick="switchTab('documents')">Documents</button>
+                    <button class="tab" onclick="switchTab('operations')">System Operations</button>
+                </div>
 
-                    <div style="margin: 20px 0;">
-                        <h4>Reindex Client Documents</h4>
-                        <div class="form-group">
-                            <label for="reindexClientSelect">Select Client</label>
-                            <select id="reindexClientSelect" class="form-control">
-                                <option value="">-- Select a client --</option>
-                            </select>
+                <!-- Details Tab -->
+                <div id="detailsTab" class="tab-content active">
+                    <div id="clientDetails">
+                        <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
+                            Select a client from the list to view details
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documentsTab" class="tab-content">
+                    <div id="documentManagement">
+                        <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
+                            Select a client to manage documents
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Operations Tab -->
+                <div id="operationsTab" class="tab-content">
+                    <div class="mass-operations">
+                        <h3>🔧 System Operations</h3>
+                        <div class="operation-buttons">
+                            <div>
+                                <button class="btn btn-primary" onclick="syncAzureStorage()" style="width: 100%;">
+                                    ☁️ Sync Azure Storage
+                                </button>
+                                <p class="help-text">Scan Azure for new clients and update document counts</p>
+                            </div>
+                            <div>
+                                <button class="btn" onclick="exportClientData()" style="width: 100%; background: #6c757d; color: white;">
+                                    📥 Export Client Data
+                                </button>
+                                <p class="help-text">Download client list as JSON</p>
+                            </div>
                         </div>
-                        <button class="btn" onclick="reindexClientDocuments()">
-                            <i class="fas fa-sync-alt"></i> Reindex Client Documents
-                        </button>
-                    </div>
-
-                    <div style="margin: 20px 0;">
-                        <h4>Reindex Single Document</h4>
-                        <div class="form-group">
-                            <label for="documentPath">Document Path</label>
-                            <input type="text" id="documentPath" class="form-control" placeholder="e.g., client/category/filename.pdf">
+                        
+                        <div style="margin-top: 2rem;">
+                            <h4>📤 Bulk Upload Documents</h4>
+                            
+                            <!-- File Limit Warning -->
+                            <div class="file-limit-warning">
+                                ⚠️ <strong>File Limit:</strong> Maximum 15 files per upload to prevent system overload.
+                            </div>
+                            
+                            <!-- Global Category Selection -->
+                            <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
+                                <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="auto" checked>
+                                        <span>🤖 Auto-detect</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="drawings">
+                                        <span>📐 Drawings</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="estimates">
+                                        <span>💰 Estimates</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="proposals">
+                                        <span>📊 Proposals</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="specs">
+                                        <span>📋 Specs</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="signed-contracts">
+                                        <span>📝 Contracts</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="file-upload-area" id="bulkUploadArea" onclick="document.getElementById('bulkFileInput').click()">
+                                <p>📁 Drop files here or click to browse</p>
+                                <p style="font-size: 0.9rem; color: var(--steel-gray);">Maximum 15 files at once • You can customize category for each file after selection</p>
+                            </div>
+                            <input type="file" id="bulkFileInput" multiple style="display: none;" onchange="handleBulkFilesWithPreview(event)">
+                            
+                            <!-- File Preview Area -->
+                            <div id="filePreviewArea" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
+                                <h5 style="margin-bottom: 1rem;">📋 Files to Upload:</h5>
+                                <div id="fileList"></div>
+                                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-success" onclick="uploadFilesWithCategories()">📤 Upload All Files</button>
+                                    <button class="btn btn-danger" onclick="clearFileSelection()">❌ Clear Selection</button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn" onclick="reindexSingleDocument()">
-                            <i class="fas fa-file"></i> Reindex Document
-                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Logs Tab -->
-            <div id="logs" class="tab-pane">
-                <div class="card">
-                    <h3><i class="fas fa-file-alt"></i> System Activity Logs</h3>
-                    <button class="btn" onclick="clearLogs()">
-                        <i class="fas fa-trash"></i> Clear Logs
-                    </button>
-                    <div id="systemLogs" class="logs">
-                        Initializing logs...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Metrics Tab -->
-            <div id="metrics" class="tab-pane">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <div class="card metric-card">
-                        <div class="metric-value" id="totalClients">-</div>
-                        <div class="metric-label">Total Clients</div>
-                    </div>
-                    <div class="card metric-card">
-                        <div class="metric-value" id="totalDocuments">-</div>
-                        <div class="metric-label">Total Documents</div>
-                    </div>
-                    <div class="card metric-card">
-                        <div class="metric-value" id="systemStatus">-</div>
-                        <div class="metric-label">System Status</div>
-                    </div>
-                    <div class="card metric-card">
-                        <div class="metric-value" id="lastUpdated">-</div>
-                        <div class="metric-label">Last Updated</div>
-                    </div>
-                </div>
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message"></div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Client Modal -->
-    <div id="editClientModal" class="modal">
-        <div class="modal-content">
-            <h3><i class="fas fa-edit"></i> Edit Client</h3>
-            <form id="editClientForm">
-                <div class="form-group">
-                    <label for="editClientName">Client Name</label>
-                    <input type="text" id="editClientName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="editProjectName">Project Name</label>
-                    <input type="text" id="editProjectName" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label for="editProjectDescription">Project Description</label>
-                    <textarea id="editProjectDescription" class="form-control" rows="3"></textarea>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save Changes</button>
-                </div>
-            </form>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p id="loadingText" style="color: white; margin-top: 1rem;">Loading...</p>
         </div>
     </div>
 
     <script>
-        // API Base URL
+        // Configuration
+        const ADMIN_PASSWORD = 'FCS2025!';
         const API_BASE = 'https://workflows.saxtechnology.com/webhook/ask-foreman';
-        
-        let currentEditClientId = null;
+        const AZURE_STORAGE = {
+            account: 'saxtechfcs',
+            container: 'fcs-clients',
+            sasToken: '?sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D'
+        };
+        const MAX_FILES_PER_UPLOAD = 15; // Maximum files allowed per bulk upload
 
-        // Show status messages
-        function showStatus(message, type = 'success') {
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `status ${type}`;
-            statusDiv.innerHTML = message;
-            
-            document.body.appendChild(statusDiv);
-            
-            setTimeout(() => {
-                statusDiv.remove();
-            }, 5000);
-        }
+        let selectedClient = null;
+        let clients = [];
 
-        // Log message
-        function log(message, type = 'info') {
-            const timestamp = new Date().toISOString();
-            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
-            
-            const logsElement = document.getElementById('systemLogs');
-            if (logsElement) {
-                logsElement.innerHTML += logEntry;
-                logsElement.scrollTop = logsElement.scrollHeight;
+        // Authentication
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                sessionStorage.setItem('adminAuth', 'true');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
             }
-            
-            console.log(logEntry);
         }
 
-        // Clear logs
-        function clearLogs() {
-            document.getElementById('systemLogs').innerHTML = '';
-            log('Logs cleared', 'info');
+        function logout() {
+            sessionStorage.removeItem('adminAuth');
+            window.location.reload();
         }
 
-        // Tab Management
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-pane').forEach(pane => {
-                pane.classList.remove('active');
-            });
+        // Check auth on load
+        window.onload = function() {
+            if (sessionStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('adminContainer').style.display = 'flex';
+                loadClients();
+            }
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            // Remove active class from all nav tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
-            
-            log(`Switched to ${tabName} tab`);
-            
-            // Load specific data for each tab
-            if (tabName === 'clients') {
-                loadClients();
-            } else if (tabName === 'reindex') {
-                loadClientsForReindex();
-            }
+            document.getElementById(tabName + 'Tab').classList.add('active');
         }
 
-        // Load Clients
+        // Load clients from Azure
         async function loadClients() {
-            log('Loading clients...');
-            
-            const clientsList = document.getElementById('clientsList');
-            clientsList.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading clients...</div>';
-            
+            showLoading('Loading clients...');
             try {
-                const response = await fetch(`${API_BASE}/clients/list`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
+                const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                const response = await fetch(url);
+                const xmlText = await response.text();
                 
-                const data = await response.json();
-                log(`Loaded ${data.clients.length} clients successfully`);
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
                 
-                displayClients(data.clients);
-                updateMetrics(data.clients.length);
-                
-            } catch (error) {
-                log(`Failed to load clients: ${error.message}`, 'error');
-                showStatus('Failed to load clients: ' + error.message, 'error');
-                clientsList.innerHTML = '<p style="text-align: center; color: #e74c3c;">Failed to load clients. Please try again.</p>';
-            }
-        }
-
-        // Display Clients
-        function displayClients(clients) {
-            const clientsList = document.getElementById('clientsList');
-            
-            // Also populate upload dropdown
-            const uploadSelect = document.getElementById('uploadClient');
-            uploadSelect.innerHTML = '<option value="">-- Select a client --</option>';
-            
-            if (clients.length === 0) {
-                clientsList.innerHTML = '<p style="text-align: center; color: #6c757d; grid-column: 1 / -1;">No clients found. Clients must be created through the main application.</p>';
-                return;
-            }
-            
-            // Populate upload dropdown
-            clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.name;
-                uploadSelect.appendChild(option);
-            });
-            
-            clientsList.innerHTML = clients.map(client => `
-                <div class="client-item">
-                    <div class="client-name">
-                        <i class="fas fa-building"></i> ${client.name} (ID: ${client.id})
-                    </div>
-                    <div class="client-project">
-                        <i class="fas fa-project-diagram"></i> ${client.projectName || 'No project specified'}
-                    </div>
-                    <div class="client-actions">
-                        <button class="btn" onclick="editClient('${client.id}', '${client.name}', '${client.projectName || ''}')" title="Edit Project Details">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-warning" onclick="reindexClient('${client.id}')" title="Reindex Client Documents">
-                            <i class="fas fa-sync-alt"></i> Reindex
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteClient('${client.id}', '${client.name}')" title="Delete Client">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Note: Client creation form removed from admin panel - clients created through main app
-
-        // Edit Client - Show modal
-        function editClient(clientId, clientName, projectName) {
-            currentEditClientId = clientId;
-            document.getElementById('editClientName').value = clientName;
-            document.getElementById('editProjectName').value = projectName === 'N/A' ? '' : projectName;
-            document.getElementById('editProjectDescription').value = '';
-            document.getElementById('editClientModal').style.display = 'block';
-            log(`Opening edit dialog for client: ${clientName}`);
-        }
-
-        // Close edit modal
-        function closeEditModal() {
-            document.getElementById('editClientModal').style.display = 'none';
-            currentEditClientId = null;
-        }
-
-        // Handle edit form submission
-        document.getElementById('editClientForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!currentEditClientId) {
-                showStatus('No client selected for editing', 'error');
-                return;
-            }
-
-            const clientName = document.getElementById('editClientName').value.trim();
-            const projectName = document.getElementById('editProjectName').value.trim();
-            const projectDescription = document.getElementById('editProjectDescription').value.trim();
-            
-            if (!clientName) {
-                showStatus('Client name is required', 'error');
-                return;
-            }
-            
-            log(`Updating client: ${currentEditClientId}`);
-            
-            try {
-                // Since there's no direct update endpoint, we'll simulate it
-                // In a real implementation, you'd need to check if the n8n workflow has an update endpoint
-                
-                showStatus(`Client "${clientName}" updated successfully!`, 'success');
-                log(`Client updated successfully: ${clientName}`, 'success');
-                
-                closeEditModal();
-                loadClients();
-                
-            } catch (error) {
-                log(`Failed to update client: ${error.message}`, 'error');
-                showStatus('Failed to update client: ' + error.message, 'error');
-            }
-        });
-
-        // Delete Client with proper implementation
-        async function deleteClient(clientId, clientName) {
-            if (!confirm(`Are you sure you want to delete client "${clientName}"? This action cannot be undone.`)) {
-                return;
-            }
-            
-            log(`Attempting to delete client: ${clientId} (${clientName})`);
-            
-            try {
-                // Try the primary delete endpoint first
-                const response = await fetch(`${API_BASE}/clients/delete`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        clientId: clientId,
-                        clientName: clientName
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    log(`Client deleted successfully: ${JSON.stringify(result)}`, 'success');
-                    showStatus(`Client "${clientName}" deleted successfully!`, 'success');
-                    if (result.searchIndexNote) {
-                        log(`Note: ${result.searchIndexNote}`, 'warning');
-                    }
-                    loadClients();
-                    return;
-                }
-                
-                // If we get here, the endpoint exists but returned an error
-                const errorData = await response.text();
-                log(`Delete failed with HTTP ${response.status}: ${errorData}`, 'error');
-                
-                if (response.status === 500) {
-                    showStatus(`Server error during deletion. The delete endpoint may have issues. Check logs.`, 'error');
-                } else {
-                    showStatus(`Delete failed: HTTP ${response.status}`, 'error');
-                }
-                
-            } catch (error) {
-                log(`Delete request failed: ${error.message}`, 'error');
-                
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    showStatus(`Delete endpoint not available or network error. Contact system administrator.`, 'warning');
-                } else {
-                    showStatus('Failed to delete client: ' + error.message, 'error');
-                }
-            }
-        }
-
-        // Load clients for reindex dropdown
-        async function loadClientsForReindex() {
-            try {
-                const response = await fetch(`${API_BASE}/clients/list`);
-                if (!response.ok) return;
-                
-                const data = await response.json();
-                const select = document.getElementById('reindexClientSelect');
-                select.innerHTML = '<option value="">-- Select a client --</option>';
-                
-                data.clients.forEach(client => {
-                    const option = document.createElement('option');
-                    option.value = client.id;
-                    option.textContent = client.name;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                log(`Failed to load clients for reindex: ${error.message}`, 'error');
-            }
-        }
-
-        // Reindex Client Documents
-        async function reindexClient(clientId) {
-            if (!confirm('Are you sure you want to reindex all documents for this client? This may take several minutes.')) {
-                return;
-            }
-            
-            log(`Starting reindex for client: ${clientId}`);
-            showStatus('Starting client document reindex...', 'info');
-            
-            try {
-                const possibleEndpoints = [
-                    `${API_BASE}/reindex/client`,
-                    `${API_BASE}/admin/reindex`,
-                    `${API_BASE}/documents/reindex`
-                ];
-                
-                let success = false;
-                
-                for (const endpoint of possibleEndpoints) {
-                    try {
-                        const response = await fetch(endpoint, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                clientId: clientId,
-                                action: 'reindex_client'
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            success = true;
-                            log(`Client reindex started successfully using: ${endpoint}`, 'success');
-                            showStatus('Client document reindex started successfully!', 'success');
-                            break;
+                clients = [];
+                for (let i = 0; i < prefixes.length; i++) {
+                    const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+                    if (nameElement) {
+                        const fullPath = nameElement.textContent.replace(/\/$/, '');
+                        const pathParts = fullPath.split('/');
+                        if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                            const clientName = pathParts[1];
+                            clients.push({
+                                id: clientName.toLowerCase(),
+                                name: clientName,
+                                folder: clientName,
+                                projectType: 'Commercial',
+                                description: ''
+                            });
                         }
-                    } catch (err) {
-                        continue;
                     }
                 }
                 
-                if (!success) {
-                    log('Reindex endpoint not found - using fallback notification', 'warning');
-                    showStatus('Reindex functionality not yet implemented. Contact system administrator.', 'warning');
-                }
-                
+                renderClients();
             } catch (error) {
-                log(`Failed to start client reindex: ${error.message}`, 'error');
-                showStatus('Failed to start reindex: ' + error.message, 'error');
+                console.error('Error loading clients:', error);
+                showStatus('error', 'Failed to load clients');
+            } finally {
+                hideLoading();
             }
         }
 
-        // Reindex Client Documents (from dropdown)
-        async function reindexClientDocuments() {
-            const clientId = document.getElementById('reindexClientSelect').value;
-            if (!clientId) {
-                showStatus('Please select a client first', 'error');
-                return;
-            }
+        function renderClients() {
+            const listContainer = document.getElementById('clientList');
+            listContainer.innerHTML = '';
             
-            await reindexClient(clientId);
+            clients.forEach(client => {
+                const item = document.createElement('div');
+                item.className = 'client-item';
+                item.onclick = () => selectClient(client);
+                
+                item.innerHTML = `
+                    <div style="font-weight: 600; color: var(--concrete-gray);">${client.name}</div>
+                    <div style="font-size: 0.9rem; color: var(--steel-gray);">
+                        Type: ${client.projectType}
+                    </div>
+                `;
+                
+                listContainer.appendChild(item);
+            });
         }
 
-        // Reindex All Documents
-        async function reindexAllDocuments() {
-            if (!confirm('Are you sure you want to reindex all documents? This may take several minutes and impact system performance.')) {
-                return;
-            }
+        function selectClient(client) {
+            selectedClient = client;
             
-            log('Starting full system reindex');
-            showStatus('Starting full system reindex...', 'info');
+            // Update UI selection
+            document.querySelectorAll('.client-item').forEach(item => item.classList.remove('selected'));
+            event.target.closest('.client-item').classList.add('selected');
             
+            // Load client details
+            loadClientDetails();
+            loadClientDocuments();
+        }
+
+        async function loadClientDetails() {
+            const detailsContainer = document.getElementById('clientDetails');
+            
+            // Load metadata from Azure Blob Storage (stored as JSON file)
             try {
-                const response = await fetch(`${API_BASE}/reindex/all`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'reindex_all'
-                    })
-                });
+                const metadataUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${selectedClient.folder}/.metadata.json${AZURE_STORAGE.sasToken}`;
+                const response = await fetch(metadataUrl);
                 
                 if (response.ok) {
-                    log('Full system reindex started successfully', 'success');
-                    showStatus('Full system reindex started! This may take several minutes.', 'success');
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    const metadata = await response.json();
+                    selectedClient.description = metadata.description || '';
+                    selectedClient.projectType = metadata.projectType || 'Commercial';
+                }
+            } catch (error) {
+                console.log('No metadata found for client, using defaults');
+            }
+            
+            detailsContainer.innerHTML = `
+                <div class="form-group">
+                    <label>Client Name</label>
+                    <input type="text" id="clientName" value="${selectedClient.name}">
+                </div>
+                <div class="form-group">
+                    <label>Folder Name (in Azure)</label>
+                    <input type="text" id="folderName" value="${selectedClient.folder}" readonly style="background: #f0f0f0;">
+                    <p class="help-text">⚠️ Folder name cannot be changed after creation</p>
+                </div>
+                <div class="form-group">
+                    <label>Project Type</label>
+                    <select id="projectType">
+                        <option value="Commercial" ${selectedClient.projectType === 'Commercial' ? 'selected' : ''}>Commercial</option>
+                        <option value="Residential" ${selectedClient.projectType === 'Residential' ? 'selected' : ''}>Residential</option>
+                        <option value="Industrial" ${selectedClient.projectType === 'Industrial' ? 'selected' : ''}>Industrial</option>
+                        <option value="Healthcare" ${selectedClient.projectType === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+                        <option value="Educational" ${selectedClient.projectType === 'Educational' ? 'selected' : ''}>Educational</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="projectDescription">${selectedClient.description || ''}</textarea>
+                    <p class="help-text">☁️ Description is saved in Azure as metadata file</p>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <button class="btn btn-primary" onclick="updateClient()">💾 Save Changes</button>
+                    <button class="btn btn-danger" onclick="deleteClient()">🗑️ Delete Client</button>
+                </div>
+            `;
+        }
+
+        async function loadClientDocuments() {
+            const documentsContainer = document.getElementById('documentManagement');
+            showLoading('Loading documents...');
+            
+            try {
+                const prefix = `FCS-OriginalClients/${selectedClient.folder}/`;
+                const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
+                
+                const response = await fetch(listUrl);
+                const xmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const blobs = xmlDoc.getElementsByTagName("Blob");
+                
+                // Organize documents by category/folder
+                const documentsByCategory = {
+                    'drawings': [],
+                    'estimates': [],
+                    'proposals': [],
+                    'specs': [],
+                    'signed-contracts': [],
+                    'documents': [],
+                    'other': []
+                };
+                
+                // Parse and categorize documents
+                for (let i = 0; i < blobs.length; i++) {
+                    const nameEl = blobs[i].getElementsByTagName("Name")[0];
+                    const propsEl = blobs[i].getElementsByTagName("Properties")[0];
+                    
+                    if (nameEl) {
+                        const fullPath = nameEl.textContent;
+                        const pathParts = fullPath.split('/');
+                        
+                        // Skip if it's just the folder itself or metadata
+                        if (pathParts.length < 3 || fullPath.includes('.metadata')) continue;
+                        
+                        const category = pathParts[2]; // FCS-OriginalClients/ClientName/Category/file.pdf
+                        const fileName = pathParts[pathParts.length - 1];
+                        
+                        if (fileName && fileName.length > 0 && !fileName.startsWith('.')) {
+                            let size = '0 KB';
+                            let modified = 'Unknown';
+                            
+                            if (propsEl) {
+                                const sizeEl = propsEl.getElementsByTagName("Content-Length")[0];
+                                const modEl = propsEl.getElementsByTagName("Last-Modified")[0];
+                                
+                                if (sizeEl) {
+                                    const bytes = parseInt(sizeEl.textContent) || 0;
+                                    size = formatFileSize(bytes);
+                                }
+                                if (modEl) {
+                                    modified = new Date(modEl.textContent).toLocaleDateString();
+                                }
+                            }
+                            
+                            const doc = {
+                                fullPath: fullPath,
+                                fileName: fileName,
+                                size: size,
+                                modified: modified,
+                                category: category
+                            };
+                            
+                            // Add to appropriate category
+                            if (documentsByCategory[category]) {
+                                documentsByCategory[category].push(doc);
+                            } else {
+                                documentsByCategory['other'].push(doc);
+                            }
+                        }
+                    }
                 }
                 
+                // Build HTML with categorized documents
+                let html = `<h3>📄 Documents for ${selectedClient.name}</h3>`;
+                
+                const totalDocs = Object.values(documentsByCategory).reduce((sum, docs) => sum + docs.length, 0);
+                
+                if (totalDocs === 0) {
+                    html += '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">No documents found</p>';
+                } else {
+                    // Category display names and icons
+                    const categoryInfo = {
+                        'drawings': { name: 'Drawings', icon: '📐' },
+                        'estimates': { name: 'Estimates', icon: '💰' },
+                        'proposals': { name: 'Proposals', icon: '📊' },
+                        'specs': { name: 'Specifications', icon: '📋' },
+                        'signed-contracts': { name: 'Signed Contracts', icon: '📝' },
+                        'documents': { name: 'General Documents', icon: '📁' },
+                        'other': { name: 'Other Files', icon: '📎' }
+                    };
+                    
+                    // Display each category
+                    for (const [category, docs] of Object.entries(documentsByCategory)) {
+                        if (docs.length === 0) continue;
+                        
+                        const info = categoryInfo[category] || { name: category, icon: '📄' };
+                        
+                        html += `
+                            <div style="margin-top: 2rem;">
+                                <h4 style="color: var(--concrete-gray); border-bottom: 2px solid var(--safety-yellow); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                                    ${info.icon} ${info.name} (${docs.length} files)
+                                </h4>
+                                <table class="document-table">
+                                    <thead>
+                                        <tr>
+                                            <th>File Name</th>
+                                            <th>Size</th>
+                                            <th>Modified</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        for (const doc of docs) {
+                            html += `
+                                <tr>
+                                    <td>${doc.fileName}</td>
+                                    <td>${doc.size}</td>
+                                    <td>${doc.modified}</td>
+                                    <td>
+                                        <button class="btn btn-small btn-danger" onclick="deleteDocument('${doc.fullPath}')">🗑️ Delete</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                        
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                }
+                
+                documentsContainer.innerHTML = html;
             } catch (error) {
-                log(`Failed to start full reindex: ${error.message}`, 'error');
-                showStatus('Reindex all functionality not yet implemented. Contact system administrator.', 'warning');
+                console.error('Error loading documents:', error);
+                documentsContainer.innerHTML = `<p style="color: var(--warning-red);">Error loading documents: ${error.message}</p>`;
+            } finally {
+                hideLoading();
             }
         }
 
-        // Reindex Single Document
-        async function reindexSingleDocument() {
-            const documentPath = document.getElementById('documentPath').value.trim();
-            if (!documentPath) {
-                showStatus('Please enter a document path', 'error');
-                return;
-            }
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Client operations
+        async function updateClient() {
+            const clientData = {
+                name: document.getElementById('clientName').value,
+                projectType: document.getElementById('projectType').value,
+                description: document.getElementById('projectDescription').value,
+                lastUpdated: new Date().toISOString()
+            };
             
-            log(`Starting single document reindex: ${documentPath}`);
-            showStatus('Starting document reindex...', 'info');
-            
+            // Save to Azure Blob Storage as JSON metadata file
+            showLoading('Saving client details...');
             try {
-                const response = await fetch(`${API_BASE}/reindex/document`, {
-                    method: 'POST',
+                const metadataBlob = new Blob([JSON.stringify(clientData, null, 2)], { type: 'application/json' });
+                const metadataUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${selectedClient.folder}/.metadata.json${AZURE_STORAGE.sasToken}`;
+                
+                const response = await fetch(metadataUrl, {
+                    method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'x-ms-blob-type': 'BlockBlob',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        documentPath: documentPath,
-                        action: 'reindex_document'
-                    })
+                    body: metadataBlob
                 });
                 
-                if (response.ok) {
-                    log(`Document reindex started successfully: ${documentPath}`, 'success');
-                    showStatus('Document reindex started successfully!', 'success');
-                    document.getElementById('documentPath').value = '';
+                if (response.ok || response.status === 201) {
+                    // Update in memory
+                    selectedClient.name = clientData.name;
+                    selectedClient.projectType = clientData.projectType;
+                    selectedClient.description = clientData.description;
+                    
+                    showStatus('success', 'Client details saved to Azure successfully');
+                    renderClients();
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error('Failed to save metadata');
                 }
-                
             } catch (error) {
-                log(`Failed to start document reindex: ${error.message}`, 'error');
-                showStatus('Single document reindex functionality not yet implemented. Contact system administrator.', 'warning');
+                showStatus('error', `Failed to save: ${error.message}`);
+            } finally {
+                hideLoading();
             }
         }
 
-        // Update Metrics
-        function updateMetrics(clientCount) {
-            document.getElementById('totalClients').textContent = clientCount || 0;
-            document.getElementById('systemStatus').textContent = 'Online';
-            document.getElementById('systemStatus').style.color = '#2ecc71';
-            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('editClientModal');
-            if (event.target === modal) {
-                closeEditModal();
-            }
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            log('Admin panel initialized - Enhanced Version');
-            loadClients();
-            loadClientsForReindex();
-            
-            // Set up periodic metrics update
-            setInterval(() => {
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-            }, 30000);
-        });
-
-        // Add some initial logs
-        setTimeout(() => {
-            log('System initialization complete');
-            log('API endpoints configured');
-            log('Enhanced admin panel ready with full CRUD functionality', 'success');
-        }, 1000);
-
-        // Handle Bulk Document Upload
-        document.getElementById('bulkUploadForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const clientId = document.getElementById('uploadClient').value;
-            const clientName = document.getElementById('uploadClient').options[document.getElementById('uploadClient').selectedIndex].text;
-            const category = document.getElementById('uploadCategory').value;
-            const files = document.getElementById('documentFiles').files;
-            const processWithWorkflow = document.getElementById('processDocuments').checked;
-            
-            if (!clientId) {
-                showStatus('Please select a client', 'error');
+        async function deleteClient() {
+            if (!confirm(`Delete client "${selectedClient.name}"? This will delete all documents and cannot be undone.`)) {
                 return;
             }
             
-            if (!category) {
-                showStatus('Please select a document category', 'error');
-                return;
-            }
-            
-            if (files.length === 0) {
-                showStatus('Please select at least one file to upload', 'error');
-                return;
-            }
-            
-            if (files.length > 10) {
-                showStatus('Maximum 10 files allowed per upload (rate limiting)', 'error');
-                return;
-            }
-            
-            log(`Bulk upload started: ${files.length} files for client ${clientName}/${category}`);
-            showStatus(`Uploading ${files.length} files to ${clientName}/${category}...`, 'info');
-            
-            // Show progress bar
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            document.getElementById('uploadProgress').style.display = 'block';
-            progressBar.style.width = '0%';
-            progressText.textContent = 'Preparing files...';
-            
-            // Prepare form data
-            const formData = new FormData();
-            formData.append('clientName', clientName);
-            formData.append('category', category);
-            formData.append('processWithWorkflow', processWithWorkflow);
-            
-            // Add files to form data
-            for (let i = 0; i < files.length; i++) {
-                formData.append(`file${i}`, files[i]);
-            }
-            
+            showLoading('Deleting client and all associated files...');
             try {
-                // Update progress
-                progressBar.style.width = '30%';
-                progressText.textContent = 'Uploading files...';
-                
-                // Send to bulk upload endpoint
-                const response = await fetch(`${API_BASE}/bulk-upload`, {
-                    method: 'POST',
-                    body: formData
+                const response = await fetch(`https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code={{AZURE_FUNCTION_KEY}}`, {
+                    method: 'DELETE'
                 });
-                
-                // Update progress
-                progressBar.style.width = '70%';
-                progressText.textContent = 'Processing uploaded files...';
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
                 
                 const result = await response.json();
                 
-                // Complete progress
-                progressBar.style.width = '100%';
-                progressText.textContent = 'Upload complete!';
-                
-                // Log and show status
-                const successMsg = result.message || `Successfully uploaded ${result.successCount || files.length} files`;
-                log(`Bulk upload completed: ${successMsg}`, 'success');
-                showStatus(successMsg, 'success');
-                
-                if (result.failedCount && result.failedCount > 0) {
-                    log(`Warning: ${result.failedCount} files failed to upload`, 'warning');
+                if (result.Success) {
+                    showStatus('success', `Client deleted successfully. ${result.Summary.TotalDeleted} files removed.`);
+                    selectedClient = null;
+                    loadClients();
+                    // Clear the details panel
+                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
+                    document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
+                } else {
+                    showStatus('error', `Failed to delete client: ${result.Error}`);
                 }
-                
-                if (result.convertedCount && result.convertedCount > 0) {
-                    log(`${result.convertedCount} files processed for search indexing`, 'info');
-                }
-                
-                // Reset form
-                document.getElementById('bulkUploadForm').reset();
-                
-                // Hide progress after delay
-                setTimeout(() => {
-                    document.getElementById('uploadProgress').style.display = 'none';
-                }, 3000);
-                
             } catch (error) {
-                // Error handling
-                progressBar.style.width = '100%';
-                progressBar.style.background = 'linear-gradient(135deg, var(--warning-red), #b71c1c)';
-                progressText.textContent = 'Upload failed!';
+                showStatus('error', `Failed to delete client: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function createNewClient() {
+            const name = prompt('Enter client name:');
+            if (!name) return;
+            
+            showStatus('success', `To create client "${name}", use the main app's "Create New Client" feature`);
+        }
+
+        // Document operations
+        async function deleteDocument(filePath) {
+            if (!confirm(`Delete this document?\n\nFile: ${filePath.split('/').pop()}`)) {
+                return;
+            }
+            
+            showLoading('Deleting document...');
+            try {
+                const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
                 
-                log(`Bulk upload failed: ${error.message}`, 'error');
-                showStatus(`Upload failed: ${error.message}`, 'error');
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        'x-ms-delete-snapshots': 'include'
+                    }
+                });
                 
-                // Hide progress after delay
-                setTimeout(() => {
-                    document.getElementById('uploadProgress').style.display = 'none';
-                    progressBar.style.background = 'linear-gradient(135deg, var(--construction-orange), var(--safety-yellow))';
-                }, 3000);
+                if (response.ok || response.status === 202) {
+                    showStatus('success', 'Document deleted successfully');
+                    loadClientDocuments();
+                } else {
+                    throw new Error(`Delete failed with status ${response.status}`);
+                }
+            } catch (error) {
+                showStatus('error', `Failed to delete: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // System operations
+        async function syncAzureStorage() {
+            if (!confirm(`Sync with Azure Storage?\n\nWhat this does:\n- Scans all folders in Azure Blob Storage\n- Updates the client list\n- Identifies new or removed clients\n- Refreshes document counts\n\nUse this when files were added/removed outside the app.`)) {
+                return;
+            }
+            
+            await loadClients();
+            showStatus('success', `Azure Storage synced. Found ${clients.length} clients.`);
+        }
+
+        function exportClientData() {
+            const dataStr = JSON.stringify(clients, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `clients_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showStatus('success', 'Client data exported');
+        }
+
+        // Store selected files for preview
+        let selectedFiles = [];
+        
+        // Enhanced bulk upload with preview and 15-file limit
+        function handleBulkFilesWithPreview(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                event.target.value = '';
+                return;
+            }
+            
+            // Check file limit
+            if (files.length > MAX_FILES_PER_UPLOAD) {
+                showStatus('warning', `You selected ${files.length} files. Maximum ${MAX_FILES_PER_UPLOAD} files allowed per upload. Please select fewer files.`);
+                event.target.value = '';
+                return;
+            }
+            
+            // Store files for preview
+            selectedFiles = Array.from(files);
+            
+            // Get default category
+            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
+            
+            // Build preview UI
+            const fileListContainer = document.getElementById('fileList');
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<thead><tr>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">File Name</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Size</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Category</th>';
+            html += '</tr></thead><tbody>';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileName = file.name;
+                const fileSize = formatFileSize(file.size);
+                
+                // Auto-detect category if default is 'auto'
+                let autoCategory = 'documents';
+                if (defaultCategory === 'auto') {
+                    const lowerName = fileName.toLowerCase();
+                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
+                        autoCategory = 'drawings';
+                    } else if (lowerName.includes('estimate')) {
+                        autoCategory = 'estimates';
+                    } else if (lowerName.includes('proposal')) {
+                        autoCategory = 'proposals';
+                    } else if (lowerName.includes('spec')) {
+                        autoCategory = 'specs';
+                    } else if (lowerName.includes('contract')) {
+                        autoCategory = 'signed-contracts';
+                    }
+                }
+                
+                const selectedCategory = defaultCategory === 'auto' ? autoCategory : defaultCategory;
+                
+                html += '<tr>';
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileSize}</td>`;
+                html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">`;
+                html += `<select id="fileCategory_${index}" style="padding: 0.25rem; border: 1px solid var(--medium-gray); border-radius: 3px;">`;
+                html += `<option value="drawings" ${selectedCategory === 'drawings' ? 'selected' : ''}>📐 Drawings</option>`;
+                html += `<option value="estimates" ${selectedCategory === 'estimates' ? 'selected' : ''}>💰 Estimates</option>`;
+                html += `<option value="proposals" ${selectedCategory === 'proposals' ? 'selected' : ''}>📊 Proposals</option>`;
+                html += `<option value="specs" ${selectedCategory === 'specs' ? 'selected' : ''}>📋 Specs</option>`;
+                html += `<option value="signed-contracts" ${selectedCategory === 'signed-contracts' ? 'selected' : ''}>📝 Contracts</option>`;
+                html += `<option value="documents" ${selectedCategory === 'documents' ? 'selected' : ''}>📁 Documents</option>`;
+                html += `</select>`;
+                html += `</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            html += `<p style="margin-top: 0.5rem; color: var(--steel-gray); font-size: 0.9rem;">Total files: ${selectedFiles.length} / ${MAX_FILES_PER_UPLOAD} max</p>`;
+            fileListContainer.innerHTML = html;
+            
+            // Show preview area
+            document.getElementById('filePreviewArea').style.display = 'block';
+            
+            // Clear file input to allow re-selection
+            event.target.value = '';
+        }
+        
+        // Upload files with individual categories
+        async function uploadFilesWithCategories() {
+            if (!selectedFiles || selectedFiles.length === 0) {
+                showStatus('error', 'No files selected');
+                return;
+            }
+            
+            if (!selectedClient) {
+                showStatus('error', 'Please select a client first');
+                return;
+            }
+            
+            showLoading(`Uploading ${selectedFiles.length} files...`);
+            
+            let successCount = 0;
+            let overwriteCount = 0;
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const fileName = file.name;
+                
+                // Get category from dropdown
+                const categorySelect = document.getElementById(`fileCategory_${i}`);
+                const category = categorySelect ? categorySelect.value : 'documents';
+                
+                const blobPath = `FCS-OriginalClients/${selectedClient.folder}/${category}/${fileName}`;
+                const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${blobPath}${AZURE_STORAGE.sasToken}`;
+                
+                try {
+                    // Check if file exists
+                    const checkResponse = await fetch(uploadUrl, { method: 'HEAD' });
+                    
+                    let shouldUpload = true;
+                    if (checkResponse.ok) {
+                        shouldUpload = confirm(`File '${fileName}' already exists in ${category}. Overwrite?`);
+                        if (shouldUpload) overwriteCount++;
+                    }
+                    
+                    if (shouldUpload) {
+                        const uploadResponse = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'x-ms-blob-type': 'BlockBlob',
+                                'Content-Type': file.type || 'application/octet-stream'
+                            },
+                            body: file
+                        });
+                        
+                        if (uploadResponse.ok || uploadResponse.status === 201) {
+                            successCount++;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error uploading ${fileName}:`, error);
+                }
+                
+                document.getElementById('loadingText').textContent = `Processing file ${i + 1} of ${selectedFiles.length}...`;
+            }
+            
+            hideLoading();
+            
+            let message = `Upload complete: ${successCount} files uploaded`;
+            if (overwriteCount > 0) message += `, ${overwriteCount} overwritten`;
+            message += '. Files will be automatically indexed.';
+            
+            showStatus('success', message);
+            
+            // Clear selection and hide preview
+            clearFileSelection();
+            
+            // Reload documents
+            loadClientDocuments();
+        }
+        
+        // Clear file selection
+        function clearFileSelection() {
+            selectedFiles = [];
+            document.getElementById('filePreviewArea').style.display = 'none';
+            document.getElementById('bulkFileInput').value = '';
+        }
+        
+        // Drag and drop with file limit check
+        const bulkUploadArea = document.getElementById('bulkUploadArea');
+        
+        bulkUploadArea?.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            bulkUploadArea.classList.add('dragover');
+        });
+        
+        bulkUploadArea?.addEventListener('dragleave', () => {
+            bulkUploadArea.classList.remove('dragover');
+        });
+        
+        bulkUploadArea?.addEventListener('drop', (e) => {
+            e.preventDefault();
+            bulkUploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                // Check file limit before processing
+                if (files.length > MAX_FILES_PER_UPLOAD) {
+                    showStatus('warning', `You dropped ${files.length} files. Maximum ${MAX_FILES_PER_UPLOAD} files allowed per upload. Please select fewer files.`);
+                    return;
+                }
+                handleBulkFilesWithPreview({ target: { files } });
             }
         });
+
+        // UI helpers
+        function showLoading(text = 'Loading...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function showStatus(type, message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message status-${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, type === 'warning' ? 7000 : 5000); // Longer display for warnings
+        }
     </script>
 </body>
 </html>
