@@ -517,14 +517,16 @@
 
         let selectedClient = null;
         let clients = [];
+        let azureFunctionConfig = null; // Store configuration from API
 
         // Authentication
-        function login() {
+        async function login() {
             const password = document.getElementById('passwordInput').value;
             if (password === ADMIN_PASSWORD) {
                 sessionStorage.setItem('adminAuth', 'true');
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('adminContainer').style.display = 'flex';
+                await loadConfiguration();
                 loadClients();
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -538,13 +540,31 @@
         }
 
         // Check auth on load
-        window.onload = function() {
+        window.onload = async function() {
             if (sessionStorage.getItem('adminAuth') === 'true') {
                 document.getElementById('loginContainer').style.display = 'none';
                 document.getElementById('adminContainer').style.display = 'flex';
+                await loadConfiguration();
                 loadClients();
             }
         };
+
+        // Load configuration from API
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/config');
+                if (response.ok) {
+                    azureFunctionConfig = await response.json();
+                    console.log('Configuration loaded successfully');
+                } else {
+                    console.error('Failed to load configuration');
+                    showStatus('warning', 'Configuration not loaded. Some features may not work.');
+                }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+                showStatus('warning', 'Could not load configuration. Delete functionality may be limited.');
+            }
+        }
 
         // Tab switching
         function switchTab(tabName) {
@@ -880,9 +900,16 @@
                 return;
             }
             
+            // Check if we have the Azure Function key
+            if (!azureFunctionConfig || !azureFunctionConfig.azureFunctionKey) {
+                showStatus('error', 'Configuration not loaded. Please refresh the page and try again.');
+                return;
+            }
+            
             showLoading('Deleting client and all associated files...');
             try {
-                const response = await fetch(`https://saxtech-functionapps2.azurewebsites.net/api/clients/${selectedClient.folder}?code={{AZURE_FUNCTION_KEY}}`, {
+                const functionUrl = azureFunctionConfig.functionAppUrl || 'https://saxtech-functionapps2.azurewebsites.net';
+                const response = await fetch(`${functionUrl}/api/clients/${selectedClient.folder}?code=${azureFunctionConfig.azureFunctionKey}`, {
                     method: 'DELETE'
                 });
                 
