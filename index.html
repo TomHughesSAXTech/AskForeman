@@ -3749,10 +3749,10 @@
           const category = pathParts[2] || 'documents';
           
           // Use n8n webhook for file deletion with proper index cleanup
-          const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman-delete-file/ask-foreman/files/${encodeURIComponent(filePath)}`;
+          const webhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/files/delete';
           
           const response = await fetch(webhookUrl, {
-            method: 'DELETE',
+            method: 'POST',  // Use POST instead of DELETE for webhook
             headers: {
               'Content-Type': 'application/json'
             },
@@ -4247,10 +4247,10 @@
           const category = pathParts[2] || 'documents';
           
           // Use n8n webhook for file deletion with proper index cleanup
-          const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman-delete-file/ask-foreman/files/${encodeURIComponent(filePath)}`;
+          const webhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/files/delete';
           
           const response = await fetch(webhookUrl, {
-            method: 'DELETE',
+            method: 'POST',  // Use POST instead of DELETE for webhook
             headers: {
               'Content-Type': 'application/json'
             },
