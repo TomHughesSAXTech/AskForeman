@@ -1703,7 +1703,7 @@
                     return;
                 }
                 
-                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis will remove:\n• Empty placeholder files\n• Documents with missing client information\n• Processing metadata files (.metadata.json)\n\nThis will KEEP:\n• JSONL files (processed document content)\n• client-info.json files (project metadata)\n\nDelete problematic documents?")) {
+                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis will remove:\n• Empty placeholder files\n• Documents with missing client information\n• Processing metadata files (.metadata.json)\n\nThis will KEEP:\n• JSONL files (processed document content)\n• client-info.json files (project metadata)\n\nDelete problematic documents?`))
                     hideLoading();
                     return;
                 }
