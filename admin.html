@@ -467,11 +467,7 @@
                                 <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
                                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="auto" checked>
-                                        <span>🤖 Auto-detect</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="drawings">
+                                        <input type="radio" name="uploadCategory" value="drawings" checked>
                                         <span>📐 Drawings</span>
                                     </label>
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
@@ -489,6 +485,10 @@
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
                                         <input type="radio" name="uploadCategory" value="signed-contracts">
                                         <span>📝 Contracts</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="radio" name="uploadCategory" value="documents">
+                                        <span>📁 Documents</span>
                                     </label>
                                 </div>
                             </div>
@@ -1055,7 +1055,7 @@
             selectedFiles = Array.from(files);
             
             // Get default category
-            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'auto';
+            const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'drawings';
             
             // Build preview UI
             const fileListContainer = document.getElementById('fileList');
@@ -1070,24 +1070,7 @@
                 const fileName = file.name;
                 const fileSize = formatFileSize(file.size);
                 
-                // Auto-detect category if default is 'auto'
-                let autoCategory = 'documents';
-                if (defaultCategory === 'auto') {
-                    const lowerName = fileName.toLowerCase();
-                    if (lowerName.includes('drawing') || lowerName.includes('plan')) {
-                        autoCategory = 'drawings';
-                    } else if (lowerName.includes('estimate')) {
-                        autoCategory = 'estimates';
-                    } else if (lowerName.includes('proposal')) {
-                        autoCategory = 'proposals';
-                    } else if (lowerName.includes('spec')) {
-                        autoCategory = 'specs';
-                    } else if (lowerName.includes('contract')) {
-                        autoCategory = 'signed-contracts';
-                    }
-                }
-                
-                const selectedCategory = defaultCategory === 'auto' ? autoCategory : defaultCategory;
+                const selectedCategory = defaultCategory;
                 
                 html += '<tr>';
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
@@ -1282,29 +1265,37 @@
                 // First, if force refresh, try to trigger Azure Search to update its stats
                 if (forceRefresh) {
                     console.log('Force refreshing index statistics...');
+                    // Clear any cached data
+                    window.lastKnownDocumentCount = null;
+                    
                     // Make a dummy search query to potentially trigger stats update
                     try {
                         await fetch(AZURE_SEARCH_PROXY.searchUrl, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache'
+                            },
                             body: JSON.stringify({ search: '*', top: 1, count: true })
                         });
                     } catch (e) {
                         console.log('Stats refresh query failed, continuing...');
                     }
-                    // Small delay to let Azure process
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    // Increased delay to let Azure process
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 
                 // Get index statistics via n8n proxy with aggressive cache busting
                 const randomId = Math.random().toString(36).substring(7);
-                const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}&r=${randomId}&force=${forceRefresh}`;
+                const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}&r=${randomId}&force=${forceRefresh}&_=${Math.random()}`;
                 const statsResponse = await fetch(statsUrl, {
-                    method: 'GET',
+                    method: forceRefresh ? 'POST' : 'GET',
                     headers: {
                         'Content-Type': 'application/json'
-                        // Removed Pragma and Cache-Control headers that cause CORS issues
-                    }
+                    },
+                    body: forceRefresh ? JSON.stringify({ forceRefresh: true }) : undefined,
+                    cache: 'no-store'
                 });
                 
                 if (statsResponse.ok) {
@@ -1342,19 +1333,22 @@
                     console.error('Failed to fetch stats:', await statsResponse.text());
                 }
                 
-                // Search for all documents via n8n proxy
+                    // Search for all documents via n8n proxy
                 // Request ALL fields to see what's actually in the index
-                const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
+                const searchCacheBuster = `${Date.now()}_${Math.random()}`;
+                const searchResponse = await fetch(`${AZURE_SEARCH_PROXY.searchUrl}?cb=${searchCacheBuster}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                        // Removed Cache-Control header that might cause CORS issues
                     },
                     body: JSON.stringify({
                         search: '*',
-                        top: 100,
-                        select: '*'  // Get ALL fields to inspect what's in the index
-                    })
+                        top: 1000,  // Increased to get more documents
+                        select: '*',  // Get ALL fields to inspect what's in the index
+                        count: true,
+                        orderby: 'fileName desc'  // Order by filename to see latest
+                    }),
+                    cache: 'no-store'
                 });
                 
                 if (searchResponse.ok) {
@@ -1515,8 +1509,9 @@
                     const result = await response.json();
                     showStatus('success', `Successfully deleted ${checkboxes.length} document(s) from the index`);
                     
-                    // Refresh the entire view including stats with force refresh
-                    setTimeout(() => viewIndexContents(true), 1500);
+                    // Clear cache and refresh the entire view including stats with force refresh
+                    window.lastKnownDocumentCount = null;
+                    setTimeout(() => viewIndexContents(true), 2000);
                 } else {
                     const errorText = await response.text();
                     throw new Error(errorText);
