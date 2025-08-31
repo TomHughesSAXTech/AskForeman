@@ -1899,19 +1899,42 @@
           checkbox.checked = true;
         }
         
+        let addedCount = 0;
+        let duplicateCount = 0;
+        
         for (let file of files) {
           if (isValidFile(file)) {
-            const fileWithCategory = new File([file], file.name, {
-              type: file.type,
-            });
-            fileWithCategory.category = category;
-            uploadedFiles[category].push(fileWithCategory);
+            // Check for duplicate files in the same category
+            const isDuplicate = uploadedFiles[category].some(
+              existingFile => existingFile.name === file.name
+            );
+            
+            if (isDuplicate) {
+              duplicateCount++;
+              console.log(`Skipping duplicate file: ${file.name} in ${category}`);
+            } else {
+              const fileWithCategory = new File([file], file.name, {
+                type: file.type,
+              });
+              fileWithCategory.category = category;
+              uploadedFiles[category].push(fileWithCategory);
+              addedCount++;
+            }
           } else {
             showError(
               `Invalid file type: ${file.name}. Please upload PDF, DOCX, or Excel files.`
             );
           }
         }
+        
+        // Show feedback about added/skipped files
+        if (duplicateCount > 0) {
+          const message = addedCount > 0 
+            ? `Added ${addedCount} new file(s) to ${category}. Skipped ${duplicateCount} duplicate(s).`
+            : `All ${duplicateCount} file(s) were duplicates and already queued for upload.`;
+          addSystemMessage(`ℹ️ ${message}`);
+        }
+        
         updateFileCounts();
         renderFileList();
         updateProcessButton();
@@ -2162,27 +2185,52 @@
         processedDocuments += successCount;
         updateMetadata();
 
-        // Reset UI
+        // Reset UI but keep categories selected for continuous upload
         setTimeout(() => {
           progressBar.classList.remove("active");
-          Object.keys(uploadedFiles).forEach((category) => {
+          
+          // Clear only the successfully uploaded files from each category
+          // This allows users to continue adding more files without refreshing
+          selectedCategories.forEach((category) => {
+            // Clear the uploaded files for this category
             uploadedFiles[category] = [];
           });
+          
+          // Update counts and UI to reflect cleared categories
           updateFileCounts();
           renderFileList();
-          processButton.disabled = true;
+          
+          // Reset file inputs so users can select the same files again if needed
+          categories.forEach((category) => {
+            const inputId = category + "Files";
+            const fileInput = document.getElementById(inputId);
+            if (fileInput) {
+              fileInput.value = ''; // Clear the input so same files can be selected again
+            }
+          });
+          
+          // Keep checkboxes checked so users can continue uploading to same categories
+          // Re-enable the process button if there are new files
+          updateProcessButton();
 
           if (errorCount > 0) {
             addSystemMessage(
-              `⚠️ Processed ${successCount} documents successfully, ${errorCount} failed. You can now ask questions about uploaded documents.`
+              `⚠️ Processed ${successCount} documents successfully, ${errorCount} failed. You can continue adding more files to the selected categories or ask questions about uploaded documents.`
             );
           } else {
             addSystemMessage(
               `✅ All ${successCount} documents processed successfully for ${
                 clientSelect.options[clientSelect.selectedIndex].text
-              }! You can now ask questions about your construction documents.`
+              }! You can continue adding more files to the selected categories or ask questions about your construction documents.`
             );
           }
+          
+          // Show a helpful tip about continuous upload
+          setTimeout(() => {
+            addSystemMessage(
+              `💡 Tip: The selected categories remain active. You can add more files without refreshing the page!`
+            );
+          }, 2000);
         }, 1000);
       });
 
