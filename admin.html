@@ -1402,13 +1402,61 @@
                     if (documents.length === 0) {
                         indexContents.innerHTML = '<p style="text-align: center; padding: 1rem; color: var(--steel-gray);">No documents in index</p>';
                     } else {
-                        let html = '<table class="document-table" style="width: 100%;">';
+                        // Categorize documents
+                        const problematicDocs = [];
+                        const validDocs = [];
+                        
+                        documents.forEach(doc => {
+                            const fileName = doc.fileName || 'Unknown';
+                            const client = doc.client;
+                            
+                            // Identify problematic documents
+                            const isProblematic = 
+                                !client || client === 'Unknown' || client === 'null' ||
+                                fileName.includes('.metadata.json') ||
+                                fileName.includes('.jsonl') ||
+                                fileName === '.placeholder' ||
+                                fileName === 'client-info.json' ||
+                                fileName.match(/_[0-9]{13}\.(pdf|docx|xlsx)/);
+                            
+                            if (isProblematic) {
+                                problematicDocs.push(doc);
+                            } else {
+                                validDocs.push(doc);
+                            }
+                        });
+                        
+                        let html = '<div style="margin-bottom: 1rem;">';
+                        html += `<div style="display: flex; gap: 2rem; margin-bottom: 1rem;">`;
+                        html += `<span style="color: var(--hi-vis-green);">✅ Valid Documents: ${validDocs.length}</span>`;
+                        html += `<span style="color: var(--warning-red);">⚠️ Problematic Documents: ${problematicDocs.length}</span>`;
+                        html += `<span style="color: var(--steel-gray);">📊 Total: ${documents.length}</span>`;
+                        html += `</div>`;
+                        
+                        if (problematicDocs.length > 0) {
+                            html += '<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
+                            html += '<strong>⚠️ Index Issues Found:</strong><br>';
+                            html += 'The following document types should not be indexed:<br>';
+                            html += '• Metadata files (.metadata.json)<br>';
+                            html += '• Processing files (.jsonl)<br>';
+                            html += '• Placeholder files<br>';
+                            html += '• Files with null/unknown client<br>';
+                            html += '• Timestamped duplicate files<br>';
+                            html += '<button class="btn btn-warning" style="margin-top: 0.5rem;" onclick="cleanupProblematicDocs()">🧹 Clean Up Index</button>';
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                        
+                        html += '<table class="document-table" style="width: 100%;">';
                         html += '<thead><tr>';
                         html += '<th style="width: 20px;"><input type="checkbox" id="selectAllDocs" onchange="toggleAllDocuments()"></th>';
                         html += '<th>File Name</th>';
                         html += '<th>Client</th>';
                         html += '<th>Category</th>';
-                        html += '<th>Content Type</th>';
+                        html += '<th>Size</th>';
+                        html += '<th>Uploaded</th>';
+                        html += '<th>Type</th>';
+                        html += '<th>Status</th>';
                         html += '</tr></thead><tbody>';
                         
                         documents.forEach((doc, index) => {
@@ -1416,12 +1464,45 @@
                             const client = doc.client || 'Unknown';
                             const category = doc.category || 'documents';
                             
+                            // Calculate content size
+                            let contentSize = 0;
+                            if (doc.content) {
+                                contentSize = new Blob([doc.content]).size;
+                            }
+                            
+                            // Format upload date
+                            let uploadDate = 'Unknown';
+                            if (doc.uploadedAt) {
+                                uploadDate = new Date(doc.uploadedAt).toLocaleDateString();
+                            }
+                            
                             // Check what type of content is stored
                             let contentType = 'Unknown';
-                            if (doc.content) {
+                            let rowClass = '';
+                            let statusIcon = '✅';
+                            
+                            // Identify problematic documents
+                            if (!client || client === 'Unknown' || client === 'null') {
+                                rowClass = 'style="background-color: #ffebee;"';
+                                statusIcon = '⚠️';
+                            } else if (fileName.includes('.metadata.json')) {
+                                contentType = '📄 Metadata';
+                                rowClass = 'style="background-color: #fff3e0;"';
+                                statusIcon = '❌';
+                            } else if (fileName.includes('.jsonl')) {
+                                contentType = '📃 JSONL';
+                                rowClass = 'style="background-color: #fff3e0;"';
+                                statusIcon = '❌';
+                            } else if (fileName === '.placeholder') {
+                                contentType = '📂 Placeholder';
+                                rowClass = 'style="background-color: #ffebee;"';
+                                statusIcon = '❌';
+                            } else if (doc.content) {
                                 // Check if content looks like JSON
                                 if (doc.content.trim().startsWith('{') || doc.content.trim().startsWith('[')) {
                                     contentType = '📄 JSON';
+                                } else if (doc.content.includes('=== DOCUMENT ANALYSIS ===')) {
+                                    contentType = '📝 Processed';
                                 } else if (doc.content.includes('\n\n') && doc.content.includes(':')) {
                                     contentType = '📝 Text/Markdown';
                                 } else {
@@ -1429,21 +1510,28 @@
                                 }
                             } else {
                                 contentType = '❌ No content';
+                                rowClass = 'style="background-color: #ffebee;"';
+                                statusIcon = '⚠️';
                             }
                             
-                            html += '<tr>';
-                            html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}"></td>`;
-                            html += `<td title="${fileName}">${fileName}</td>`;
+                            html += `<tr ${rowClass}>`;
+                            html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}" data-problematic="${rowClass ? 'true' : 'false'}"></td>`;
+                            html += `<td title="${fileName}" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fileName}</td>`;
                             html += `<td>${client}</td>`;
                             html += `<td>${category}</td>`;
+                            html += `<td>${formatFileSize(contentSize)}</td>`;
+                            html += `<td>${uploadDate}</td>`;
                             html += `<td>${contentType}</td>`;
+                            html += `<td style="text-align: center;">${statusIcon}</td>`;
                             html += '</tr>';
                         });
                         
                         html += '</tbody></table>';
-                        html += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">';
+                        html += '<div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">';
                         html += '<button class="btn btn-danger" onclick="deleteSelectedDocuments()">🗑️ Delete Selected</button>';
-                        html += `<span style="color: var(--steel-gray); align-self: center;">Total: ${documents.length} documents</span>`;
+                        html += '<button class="btn btn-warning" onclick="selectProblematicDocs()">⚠️ Select Problematic</button>';
+                        html += '<button class="btn" onclick="viewIndexContents(true)">🔄 Refresh</button>';
+                        html += `<span style="color: var(--steel-gray); margin-left: auto;">Total: ${documents.length} documents in index</span>`;
                         html += '</div>';
                         
                         indexContents.innerHTML = html;
@@ -1520,6 +1608,113 @@
             }
         }
 
+        // Select all problematic documents
+        function selectProblematicDocs() {
+            const checkboxes = document.querySelectorAll('.doc-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = cb.getAttribute('data-problematic') === 'true';
+            });
+            
+            const checkedCount = document.querySelectorAll('.doc-checkbox:checked').length;
+            if (checkedCount > 0) {
+                showStatus('info', `Selected ${checkedCount} problematic documents`);
+            }
+        }
+        
+        // Clean up problematic documents from index
+        async function cleanupProblematicDocs() {
+            showLoading('Analyzing index for cleanup...');
+            
+            try {
+                // Get all documents
+                const searchResponse = await fetch(AZURE_SEARCH_PROXY.searchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        search: '*',
+                        top: 1000,
+                        select: 'id,fileName,client,category',
+                        count: true
+                    })
+                });
+                
+                if (!searchResponse.ok) {
+                    throw new Error('Failed to fetch documents');
+                }
+                
+                const searchResults = await searchResponse.json();
+                const documents = searchResults.value || [];
+                
+                // Identify problematic documents
+                const problematicIds = [];
+                documents.forEach(doc => {
+                    const fileName = doc.fileName || '';
+                    const client = doc.client;
+                    
+                    const isProblematic = 
+                        !client || client === 'Unknown' || client === 'null' ||
+                        fileName.includes('.metadata.json') ||
+                        fileName.includes('.jsonl') ||
+                        fileName === '.placeholder' ||
+                        fileName === 'client-info.json' ||
+                        fileName.match(/_[0-9]{13}\.(pdf|docx|xlsx)/);
+                    
+                    if (isProblematic) {
+                        problematicIds.push(doc.id);
+                    }
+                });
+                
+                if (problematicIds.length === 0) {
+                    hideLoading();
+                    showStatus('success', 'No problematic documents found in index');
+                    return;
+                }
+                
+                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis includes:\n• Metadata files (.metadata.json)\n• Processing files (.jsonl)\n• Placeholder files\n• Documents with null/unknown client\n• Timestamped duplicates\n\nDelete all problematic documents?")) {
+                    hideLoading();
+                    return;
+                }
+                
+                showLoading(`Deleting ${problematicIds.length} problematic documents...`);
+                
+                // Delete in batches
+                const batchSize = 50;
+                let deletedCount = 0;
+                
+                for (let i = 0; i < problematicIds.length; i += batchSize) {
+                    const batch = problematicIds.slice(i, i + batchSize);
+                    
+                    const deleteResponse = await fetch(AZURE_SEARCH_PROXY.deleteUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            documentIds: batch
+                        })
+                    });
+                    
+                    if (deleteResponse.ok) {
+                        deletedCount += batch.length;
+                        showLoading(`Deleted ${deletedCount} of ${problematicIds.length} documents...`);
+                    }
+                }
+                
+                hideLoading();
+                showStatus('success', `Successfully cleaned up ${deletedCount} problematic documents from the index`);
+                
+                // Refresh the view
+                setTimeout(() => viewIndexContents(true), 2000);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Cleanup error:', error);
+                showStatus('error', `Cleanup failed: ${error.message}`);
+            }
+        }
+        
         // Clear entire index
         async function confirmClearIndex() {
             // First, get the document count
