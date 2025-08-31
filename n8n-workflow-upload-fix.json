@@ -1,0 +1,218 @@
+{
+  "name": "SAXTech Foreman AI - Upload Fix",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-upload",
+      "name": "Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-400, 800],
+      "webhookId": "ask-foreman-upload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced file preparation with complete data preservation\nconst items = $input.all();\nconst output = [];\n\n// Category mapping to ensure lowercase folder names\nconst categoryMapping = {\n  'Drawings': 'drawings',\n  'Estimates': 'estimates', \n  'Proposals': 'proposals',\n  'Specs': 'specs',\n  'Signed-Contracts': 'signed-contracts',\n  'signed-contracts': 'signed-contracts',\n  'drawings': 'drawings',\n  'estimates': 'estimates',\n  'proposals': 'proposals',\n  'specs': 'specs'\n};\n\nfor (const item of items) {\n  // Get the binary file\n  let fileBinary = null;\n  let binaryFieldName = null;\n  \n  if (item.binary) {\n    // Try different field names n8n might use\n    const possibleFields = ['file', 'file0', 'file00', 'data', 'attachment'];\n    for (const field of possibleFields) {\n      if (item.binary[field]) {\n        fileBinary = item.binary[field];\n        binaryFieldName = field;\n        break;\n      }\n    }\n    \n    // If not found, get first available\n    if (!fileBinary && Object.keys(item.binary).length > 0) {\n      binaryFieldName = Object.keys(item.binary)[0];\n      fileBinary = item.binary[binaryFieldName];\n    }\n  }\n  \n  if (!fileBinary) {\n    console.error('No binary data found');\n    throw new Error('No file data found in upload');\n  }\n  \n  console.log(`Found binary data in field: ${binaryFieldName}`);\n  \n  // Extract client name from multiple sources\n  let clientName = item.json?.body?.client || \n                   item.json?.body?.clientName ||\n                   item.json?.client || \n                   item.json?.clientName ||\n                   item.json?.query?.client ||\n                   item.json?.query?.clientName ||\n                   'unknown';\n                   \n  const rawCategory = item.json?.body?.category || \n                      item.json?.category || \n                      item.json?.query?.category ||\n                      'drawings';\n  \n  console.log('Client from request:', clientName);\n  console.log('Category from request:', rawCategory);\n  \n  const fileName = fileBinary.fileName || 'unnamed_file';\n  const mimeType = fileBinary.mimeType || 'application/octet-stream';\n  const fileSize = fileBinary.fileSize || 0;\n  \n  // Map category to lowercase folder name\n  const categoryFolder = categoryMapping[rawCategory] || rawCategory.toLowerCase();\n  \n  // Keep original filename without timestamp for readability\n  const uniqueFileName = fileName;\n  \n  // Storage configuration\n  const storageAccount = 'saxtechfcs';\n  const container = 'fcs-clients';\n  const sasToken = 'sp=racwdl&st=2025-08-07T21:44:55Z&se=2030-08-08T05:59:55Z&spr=https&sv=2024-11-04&sr=c&sig=AeQA3cyePZQqGGmb6QPu5G4y1b0qB8Z5FIFZBdi6Cdo%3D';\n  \n  // Build paths for both original and converted files\n  const originalFilePath = `FCS-OriginalClients/${clientName}/${categoryFolder}/${uniqueFileName}`;\n  const convertedFilePath = `FCS-ConvertedClients/${clientName}/${categoryFolder}/${uniqueFileName}.jsonl`;\n  \n  const uploadUrl = `https://${storageAccount}.blob.core.windows.net/${container}/${originalFilePath}?${sasToken}`;\n  const convertedUrl = `https://${storageAccount}.blob.core.windows.net/${container}/${convertedFilePath}?${sasToken}`;\n  \n  output.push({\n    json: {\n      // File information\n      fileName: fileName,\n      uniqueFileName: uniqueFileName,\n      mimeType: mimeType,\n      fileSize: fileSize,\n      \n      // Client information - ensure it's passed through\n      client: clientName,\n      clientName: clientName,\n      \n      // Category information\n      category: rawCategory,\n      categoryFolder: categoryFolder,\n      \n      // URLs and paths - CRITICAL: These must be present for conversion\n      uploadUrl: uploadUrl,\n      originalBlobUrl: uploadUrl,  // This is what Convert Document needs\n      convertedUrl: convertedUrl,\n      convertedBlobUrl: convertedUrl,\n      originalFilePath: originalFilePath,\n      convertedFilePath: convertedFilePath,\n      \n      // Storage details\n      storageAccount: storageAccount,\n      containerName: container,\n      \n      // Metadata\n      uploadedAt: new Date().toISOString(),\n      binaryFieldName: binaryFieldName,\n      \n      // Operation tracking\n      operation: 'UPLOAD_FILE'\n    },\n    binary: {\n      [binaryFieldName]: fileBinary\n    }\n  });\n}\n\nconsole.log(`Prepared ${output.length} file(s) for upload`);\nreturn output;"
+      },
+      "id": "prepare-file-data",
+      "name": "Prepare File Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-200, 800]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.originalBlobUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "={{ $json.binaryFieldName }}",
+        "options": {}
+      },
+      "id": "upload-original",
+      "name": "Upload Original to Azure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through all data to ensure it's available for conversion\nconst currentData = $json || {};\n\n// Ensure all critical fields are preserved\nreturn {\n  ...currentData,\n  // Double-check critical fields\n  client: currentData.client || currentData.clientName || 'unknown',\n  clientName: currentData.client || currentData.clientName || 'unknown',\n  fileName: currentData.fileName || currentData.uniqueFileName || 'unknown',\n  uniqueFileName: currentData.uniqueFileName || currentData.fileName || 'unknown',\n  category: currentData.category || 'documents',\n  categoryFolder: currentData.categoryFolder || currentData.category || 'documents',\n  originalBlobUrl: currentData.originalBlobUrl || currentData.uploadUrl,\n  convertedBlobUrl: currentData.convertedBlobUrl || currentData.convertedUrl,\n  mimeType: currentData.mimeType || 'application/octet-stream'\n};"
+      },
+      "id": "pass-through-data",
+      "name": "Pass Through Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/ConvertDocument?code=KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"BlobUrl\": \"{{ $json.originalBlobUrl }}\",\n  \"FileName\": \"{{ $json.uniqueFileName || $json.fileName }}\",\n  \"MimeType\": \"{{ $json.mimeType }}\",\n  \"client\": \"{{ $json.client || $json.clientName }}\",\n  \"category\": \"{{ $json.categoryFolder || $json.category }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [400, 800],
+      "id": "convert-document",
+      "name": "Convert Document"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process conversion response and prepare for JSONL upload\nconst convertResponse = $json || {};\nconst passedData = $node['Pass Through Data'].json || {};\n\nconsole.log('Conversion response:', convertResponse);\nconsole.log('Passed data available:', Object.keys(passedData));\n\n// Check if conversion was successful\nif (convertResponse.success === false || convertResponse.error) {\n  console.error('Conversion failed:', convertResponse.error || 'Unknown error');\n  throw new Error(`Document conversion failed: ${convertResponse.error || 'Unknown error'}`);\n}\n\n// Get the converted content\nconst convertedContent = convertResponse.convertedContent || \n                        convertResponse.content || \n                        convertResponse.jsonlContent || \n                        '';\n\nif (!convertedContent) {\n  console.error('No converted content received');\n  throw new Error('No converted content received from conversion service');\n}\n\n// Merge all data\nconst outputData = {\n  ...passedData,\n  ...convertResponse,\n  // Ensure critical fields are present\n  client: passedData.client || passedData.clientName || 'unknown',\n  clientName: passedData.client || passedData.clientName || 'unknown',\n  fileName: passedData.fileName || 'unknown',\n  uniqueFileName: passedData.uniqueFileName || passedData.fileName || 'unknown',\n  category: passedData.category || 'documents',\n  categoryFolder: passedData.categoryFolder || passedData.category || 'documents',\n  convertedContent: convertedContent,\n  jsonlContent: convertedContent,\n  convertedBlobUrl: passedData.convertedBlobUrl || passedData.convertedUrl,\n  originalFilePath: passedData.originalFilePath,\n  convertedFilePath: passedData.convertedFilePath,\n  conversionSuccess: true,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('Prepared for JSONL upload:', {\n  client: outputData.client,\n  fileName: outputData.fileName,\n  contentLength: convertedContent.length,\n  hasUrl: !!outputData.convertedBlobUrl\n});\n\nreturn [{\n  json: outputData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 800],
+      "id": "prepare-jsonl-upload",
+      "name": "Prepare JSONL Upload"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.convertedBlobUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-ms-version",
+              "value": "2024-11-04"
+            },
+            {
+              "name": "x-ms-blob-type",
+              "value": "BlockBlob"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/jsonl"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/jsonl",
+        "body": "={{ $json.jsonlContent || $json.convertedContent }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 800],
+      "id": "upload-converted-jsonl",
+      "name": "Upload Converted JSONL"
+    }
+  ],
+  "connections": {
+    "Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare File Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare File Data": {
+      "main": [
+        [
+          {
+            "node": "Upload Original to Azure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Original to Azure": {
+      "main": [
+        [
+          {
+            "node": "Pass Through Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Through Data": {
+      "main": [
+        [
+          {
+            "node": "Convert Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Document": {
+      "main": [
+        [
+          {
+            "node": "Prepare JSONL Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare JSONL Upload": {
+      "main": [
+        [
+          {
+            "node": "Upload Converted JSONL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -956,10 +956,10 @@
                 const fileName = pathParts[pathParts.length - 1];
                 
                 // Use n8n webhook for file deletion with proper index cleanup
-                const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman/files/delete`;
+                const webhookUrl = `https://workflows.saxtechnology.com/webhook/ask-foreman-delete-file/ask-foreman/files/${encodeURIComponent(filePath)}`;
                 
                 const response = await fetch(webhookUrl, {
-                    method: 'POST',
+                    method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -1703,7 +1703,7 @@
                     return;
                 }
                 
-                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis will remove:\n• Empty placeholder files\n• Documents with missing client information\n• Processing metadata files (.metadata.json)\n\nThis will KEEP:\n• JSONL files (processed document content)\n• client-info.json files (project metadata)\n\nDelete problematic documents?`)) {
+                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis will remove:\n• Empty placeholder files\n• Documents with missing client information\n• Processing metadata files (.metadata.json)\n\nThis will KEEP:\n• JSONL files (processed document content)\n• client-info.json files (project metadata)\n\nDelete problematic documents?")) {
                     hideLoading();
                     return;
                 }
@@ -1808,29 +1808,11 @@
                 });
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Clear index error response:', errorText);
-                    throw new Error(`Failed to clear index: ${response.status} ${response.statusText}`);
+                    throw new Error('Failed to clear index');
                 }
                 
-                // Check if response has content before parsing
-                const responseText = await response.text();
-                let result = {};
-                let deletedCount = 0;
-                
-                if (responseText && responseText.trim()) {
-                    try {
-                        result = JSON.parse(responseText);
-                        deletedCount = result.deletedCount || 0;
-                    } catch (parseError) {
-                        console.warn('Could not parse clear index response, but operation may have succeeded:', responseText);
-                        // If we can't parse the response but got a 200 OK, assume success
-                        deletedCount = 'unknown number of';
-                    }
-                } else {
-                    console.warn('Empty response from clear index, but operation may have succeeded');
-                    deletedCount = 'all';
-                }
+                const result = await response.json();
+                const deletedCount = result.deletedCount || 0;
                 
                 hideLoading();
                 showStatus('success', `Successfully cleared the entire index. ${deletedCount} documents removed.`);
