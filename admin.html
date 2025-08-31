@@ -1405,44 +1405,67 @@
                         // Categorize documents
                         const problematicDocs = [];
                         const validDocs = [];
+                        const processingDocs = [];
                         
                         documents.forEach(doc => {
                             const fileName = doc.fileName || 'Unknown';
                             const client = doc.client;
                             
-                            // Identify problematic documents
+                            // Identify different document types
+                            const hasNoClient = !client || client === 'Unknown' || client === 'null';
+                            const isPlaceholder = fileName === '.placeholder';
+                            const isProcessingMetadata = fileName.includes('.metadata.json'); // Processing metadata, not useful
+                            const isProcessedContent = fileName.includes('.jsonl'); // Processed content - SHOULD be indexed
+                            const isClientInfo = fileName === 'client-info.json'; // Client metadata - useful for context
+                            
+                            // Only truly problematic files
                             const isProblematic = 
-                                !client || client === 'Unknown' || client === 'null' ||
-                                fileName.includes('.metadata.json') ||
-                                fileName.includes('.jsonl') ||
-                                fileName === '.placeholder' ||
-                                fileName === 'client-info.json' ||
-                                fileName.match(/_[0-9]{13}\.(pdf|docx|xlsx)/);
+                                isPlaceholder || // Empty placeholder files
+                                isProcessingMetadata || // Processing metadata files
+                                (hasNoClient && !isClientInfo); // Files with no client (except client-info.json)
                             
                             if (isProblematic) {
                                 problematicDocs.push(doc);
+                            } else if (isProcessedContent || isClientInfo) {
+                                // These are processing/metadata files that ARE useful
+                                processingDocs.push(doc);
                             } else {
                                 validDocs.push(doc);
                             }
                         });
                         
                         let html = '<div style="margin-bottom: 1rem;">';
-                        html += `<div style="display: flex; gap: 2rem; margin-bottom: 1rem;">`;
-                        html += `<span style="color: var(--hi-vis-green);">✅ Valid Documents: ${validDocs.length}</span>`;
-                        html += `<span style="color: var(--warning-red);">⚠️ Problematic Documents: ${problematicDocs.length}</span>`;
+                        html += `<div style="display: flex; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap;">`;
+                        html += `<span style="color: var(--hi-vis-green);">✅ Original Documents: ${validDocs.length}</span>`;
+                        html += `<span style="color: var(--blueprint-blue);">🔄 Processed Content: ${processingDocs.length}</span>`;
+                        html += `<span style="color: var(--warning-red);">⚠️ Issues: ${problematicDocs.length}</span>`;
                         html += `<span style="color: var(--steel-gray);">📊 Total: ${documents.length}</span>`;
                         html += `</div>`;
                         
-                        if (problematicDocs.length > 0) {
-                            html += '<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
-                            html += '<strong>⚠️ Index Issues Found:</strong><br>';
-                            html += 'The following document types should not be indexed:<br>';
-                            html += '• Metadata files (.metadata.json)<br>';
-                            html += '• Processing files (.jsonl)<br>';
-                            html += '• Placeholder files<br>';
-                            html += '• Files with null/unknown client<br>';
-                            html += '• Timestamped duplicate files<br>';
-                            html += '<button class="btn btn-warning" style="margin-top: 0.5rem;" onclick="cleanupProblematicDocs()">🧹 Clean Up Index</button>';
+                        // Show warning only for real issues
+                        const unknownClientDocs = documents.filter(d => !d.client || d.client === 'Unknown' || d.client === 'null');
+                        const placeholderDocs = documents.filter(d => d.fileName === '.placeholder');
+                        
+                        if (unknownClientDocs.length > 0 || placeholderDocs.length > 0) {
+                            html += '<div style="background: #ffebee; border: 1px solid #f44336; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
+                            html += '<strong>🚨 Critical Issues:</strong><br>';
+                            if (unknownClientDocs.length > 0) {
+                                html += `• ${unknownClientDocs.length} documents with missing client information (breaks deletion/filtering)<br>`;
+                            }
+                            if (placeholderDocs.length > 0) {
+                                html += `• ${placeholderDocs.length} empty placeholder files<br>`;
+                            }
+                            html += '<br><strong>Root Cause:</strong> The n8n workflow is not properly setting the client field during upload.<br>';
+                            html += '<button class="btn btn-danger" style="margin-top: 0.5rem;" onclick="cleanupProblematicDocs()">🗑️ Remove Problematic Documents</button>';
+                            html += '</div>';
+                        }
+                        
+                        if (processingDocs.length > 0) {
+                            html += '<div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
+                            html += '<strong>ℹ️ Processing Files:</strong><br>';
+                            html += `• ${processingDocs.filter(d => d.fileName.includes('.jsonl')).length} JSONL files (processed document content)<br>`;
+                            html += `• ${processingDocs.filter(d => d.fileName === 'client-info.json').length} client info files (project metadata)<br>`;
+                            html += 'These files contain searchable content and metadata - they are working as intended.';
                             html += '</div>';
                         }
                         html += '</div>';
@@ -1481,22 +1504,26 @@
                             let rowClass = '';
                             let statusIcon = '✅';
                             
-                            // Identify problematic documents
-                            if (!client || client === 'Unknown' || client === 'null') {
-                                rowClass = 'style="background-color: #ffebee;"';
-                                statusIcon = '⚠️';
-                            } else if (fileName.includes('.metadata.json')) {
-                                contentType = '📄 Metadata';
-                                rowClass = 'style="background-color: #fff3e0;"';
-                                statusIcon = '❌';
-                            } else if (fileName.includes('.jsonl')) {
-                                contentType = '📃 JSONL';
-                                rowClass = 'style="background-color: #fff3e0;"';
-                                statusIcon = '❌';
-                            } else if (fileName === '.placeholder') {
+                            // Identify document types and issues
+                            if (fileName === '.placeholder') {
                                 contentType = '📂 Placeholder';
                                 rowClass = 'style="background-color: #ffebee;"';
                                 statusIcon = '❌';
+                            } else if (fileName.includes('.metadata.json')) {
+                                contentType = '⚙️ Processing Metadata';
+                                rowClass = 'style="background-color: #fff3e0;"';
+                                statusIcon = '⚠️';
+                            } else if (fileName.includes('.jsonl')) {
+                                contentType = '📄 Processed Content';
+                                rowClass = 'style="background-color: #e3f2fd;"';
+                                statusIcon = '🔄';
+                            } else if (fileName === 'client-info.json') {
+                                contentType = '📋 Client Info';
+                                rowClass = 'style="background-color: #e8f5e9;"';
+                                statusIcon = 'ℹ️';
+                            } else if (!client || client === 'Unknown' || client === 'null') {
+                                rowClass = 'style="background-color: #ffebee;"';
+                                statusIcon = '🚨';
                             } else if (doc.content) {
                                 // Check if content looks like JSON
                                 if (doc.content.trim().startsWith('{') || doc.content.trim().startsWith('[')) {
@@ -1647,19 +1674,23 @@
                 const searchResults = await searchResponse.json();
                 const documents = searchResults.value || [];
                 
-                // Identify problematic documents
+                // Identify truly problematic documents (not all metadata)
                 const problematicIds = [];
                 documents.forEach(doc => {
                     const fileName = doc.fileName || '';
                     const client = doc.client;
                     
+                    // Only remove truly problematic files:
+                    // 1. Placeholder files (empty)
+                    // 2. Documents with no client info (except client-info.json which is OK)
+                    // 3. Processing metadata files (.metadata.json) but NOT content files (.jsonl)
                     const isProblematic = 
-                        !client || client === 'Unknown' || client === 'null' ||
-                        fileName.includes('.metadata.json') ||
-                        fileName.includes('.jsonl') ||
-                        fileName === '.placeholder' ||
-                        fileName === 'client-info.json' ||
-                        fileName.match(/_[0-9]{13}\.(pdf|docx|xlsx)/);
+                        fileName === '.placeholder' || // Empty placeholders
+                        ((!client || client === 'Unknown' || client === 'null') && fileName !== 'client-info.json') || // Missing client
+                        fileName.includes('.metadata.json'); // Processing metadata only
+                    
+                    // Note: We KEEP .jsonl files as they contain the actual processed content
+                    // Note: We KEEP client-info.json as it contains useful project metadata
                     
                     if (isProblematic) {
                         problematicIds.push(doc.id);
@@ -1672,7 +1703,7 @@
                     return;
                 }
                 
-                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis includes:\n• Metadata files (.metadata.json)\n• Processing files (.jsonl)\n• Placeholder files\n• Documents with null/unknown client\n• Timestamped duplicates\n\nDelete all problematic documents?")) {
+                if (!confirm(`Found ${problematicIds.length} problematic documents.\n\nThis will remove:\n• Empty placeholder files\n• Documents with missing client information\n• Processing metadata files (.metadata.json)\n\nThis will KEEP:\n• JSONL files (processed document content)\n• client-info.json files (project metadata)\n\nDelete problematic documents?")) {
                     hideLoading();
                     return;
                 }
