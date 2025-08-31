@@ -1113,7 +1113,6 @@
             const errors = [];
             
             // Use n8n webhook for upload and conversion
-            // Using regular upload endpoint since we're sending files one by one
             const uploadWebhookUrl = 'https://workflows.saxtechnology.com/webhook/ask-foreman/upload';
             
             for (let i = 0; i < selectedFiles.length; i++) {
@@ -1129,19 +1128,36 @@
                     console.log('Selected client:', selectedClient);
                     console.log('Client folder:', selectedClient.folder);
                     
-                    // Create FormData for n8n webhook
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('category', category);
-                    formData.append('client', selectedClient.folder || selectedClient.name);
-                    formData.append('clientName', selectedClient.folder || selectedClient.name); // Add clientName as well
-                    formData.append('fileName', fileName);
-                    formData.append('source', 'admin-bulk-upload');
+                    // Convert file to base64
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            // Extract base64 string (remove data URL prefix)
+                            const base64String = reader.result.split(',')[1];
+                            resolve(base64String);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
                     
-                    // Send to n8n webhook for processing and conversion
+                    // Create JSON payload (matching index.html format)
+                    const uploadData = {
+                        file: base64Data,
+                        fileName: fileName,
+                        mimeType: file.type || 'application/pdf',
+                        category: category,
+                        client: selectedClient.folder || selectedClient.name,
+                        clientName: selectedClient.folder || selectedClient.name,
+                        source: 'admin-bulk-upload'
+                    };
+                    
+                    // Send to n8n webhook as JSON
                     const uploadResponse = await fetch(uploadWebhookUrl, {
                         method: 'POST',
-                        body: formData
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(uploadData)
                     });
                     
                     if (uploadResponse.ok) {
