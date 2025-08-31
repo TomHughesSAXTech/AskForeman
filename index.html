@@ -3768,7 +3768,16 @@
           
           if (response.ok) {
             addSystemMessage(`✅ File "${fileName}" deleted successfully from storage and index!`);
-            // Reload the file list
+            
+            // Clear existing file structure to force a fresh reload
+            fileStructure = {};
+            currentPath = [];
+            selectedFiles.clear();
+            
+            // Close any open context menus
+            closeContextMenu();
+            
+            // Reload the file list with force refresh
             await loadClientFiles(selectedClient);
           } else {
             // Fallback to direct blob deletion if webhook fails
@@ -3784,6 +3793,15 @@
             
             if (directResponse.ok || directResponse.status === 202) {
               addSystemMessage(`⚠️ File "${fileName}" deleted from storage (index may not be updated)`);
+              
+              // Clear existing file structure to force a fresh reload
+              fileStructure = {};
+              currentPath = [];
+              selectedFiles.clear();
+              
+              // Close any open context menus
+              closeContextMenu();
+              
               await loadClientFiles(selectedClient);
             } else {
               throw new Error(`Delete failed with status ${directResponse.status}`);
@@ -4266,7 +4284,13 @@
           
           if (response.ok) {
             addSystemMessage(`✅ File deleted successfully from storage and index!`);
-            // Reload the file list
+            
+            // Clear existing file structure to force a fresh reload
+            fileStructure = {};
+            currentPath = [];
+            selectedFiles.clear();
+            
+            // Reload the file list with fresh data
             await loadClientFiles(clientName);
           } else {
             // Fallback to direct blob deletion if webhook fails
@@ -4282,6 +4306,12 @@
             
             if (directResponse.ok || directResponse.status === 202) {
               addSystemMessage(`⚠️ File deleted from storage (index may not be updated)`);
+              
+              // Clear existing file structure to force a fresh reload
+              fileStructure = {};
+              currentPath = [];
+              selectedFiles.clear();
+              
               await loadClientFiles(clientName);
             } else {
               throw new Error(`Delete failed with status ${directResponse.status}`);
