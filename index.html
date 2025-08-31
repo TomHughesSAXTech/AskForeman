@@ -2225,12 +2225,20 @@
             );
           }
           
+          // Auto-refresh the file browser to show newly uploaded files
+          if (selectedClient && successCount > 0) {
+            setTimeout(async () => {
+              await loadClientFiles(selectedClient);
+              addSystemMessage(`📁 File browser refreshed to show your newly uploaded documents.`);
+            }, 2000);
+          }
+          
           // Show a helpful tip about continuous upload
           setTimeout(() => {
             addSystemMessage(
               `💡 Tip: The selected categories remain active. You can add more files without refreshing the page!`
             );
-          }, 2000);
+          }, 4000);
         }, 1000);
       });
 
@@ -2244,6 +2252,7 @@
         formData.append("file", file);
         formData.append("category", category);
         formData.append("client", selectedClient);
+        formData.append("clientName", selectedClient); // Add clientName for consistency with n8n workflow
 
         try {
           const response = await fetch(API_CONFIG.uploadWebhookUrl, {
@@ -2607,6 +2616,10 @@
               clientSelect.value = clientOption.value;
               selectedClient = clientOption.value;
               addSystemMessage(`✅ Client "${clientName}" is now selected and ready for document uploads.`);
+              
+              // Auto-refresh the file browser to show the new client's folder structure
+              await loadClientFiles(clientOption.value);
+              addSystemMessage(`📁 File browser refreshed for "${clientName}".`);
             } else {
               console.log('Client not found in dropdown yet, it may take a moment to appear');
               addSystemMessage(`⚠️ Client "${clientName}" was created but may take a moment to appear in the list. Please refresh the page if it doesn't appear shortly.`);

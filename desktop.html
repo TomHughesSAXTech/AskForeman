@@ -2401,6 +2401,7 @@
         formData.append("file", file);
         formData.append("category", category);
         formData.append("client", selectedClient);
+        formData.append("clientName", selectedClient); // Add clientName for consistency with n8n workflow
 
         try {
           const response = await fetch(API_CONFIG.uploadWebhookUrl, {

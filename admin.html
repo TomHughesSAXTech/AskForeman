@@ -463,7 +463,7 @@
                             </div>
                             
                             <!-- Global Category Selection -->
-                            <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
+                <div style="margin-bottom: 1rem; padding: 1rem; background: var(--light-gray); border-radius: 5px;">
                                 <p style="font-weight: 600; margin-bottom: 0.5rem;">Default Category for All Files:</p>
                                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
@@ -485,10 +485,6 @@
                                     <label style="display: flex; align-items: center; gap: 0.5rem;">
                                         <input type="radio" name="uploadCategory" value="signed-contracts">
                                         <span>📝 Contracts</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <input type="radio" name="uploadCategory" value="documents">
-                                        <span>📁 Documents</span>
                                     </label>
                                 </div>
                             </div>
@@ -1082,7 +1078,6 @@
                 html += `<option value="proposals" ${selectedCategory === 'proposals' ? 'selected' : ''}>📊 Proposals</option>`;
                 html += `<option value="specs" ${selectedCategory === 'specs' ? 'selected' : ''}>📋 Specs</option>`;
                 html += `<option value="signed-contracts" ${selectedCategory === 'signed-contracts' ? 'selected' : ''}>📝 Contracts</option>`;
-                html += `<option value="documents" ${selectedCategory === 'documents' ? 'selected' : ''}>📁 Documents</option>`;
                 html += `</select>`;
                 html += `</td>`;
                 html += '</tr>';
@@ -1127,7 +1122,7 @@
                 
                 // Get category from dropdown
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
-                const category = categorySelect ? categorySelect.value : 'documents';
+                const category = categorySelect ? categorySelect.value : 'drawings';
                 
                 try {
                     console.log(`Uploading ${fileName} to category: ${category}`);
@@ -1274,8 +1269,8 @@
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
-                                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                                'Pragma': 'no-cache'
+                                'Cache-Control': 'no-cache, no-store, must-revalidate'
+                                // Removed 'Pragma' header to avoid CORS issues
                             },
                             body: JSON.stringify({ search: '*', top: 1, count: true })
                         });
@@ -1290,11 +1285,11 @@
                 const randomId = Math.random().toString(36).substring(7);
                 const statsUrl = `${AZURE_SEARCH_PROXY.statsUrl}?t=${Date.now()}&r=${randomId}&force=${forceRefresh}&_=${Math.random()}`;
                 const statsResponse = await fetch(statsUrl, {
-                    method: forceRefresh ? 'POST' : 'GET',
+                    method: 'GET',  // Always use GET for stats endpoint
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate'
                     },
-                    body: forceRefresh ? JSON.stringify({ forceRefresh: true }) : undefined,
                     cache: 'no-store'
                 });
                 
