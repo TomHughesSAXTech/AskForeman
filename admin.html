@@ -1808,11 +1808,29 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to clear index');
+                    const errorText = await response.text();
+                    console.error('Clear index error response:', errorText);
+                    throw new Error(`Failed to clear index: ${response.status} ${response.statusText}`);
                 }
                 
-                const result = await response.json();
-                const deletedCount = result.deletedCount || 0;
+                // Check if response has content before parsing
+                const responseText = await response.text();
+                let result = {};
+                let deletedCount = 0;
+                
+                if (responseText && responseText.trim()) {
+                    try {
+                        result = JSON.parse(responseText);
+                        deletedCount = result.deletedCount || 0;
+                    } catch (parseError) {
+                        console.warn('Could not parse clear index response, but operation may have succeeded:', responseText);
+                        // If we can't parse the response but got a 200 OK, assume success
+                        deletedCount = 'unknown number of';
+                    }
+                } else {
+                    console.warn('Empty response from clear index, but operation may have succeeded');
+                    deletedCount = 'all';
+                }
                 
                 hideLoading();
                 showStatus('success', `Successfully cleared the entire index. ${deletedCount} documents removed.`);
