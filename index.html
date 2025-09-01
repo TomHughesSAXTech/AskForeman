@@ -2526,13 +2526,10 @@
       }
 
       function updateMetadata() {
-        document.getElementById("docCount").textContent = processedDocuments;
-        document.getElementById("indexSize").textContent = `${(
-          processedDocuments * 0.5
-        ).toFixed(1)} MB`;
-        document.getElementById("lastUpdated").textContent =
-          new Date().toLocaleString();
-        document.getElementById("indexStatus").textContent =
+        // This function is now handled by updateSearchStatistics()
+        // Kept for backward compatibility but delegates to the new function
+        updateSearchStatistics();
+      }
           processedDocuments > 0 ? "Active" : "Ready";
       }
 
@@ -3107,20 +3104,71 @@
       async function updateSearchStatistics() {
         const docsCountElement = document.getElementById('totalDocsCount');
         const clientsCountElement = document.getElementById('totalClientsCount');
+        const docCountElement = document.getElementById('docCount');
+        const indexSizeElement = document.getElementById('indexSize');
+        const lastUpdatedElement = document.getElementById('lastUpdated');
+        const indexStatusElement = document.getElementById('indexStatus');
         
-        // Update based on loaded clients
+        try {
+          // Fetch real index statistics from Azure Search via n8n webhook
+          const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            const stats = Array.isArray(statsData) ? statsData[0] : statsData;
+            
+            // Update index panel with real data
+            if (stats.documentCount !== undefined) {
+              const docCount = stats.documentCount || 0;
+              docsCountElement.textContent = docCount.toLocaleString();
+              docCountElement.textContent = docCount.toLocaleString();
+            }
+            
+            if (stats.storageSize !== undefined) {
+              const sizeInMB = (stats.storageSize / (1024 * 1024)).toFixed(2);
+              indexSizeElement.textContent = `${sizeInMB} MB`;
+            }
+            
+            // Update last updated time
+            lastUpdatedElement.textContent = new Date().toLocaleTimeString();
+            indexStatusElement.textContent = 'Active';
+            indexStatusElement.className = 'metadata-value status-active';
+          } else {
+            // If stats fetch fails, fall back to counting documents
+            if (totalDocumentCount > 0) {
+              docsCountElement.textContent = totalDocumentCount.toLocaleString();
+              docCountElement.textContent = totalDocumentCount.toLocaleString();
+            } else {
+              docsCountElement.textContent = '0';
+              docCountElement.textContent = '0';
+            }
+            indexStatusElement.textContent = 'Offline';
+            indexStatusElement.className = 'metadata-value';
+          }
+        } catch (error) {
+          console.warn('Could not fetch index statistics:', error);
+          // Fall back to local counts
+          if (totalDocumentCount > 0) {
+            docsCountElement.textContent = totalDocumentCount.toLocaleString();
+            docCountElement.textContent = totalDocumentCount.toLocaleString();
+          } else {
+            docsCountElement.textContent = '0';
+            docCountElement.textContent = '0';
+          }
+          indexStatusElement.textContent = 'Error';
+          indexStatusElement.className = 'metadata-value';
+        }
+        
+        // Always update client count from loaded data
         if (window.availableClients) {
           clientsCountElement.textContent = window.availableClients.length;
-          
-          // Use actual document count if available, otherwise use processed count
-          if (totalDocumentCount > 0) {
-            docsCountElement.textContent = totalDocumentCount;
-          } else {
-            docsCountElement.textContent = processedDocuments;
-          }
         } else {
           clientsCountElement.textContent = '0';
-          docsCountElement.textContent = processedDocuments;
         }
       }
       
@@ -3187,8 +3235,8 @@
             updateDetailedStatus();
           }, 300000);
           
-          // Update search statistics periodically
-          setInterval(updateSearchStatistics, 60000); // Every minute
+          // Update search statistics periodically (every 30 seconds for better freshness)
+          setInterval(updateSearchStatistics, 30000); // Every 30 seconds
           
         } catch (error) {
           console.error("Initialization error:", error);
