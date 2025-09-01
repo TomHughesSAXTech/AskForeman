@@ -1641,6 +1641,16 @@
                                 });
                             }
                             
+                            // Parse metadata first if available
+                            let metadata = {};
+                            if (doc.metadata) {
+                                try {
+                                    metadata = typeof doc.metadata === 'string' ? JSON.parse(doc.metadata) : doc.metadata;
+                                } catch (e) {
+                                    // Ignore parse errors
+                                }
+                            }
+                            
                             // Get vector/embedding information
                             let vectorInfo = 'None';
                             let vectorSize = 0;
@@ -1697,16 +1707,6 @@
                                 searchScore = doc['@search.score'].toFixed(2);
                             } else if (doc.score) {
                                 searchScore = doc.score.toFixed(2);
-                            }
-                            
-                            // Parse metadata if available
-                            let metadata = {};
-                            if (doc.metadata) {
-                                try {
-                                    metadata = typeof doc.metadata === 'string' ? JSON.parse(doc.metadata) : doc.metadata;
-                                } catch (e) {
-                                    // Ignore parse errors
-                                }
                             }
                             
                             // Determine status and issues
