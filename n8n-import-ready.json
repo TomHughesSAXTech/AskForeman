@@ -1,0 +1,50 @@
+{
+  "name": "SAXTech Azure Functions Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload",
+        "options": {}
+      },
+      "name": "Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/convertdocument",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-functions-key",
+              "value": "GsqoRnVEcexSaaBTLsQ6NAIw7M_2Qqxg8SdHsYuYuAcBAzFulSx1NA=="
+            }
+          ]
+        },
+        "sendBody": true,
+        "options": {}
+      },
+      "name": "Call Azure Function",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    }
+  ],
+  "connections": {
+    "Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Call Azure Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

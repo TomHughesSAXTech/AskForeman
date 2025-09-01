@@ -1028,8 +1028,9 @@
 
         // Store selected files for preview
         let selectedFiles = [];
+        let duplicateCheckEnabled = true;
         
-        // Enhanced bulk upload with preview and 15-file limit
+        // Enhanced bulk upload with preview, deduplication, and 15-file limit
         function handleBulkFilesWithPreview(event) {
             const files = event.target.files;
             if (!files || files.length === 0) return;
@@ -1053,13 +1054,21 @@
             // Get default category
             const defaultCategory = document.querySelector('input[name="uploadCategory"]:checked')?.value || 'drawings';
             
-            // Build preview UI
+            // Build preview UI with hash column
             const fileListContainer = document.getElementById('fileList');
-            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            let html = '<div style="margin-bottom: 1rem;">';
+            html += '<label style="display: flex; align-items: center; gap: 0.5rem;">';
+            html += '<input type="checkbox" id="enableDeduplication" checked> ';
+            html += '<span style="color: var(--concrete-gray);">🔍 Check for duplicate files (recommended)</span>';
+            html += '</label>';
+            html += '</div>';
+            html += '<table style="width: 100%; border-collapse: collapse;">';
             html += '<thead><tr>';
             html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">File Name</th>';
             html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Size</th>';
             html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Category</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Hash</th>';
+            html += '<th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid var(--medium-gray);">Status</th>';
             html += '</tr></thead><tbody>';
             
             selectedFiles.forEach((file, index) => {
@@ -1067,6 +1076,15 @@
                 const fileSize = formatFileSize(file.size);
                 
                 const selectedCategory = defaultCategory;
+                
+                // Calculate file hash asynchronously
+                calculateFileHash(file).then(hash => {
+                    const hashCell = document.getElementById(`fileHash_${index}`);
+                    if (hashCell) {
+                        hashCell.textContent = hash.substring(0, 8) + '...';
+                        hashCell.title = hash; // Full hash on hover
+                    }
+                });
                 
                 html += '<tr>';
                 html += `<td style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">${fileName}</td>`;
@@ -1080,6 +1098,8 @@
                 html += `<option value="signed-contracts" ${selectedCategory === 'signed-contracts' ? 'selected' : ''}>📝 Contracts</option>`;
                 html += `</select>`;
                 html += `</td>`;
+                html += `<td id="fileHash_${index}" style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray); font-family: monospace; font-size: 0.85rem; color: var(--steel-gray);">calculating...</td>`;
+                html += `<td id="fileStatus_${index}" style="padding: 0.5rem; border-bottom: 1px solid var(--light-gray);">⏳ Ready</td>`;
                 html += '</tr>';
             });
             
@@ -1094,6 +1114,15 @@
             event.target.value = '';
         }
         
+        // Calculate SHA-256 hash for a file
+        async function calculateFileHash(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+        
         // Upload files with individual categories using n8n webhook for conversion
         async function uploadFilesWithCategories() {
             if (!selectedFiles || selectedFiles.length === 0) {
@@ -1106,10 +1135,15 @@
                 return;
             }
             
-            showLoading(`Uploading and converting ${selectedFiles.length} files...`);
+            // Check if deduplication is enabled
+            const dedupEnabled = document.getElementById('enableDeduplication')?.checked || false;
+            
+            // Create progress modal
+            showUploadProgress(selectedFiles.length);
             
             let successCount = 0;
             let errorCount = 0;
+            let duplicateCount = 0;
             const errors = [];
             
             // Use n8n webhook for upload and conversion
@@ -1119,6 +1153,10 @@
                 const file = selectedFiles[i];
                 const fileName = file.name;
                 
+                // Update status in table
+                const statusCell = document.getElementById(`fileStatus_${i}`);
+                if (statusCell) statusCell.innerHTML = '📤 Uploading...';
+                
                 // Get category from dropdown
                 const categorySelect = document.getElementById(`fileCategory_${i}`);
                 const category = categorySelect ? categorySelect.value : 'drawings';
@@ -1126,6 +1164,16 @@
                 try {
                     console.log(`Uploading ${fileName} to category: ${category}`);
                     console.log('Selected client:', selectedClient);
+                    
+                    // Calculate hash for deduplication
+                    const fileHash = await calculateFileHash(file);
+                    
+                    // Update hash display
+                    const hashCell = document.getElementById(`fileHash_${i}`);
+                    if (hashCell) {
+                        hashCell.textContent = fileHash.substring(0, 8) + '...';
+                        hashCell.title = fileHash;
+                    }
                     
                     // Convert file to base64
                     const base64Data = await new Promise((resolve, reject) => {
@@ -1139,14 +1187,16 @@
                         reader.readAsDataURL(file);
                     });
                     
-                    // Create JSON payload matching n8n expectations
+                    // Create JSON payload matching n8n expectations with deduplication support
                     const uploadData = {
                         file: base64Data,
                         fileName: fileName,
                         mimeType: file.type || 'application/pdf',
                         category: category,
                         client: selectedClient.folder || selectedClient.name,
-                        clientName: selectedClient.folder || selectedClient.name
+                        clientName: selectedClient.folder || selectedClient.name,
+                        fileHash: fileHash,
+                        allowDuplicates: !dedupEnabled  // If dedup is disabled, allow duplicates
                     };
                     
                     // Send to n8n webhook as JSON
@@ -1161,28 +1211,46 @@
                     if (uploadResponse.ok) {
                         const result = await uploadResponse.json();
                         console.log(`Successfully uploaded ${fileName}:`, result);
-                        successCount++;
+                        
+                        if (result.data && result.data.isDuplicate) {
+                            duplicateCount++;
+                            if (statusCell) statusCell.innerHTML = '⚠️ Duplicate';
+                        } else {
+                            successCount++;
+                            if (statusCell) statusCell.innerHTML = '✅ Complete';
+                        }
+                    } else if (uploadResponse.status === 409) {
+                        // Duplicate file detected
+                        duplicateCount++;
+                        if (statusCell) statusCell.innerHTML = '🔁 Duplicate (skipped)';
+                        console.log(`Duplicate file detected: ${fileName}`);
                     } else {
                         const errorText = await uploadResponse.text();
                         console.error(`Failed to upload ${fileName}:`, errorText);
                         errors.push(`${fileName}: ${errorText}`);
                         errorCount++;
+                        if (statusCell) statusCell.innerHTML = '❌ Failed';
                     }
                 } catch (error) {
                     console.error(`Error uploading ${fileName}:`, error);
                     errors.push(`${fileName}: ${error.message}`);
                     errorCount++;
+                    if (statusCell) statusCell.innerHTML = '❌ Error';
                 }
                 
-                document.getElementById('loadingText').textContent = `Processing file ${i + 1} of ${selectedFiles.length}...`;
+                // Update progress
+                updateUploadProgress(i + 1, selectedFiles.length, fileName);
             }
             
-            hideLoading();
+            hideUploadProgress();
             
             // Show results
             let message = '';
             if (successCount > 0) {
                 message = `✅ Successfully uploaded and converted ${successCount} file(s). They will be indexed for search.`;
+            }
+            if (duplicateCount > 0) {
+                message += `\n🔁 ${duplicateCount} duplicate file(s) were skipped.`;
             }
             if (errorCount > 0) {
                 message += `\n⚠️ ${errorCount} file(s) failed to upload.`;
@@ -1241,9 +1309,68 @@
             document.getElementById('loadingText').textContent = text;
             document.getElementById('loadingOverlay').style.display = 'flex';
         }
-
+        
         function hideLoading() {
             document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        // Upload progress modal functions
+        function showUploadProgress(totalFiles) {
+            const modal = document.createElement('div');
+            modal.id = 'uploadProgressModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                padding: 2rem;
+                border-radius: 10px;
+                min-width: 400px;
+                max-width: 600px;
+            `;
+            
+            content.innerHTML = `
+                <h3 style="color: var(--concrete-gray); margin-bottom: 1rem;">📤 Uploading Files</h3>
+                <div style="margin-bottom: 1rem;">
+                    <div style="background: var(--light-gray); height: 30px; border-radius: 5px; overflow: hidden;">
+                        <div id="uploadProgressBar" style="background: linear-gradient(90deg, var(--safety-yellow), var(--construction-orange)); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div id="uploadProgressText" style="text-align: center; color: var(--steel-gray);">Preparing upload...</div>
+                <div id="uploadCurrentFile" style="text-align: center; color: var(--steel-gray); font-size: 0.9rem; margin-top: 0.5rem;"></div>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+        
+        function updateUploadProgress(current, total, fileName) {
+            const percentage = Math.round((current / total) * 100);
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressText = document.getElementById('uploadProgressText');
+            const currentFile = document.getElementById('uploadCurrentFile');
+            
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressText) progressText.textContent = `Processing file ${current} of ${total} (${percentage}%)`;
+            if (currentFile) currentFile.textContent = `Current: ${fileName}`;
+        }
+        
+        function hideUploadProgress() {
+            const modal = document.getElementById('uploadProgressModal');
+            if (modal) {
+                modal.remove();
+            }
         }
 
         function showStatus(type, message) {
@@ -1355,7 +1482,7 @@
                         top: 1000,  // Increased to get more documents
                         select: '*',  // Get ALL fields to inspect what's in the index
                         count: true,
-                        orderby: 'fileName desc'  // Order by filename to see latest
+                        orderby: 'uploadedAt desc'  // Order by upload date to see latest first
                     }),
                     cache: 'no-store'
                 });
@@ -1416,33 +1543,23 @@
                     if (documents.length === 0) {
                         indexContents.innerHTML = '<p style="text-align: center; padding: 1rem; color: var(--steel-gray);">No documents in index</p>';
                     } else {
-                        // Categorize documents
+                        // Categorize documents by issues only
                         const problematicDocs = [];
                         const validDocs = [];
-                        const processingDocs = [];
                         
                         documents.forEach(doc => {
                             const fileName = doc.fileName || 'Unknown';
                             const client = doc.client;
                             
-                            // Identify different document types
+                            // Identify problematic documents
                             const hasNoClient = !client || client === 'Unknown' || client === 'null';
                             const isPlaceholder = fileName === '.placeholder';
-                            const isProcessingMetadata = fileName.includes('.metadata.json'); // Processing metadata, not useful
-                            const isProcessedContent = fileName.includes('.jsonl'); // Processed content - SHOULD be indexed
-                            const isClientInfo = fileName === 'client-info.json'; // Client metadata - useful for context
                             
                             // Only truly problematic files
-                            const isProblematic = 
-                                isPlaceholder || // Empty placeholder files
-                                isProcessingMetadata || // Processing metadata files
-                                (hasNoClient && !isClientInfo); // Files with no client (except client-info.json)
+                            const isProblematic = isPlaceholder || hasNoClient;
                             
                             if (isProblematic) {
                                 problematicDocs.push(doc);
-                            } else if (isProcessedContent || isClientInfo) {
-                                // These are processing/metadata files that ARE useful
-                                processingDocs.push(doc);
                             } else {
                                 validDocs.push(doc);
                             }
@@ -1450,8 +1567,7 @@
                         
                         let html = '<div style="margin-bottom: 1rem;">';
                         html += `<div style="display: flex; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap;">`;
-                        html += `<span style="color: var(--hi-vis-green);">✅ Original Documents: ${validDocs.length}</span>`;
-                        html += `<span style="color: var(--blueprint-blue);">🔄 Processed Content: ${processingDocs.length}</span>`;
+                        html += `<span style="color: var(--hi-vis-green);">✅ Valid Documents: ${validDocs.length}</span>`;
                         html += `<span style="color: var(--warning-red);">⚠️ Issues: ${problematicDocs.length}</span>`;
                         html += `<span style="color: var(--steel-gray);">📊 Total: ${documents.length}</span>`;
                         html += `</div>`;
@@ -1462,37 +1578,28 @@
                         
                         if (unknownClientDocs.length > 0 || placeholderDocs.length > 0) {
                             html += '<div style="background: #ffebee; border: 1px solid #f44336; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
-                            html += '<strong>🚨 Critical Issues:</strong><br>';
+                            html += '<strong>🚨 Issues Found:</strong><br>';
                             if (unknownClientDocs.length > 0) {
-                                html += `• ${unknownClientDocs.length} documents with missing client information (breaks deletion/filtering)<br>`;
+                                html += `• ${unknownClientDocs.length} documents with missing client information<br>`;
                             }
                             if (placeholderDocs.length > 0) {
                                 html += `• ${placeholderDocs.length} empty placeholder files<br>`;
                             }
-                            html += '<br><strong>Root Cause:</strong> The n8n workflow is not properly setting the client field during upload.<br>';
-                            html += '<button class="btn btn-danger" style="margin-top: 0.5rem;" onclick="cleanupProblematicDocs()">🗑️ Remove Problematic Documents</button>';
-                            html += '</div>';
-                        }
-                        
-                        if (processingDocs.length > 0) {
-                            html += '<div style="background: #e3f2fd; border: 1px solid #2196f3; border-radius: 5px; padding: 0.75rem; margin-bottom: 1rem;">';
-                            html += '<strong>ℹ️ Processing Files:</strong><br>';
-                            html += `• ${processingDocs.filter(d => d.fileName.includes('.jsonl')).length} JSONL files (processed document content)<br>`;
-                            html += `• ${processingDocs.filter(d => d.fileName === 'client-info.json').length} client info files (project metadata)<br>`;
-                            html += 'These files contain searchable content and metadata - they are working as intended.';
+                            html += '<button class="btn btn-danger" style="margin-top: 0.5rem;" onclick="cleanupProblematicDocs()">🗑️ Clean Up Issues</button>';
                             html += '</div>';
                         }
                         html += '</div>';
                         
-                        html += '<table class="document-table" style="width: 100%;">';
+                        html += '<table class="document-table" style="width: 100%; font-size: 0.9rem;">';
                         html += '<thead><tr>';
                         html += '<th style="width: 20px;"><input type="checkbox" id="selectAllDocs" onchange="toggleAllDocuments()"></th>';
                         html += '<th>File Name</th>';
                         html += '<th>Client</th>';
                         html += '<th>Category</th>';
-                        html += '<th>Size</th>';
-                        html += '<th>Uploaded</th>';
-                        html += '<th>Type</th>';
+                        html += '<th>Upload Time</th>';
+                        html += '<th>Content Size</th>';
+                        html += '<th>Vector Info</th>';
+                        html += '<th>Search Score</th>';
                         html += '<th>Status</th>';
                         html += '</tr></thead><tbody>';
                         
@@ -1507,63 +1614,91 @@
                                 contentSize = new Blob([doc.content]).size;
                             }
                             
-                            // Format upload date
-                            let uploadDate = 'Unknown';
+                            // Format upload timestamp with full date and time
+                            let uploadTimestamp = 'Unknown';
                             if (doc.uploadedAt) {
-                                uploadDate = new Date(doc.uploadedAt).toLocaleDateString();
+                                const date = new Date(doc.uploadedAt);
+                                uploadTimestamp = date.toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
                             }
                             
-                            // Check what type of content is stored
-                            let contentType = 'Unknown';
+                            // Get vector/embedding information
+                            let vectorInfo = 'None';
+                            let vectorSize = 0;
+                            if (doc.contentVector && Array.isArray(doc.contentVector)) {
+                                vectorSize = doc.contentVector.length;
+                                vectorInfo = `${vectorSize}D`;
+                                if (vectorSize === 1536) {
+                                    vectorInfo += ' (Ada-002)';
+                                } else if (vectorSize === 768) {
+                                    vectorInfo += ' (BERT)';
+                                }
+                            } else if (doc.embeddings) {
+                                vectorInfo = '✓ Embedded';
+                            }
+                            
+                            // Get search score information
+                            let searchScore = '-';
+                            if (doc['@search.score']) {
+                                searchScore = doc['@search.score'].toFixed(2);
+                            } else if (doc.score) {
+                                searchScore = doc.score.toFixed(2);
+                            }
+                            
+                            // Parse metadata if available
+                            let metadata = {};
+                            if (doc.metadata) {
+                                try {
+                                    metadata = typeof doc.metadata === 'string' ? JSON.parse(doc.metadata) : doc.metadata;
+                                } catch (e) {
+                                    // Ignore parse errors
+                                }
+                            }
+                            
+                            // Determine status and issues
                             let rowClass = '';
                             let statusIcon = '✅';
+                            let statusText = 'OK';
                             
-                            // Identify document types and issues
+                            // Check for issues
                             if (fileName === '.placeholder') {
-                                contentType = '📂 Placeholder';
                                 rowClass = 'style="background-color: #ffebee;"';
                                 statusIcon = '❌';
-                            } else if (fileName.includes('.metadata.json')) {
-                                contentType = '⚙️ Processing Metadata';
-                                rowClass = 'style="background-color: #fff3e0;"';
-                                statusIcon = '⚠️';
-                            } else if (fileName.includes('.jsonl')) {
-                                contentType = '📄 Processed Content';
-                                rowClass = 'style="background-color: #e3f2fd;"';
-                                statusIcon = '🔄';
-                            } else if (fileName === 'client-info.json') {
-                                contentType = '📋 Client Info';
-                                rowClass = 'style="background-color: #e8f5e9;"';
-                                statusIcon = 'ℹ️';
+                                statusText = 'Empty';
                             } else if (!client || client === 'Unknown' || client === 'null') {
                                 rowClass = 'style="background-color: #ffebee;"';
                                 statusIcon = '🚨';
-                            } else if (doc.content) {
-                                // Check if content looks like JSON
-                                if (doc.content.trim().startsWith('{') || doc.content.trim().startsWith('[')) {
-                                    contentType = '📄 JSON';
-                                } else if (doc.content.includes('=== DOCUMENT ANALYSIS ===')) {
-                                    contentType = '📝 Processed';
-                                } else if (doc.content.includes('\n\n') && doc.content.includes(':')) {
-                                    contentType = '📝 Text/Markdown';
-                                } else {
-                                    contentType = '📃 Text';
-                                }
-                            } else {
-                                contentType = '❌ No content';
-                                rowClass = 'style="background-color: #ffebee;"';
+                                statusText = 'No Client';
+                            } else if (!doc.content || doc.content.length === 0) {
+                                rowClass = 'style="background-color: #fff3e0;"';
                                 statusIcon = '⚠️';
+                                statusText = 'No Content';
+                            } else if (vectorInfo === 'None' && !fileName.includes('.jsonl')) {
+                                // Original docs should have vectors
+                                statusIcon = '🔸';
+                                statusText = 'No Vector';
+                            } else {
+                                statusText = 'Indexed';
                             }
                             
-                            html += `<tr ${rowClass}>`;
+                            // Add hover tooltip with full information
+                            const tooltip = `File: ${fileName}\nClient: ${client}\nCategory: ${category}\nUploaded: ${uploadTimestamp}\nContent Size: ${formatFileSize(contentSize)}\nVector: ${vectorInfo}\nStatus: ${statusText}`;
+                            
+                            html += `<tr ${rowClass} title="${tooltip}">`;
                             html += `<td><input type="checkbox" class="doc-checkbox" value="${doc.id}" data-filename="${fileName}" data-problematic="${rowClass ? 'true' : 'false'}"></td>`;
-                            html += `<td title="${fileName}" style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fileName}</td>`;
+                            html += `<td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fileName}</td>`;
                             html += `<td>${client}</td>`;
                             html += `<td>${category}</td>`;
+                            html += `<td style="font-size: 0.85rem;">${uploadTimestamp}</td>`;
                             html += `<td>${formatFileSize(contentSize)}</td>`;
-                            html += `<td>${uploadDate}</td>`;
-                            html += `<td>${contentType}</td>`;
-                            html += `<td style="text-align: center;">${statusIcon}</td>`;
+                            html += `<td style="font-family: monospace; font-size: 0.85rem;">${vectorInfo}</td>`;
+                            html += `<td style="text-align: center;">${searchScore}</td>`;
+                            html += `<td style="text-align: center;" title="${statusText}">${statusIcon}</td>`;
                             html += '</tr>';
                         });
                         

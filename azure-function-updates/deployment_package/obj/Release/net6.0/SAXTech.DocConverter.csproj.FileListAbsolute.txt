@@ -1,0 +1,6 @@
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.csproj.AssemblyReference.cache
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.GeneratedMSBuildEditorConfig.editorconfig
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.AssemblyInfoInputs.cache
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.AssemblyInfo.cs
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.csproj.CoreCompileInputs.cache
+/Users/tom/Desktop/WARP/SAXTech-AskForeman-Site/azure-function-updates/deployment_package/obj/Release/net6.0/SAXTech.DocConverter.sourcelink.json

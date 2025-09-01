@@ -1,0 +1,308 @@
+{
+  "name": "SAXTech Complete Azure Functions",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "id": "upload-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare upload data\nconst input = $input.first();\nconst data = input.json.body || input.json;\nconst binary = input.binary;\n\nlet fileBuffer;\nif (binary && binary.data) {\n  fileBuffer = binary.data;\n} else if (data.file) {\n  fileBuffer = {\n    data: Buffer.from(data.file, 'base64'),\n    mimeType: data.mimeType || 'application/pdf',\n    fileName: data.fileName || 'document.pdf'\n  };\n}\n\nreturn {\n  json: {\n    client: data.client || 'general',\n    category: data.category || 'uncategorized'\n  },\n  binary: {\n    data: fileBuffer\n  }\n};"
+      },
+      "name": "Prepare Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "id": "prepare-upload"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/convertdocument",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-functions-key",
+              "value": "GsqoRnVEcexSaaBTLsQ6NAIw7M_2Qqxg8SdHsYuYuAcBAzFulSx1NA=="
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $binary.data }}"
+            },
+            {
+              "name": "client",
+              "value": "={{ $json.client }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $json.category }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "name": "Azure Upload Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "id": "azure-upload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Upload Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "id": "upload-response"
+    },
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "ask-foreman/delete-client",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Delete Client Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 500],
+      "id": "delete-client-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract client name\nconst data = $input.first().json;\nconst client = data.body?.client || data.client || data.query?.client;\n\nif (!client) {\n  throw new Error('Client name is required');\n}\n\nreturn {\n  json: {\n    client: client\n  }\n};"
+      },
+      "name": "Prepare Delete Client",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 500],
+      "id": "prepare-delete-client"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/deleteclient",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-functions-key",
+              "value": "GsqoRnVEcexSaaBTLsQ6NAIw7M_2Qqxg8SdHsYuYuAcBAzFulSx1NA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({client: $json.client}) }}",
+        "options": {}
+      },
+      "name": "Azure Delete Client",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 500],
+      "id": "azure-delete-client"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Delete Client Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 500],
+      "id": "delete-client-response"
+    },
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "ask-foreman/delete-file",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Delete File Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 700],
+      "id": "delete-file-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract file info\nconst data = $input.first().json;\nconst body = data.body || data;\n\nconst client = body.client;\nconst category = body.category;\nconst fileName = body.fileName;\n\nif (!client || !category || !fileName) {\n  throw new Error('client, category, and fileName are required');\n}\n\nreturn {\n  json: {\n    client: client,\n    category: category,\n    fileName: fileName\n  }\n};"
+      },
+      "name": "Prepare Delete File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 700],
+      "id": "prepare-delete-file"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/deletefile",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-functions-key",
+              "value": "GsqoRnVEcexSaaBTLsQ6NAIw7M_2Qqxg8SdHsYuYuAcBAzFulSx1NA=="
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Azure Delete File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 700],
+      "id": "azure-delete-file"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Delete File Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 700],
+      "id": "delete-file-response"
+    }
+  ],
+  "connections": {
+    "Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload": {
+      "main": [
+        [
+          {
+            "node": "Azure Upload Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Upload Document": {
+      "main": [
+        [
+          {
+            "node": "Upload Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Client Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Delete Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Delete Client": {
+      "main": [
+        [
+          {
+            "node": "Azure Delete Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Delete Client": {
+      "main": [
+        [
+          {
+            "node": "Delete Client Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete File Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Delete File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Delete File": {
+      "main": [
+        [
+          {
+            "node": "Azure Delete File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Delete File": {
+      "main": [
+        [
+          {
+            "node": "Delete File Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

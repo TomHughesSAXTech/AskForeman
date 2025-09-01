@@ -25,3 +25,14 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+
+# Sensitive files
+local.settings.json
+test-doc-converter.js
+n8n-azure-function-setup.md
+n8n-workflow-*.json
+*.env
+.env.*
+creds.json
+*-credentials.json
+

@@ -1,0 +1,10 @@
+# Azure Function App Requirements
+azure-functions==1.17.0
+azure-storage-blob==12.19.0
+azure-search-documents==11.4.0
+azure-core==1.29.5
+azure-identity==1.15.0
+openai==1.6.1
+PyPDF2==3.0.1
+requests==2.31.0
+python-dotenv==1.0.0

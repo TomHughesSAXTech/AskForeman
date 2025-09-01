@@ -1,0 +1,170 @@
+{
+  "name": "Document Upload with Azure Function",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-document",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryData": true,
+          "rawBody": false
+        }
+      },
+      "id": "webhook-upload",
+      "name": "Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "document-upload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract file and metadata from webhook\nconst items = $input.all();\nconst inputData = items[0];\n\n// Get the binary data and form fields\nconst binaryData = inputData.binary?.data;\nconst body = inputData.json.body || inputData.json;\nconst query = inputData.json.query || {};\nconst headers = inputData.json.headers || {};\n\n// Extract client and category from form data or query params\nconst client = body.client || query.client || 'general';\nconst category = body.category || query.category || 'uncategorized';\nconst fileName = body.fileName || binaryData?.fileName || 'document.pdf';\nconst mimeType = binaryData?.mimeType || 'application/pdf';\n\nconsole.log('Processing upload:', {\n  client,\n  category,\n  fileName,\n  hasBinaryData: !!binaryData\n});\n\nif (!binaryData) {\n  throw new Error('No file data received');\n}\n\nreturn {\n  json: {\n    client,\n    category,\n    fileName,\n    mimeType,\n    timestamp: new Date().toISOString()\n  },\n  binary: {\n    data: binaryData\n  }\n};"
+      },
+      "id": "prepare-upload",
+      "name": "Prepare Upload Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://saxtech-docconverter.azurewebsites.net/api/convertdocument",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-functions-key",
+              "value": "GsqoRnVEcexSaaBTLsQ6NAIw7M_2Qqxg8SdHsYuYuAcBAzFulSx1NA=="
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{ $binary.data }}",
+              "parameterType": "formBinaryData"
+            },
+            {
+              "name": "client",
+              "value": "={{ $json.client }}"
+            },
+            {
+              "name": "category", 
+              "value": "={{ $json.category }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "call-azure-function",
+      "name": "Azure Function - ConvertDocument",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Azure Function response\nconst response = $json;\n\nif (!response.success) {\n  throw new Error(response.message || 'Document processing failed');\n}\n\n// Log success\nconsole.log('Document processed successfully:', {\n  documentId: response.documentId,\n  fileName: response.fileName,\n  client: response.client,\n  category: response.category,\n  textLength: response.textLength,\n  chunkCount: response.chunkCount\n});\n\nreturn {\n  json: {\n    status: 'success',\n    message: `Document ${response.fileName} processed successfully`,\n    documentId: response.documentId,\n    fileName: response.fileName,\n    client: response.client,\n    category: response.category,\n    blobUrl: response.blobUrl,\n    textExtracted: response.textLength,\n    chunks: response.chunkCount,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "process-response",
+      "name": "Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": "={{ $json.status === 'success' ? 200 : 500 }}",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "webhook-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload Data": {
+      "main": [
+        [
+          {
+            "node": "Azure Function - ConvertDocument",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Function - ConvertDocument": {
+      "main": [
+        [
+          {
+            "node": "Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Response": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "saxtech-n8n"
+  },
+  "pinData": {},
+  "versionId": "azure-function-integration-v1",
+  "triggerCount": 0,
+  "tags": []
+}
