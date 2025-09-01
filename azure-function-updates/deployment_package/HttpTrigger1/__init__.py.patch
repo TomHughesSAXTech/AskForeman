@@ -1,8 +1,0 @@
-# Add this import at the top of __init__.py (around line 10):
-from .document_converter import extract_document_text
-
-# Then find and replace this line (around line 150-200):
-# OLD: extracted_text = extract_pdf_text(document_content)
-# NEW: extracted_text = extract_document_text(document_content, file_name, mime_type)
-
-# This patch enables Word, Excel, and PowerPoint support

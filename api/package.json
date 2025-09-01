@@ -1,8 +1,0 @@
-{
-  "name": "askforeman-api",
-  "version": "1.0.0",
-  "description": "Azure Static Web Apps API for Ask Foreman",
-  "scripts": {},
-  "dependencies": {},
-  "devDependencies": {}
-}
