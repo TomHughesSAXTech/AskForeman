@@ -584,13 +584,19 @@ namespace SAXTech.DocConverter
         {
             // Generate consistent ID based on client and fileName (no timestamp)
             // This ensures the same file always gets the same ID for deduplication
+            
+            // Sanitize client name and file name for Azure Search requirements
+            // Azure Search only allows letters, digits, underscore (_), dash (-), or equal sign (=)
+            var sanitizedClient = System.Text.RegularExpressions.Regex.Replace(clientName, @"[^a-zA-Z0-9_\-=]", "_");
+            var sanitizedFileName = System.Text.RegularExpressions.Regex.Replace(fileName, @"[^a-zA-Z0-9_\-=]", "_");
+            
             var hash = Convert.ToBase64String(
                 SHA256.Create().ComputeHash(
                     Encoding.UTF8.GetBytes($"{clientName}_{fileName}")
                 )
             ).Replace("/", "_").Replace("+", "-").Replace("=", "").Substring(0, 16);
             
-            return $"{clientName}_{fileName.Replace(".", "_")}_{hash}";
+            return $"{sanitizedClient}_{sanitizedFileName}_{hash}";
         }
 
         private async Task<string> StoreFileInBlobStorage(byte[] content, string clientName, string category, string fileName, string containerPrefix, ILogger log)

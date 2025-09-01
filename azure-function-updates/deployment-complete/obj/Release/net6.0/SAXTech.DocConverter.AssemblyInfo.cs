@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SAXTech.DocConverter")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5fc779b28c84d2a0ba12359776f8007ba2c18fa9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc9912dac27c34a99058cbcf871533c6a9144f36")]
 [assembly: System.Reflection.AssemblyProductAttribute("SAXTech.DocConverter")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SAXTech.DocConverter")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
