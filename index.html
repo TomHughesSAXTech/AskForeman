@@ -193,6 +193,101 @@
         background: rgba(118, 255, 3, 0.1);
         border: 2px solid var(--hi-vis-green);
         border-radius: 20px;
+        position: relative;
+        cursor: help;
+        transition: all 0.3s ease;
+      }
+      
+      .status-indicator:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(118, 255, 3, 0.3);
+      }
+      
+      .status-details {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border: 2px solid var(--medium-gray);
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: var(--shadow-lg);
+        display: none;
+        min-width: 250px;
+        z-index: 1000;
+      }
+      
+      .status-indicator:hover .status-details {
+        display: block;
+        animation: fadeIn 0.2s ease-out;
+      }
+      
+      .status-details h4 {
+        margin: 0 0 0.5rem 0;
+        color: var(--concrete-gray);
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--medium-gray);
+        padding-bottom: 0.5rem;
+      }
+      
+      .status-details p {
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+        color: var(--steel-gray);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .search-stats {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+      }
+      
+      .search-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+      }
+      
+      .search-stat:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: -0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      
+      .search-stat-value {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--safety-yellow);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+      }
+      
+      .search-stat-value.loading {
+        opacity: 0.5;
+        animation: pulse 1.5s infinite;
+      }
+      
+      .search-stat-label {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 0.25rem;
       }
       
       .maintenance-btn {
@@ -1379,10 +1474,27 @@
           <p class="tagline">SAX Technology Advisors</p>
         </div>
       </div>
-      <div style="display: flex; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="search-stats">
+          <div class="search-stat">
+            <span class="search-stat-value" id="totalDocsCount">0</span>
+            <span class="search-stat-label">Documents</span>
+          </div>
+          <div class="search-stat">
+            <span class="search-stat-value" id="totalClientsCount">0</span>
+            <span class="search-stat-label">Clients</span>
+          </div>
+        </div>
         <div class="status-indicator">
           <span class="status-dot"></span>
-          <span>System Online</span>
+          <span id="statusText">System Online</span>
+          <div class="status-details">
+            <h4>System Status</h4>
+            <p><strong>Chat:</strong> <span id="chatStatus">🟢 Online</span></p>
+            <p><strong>Search:</strong> <span id="searchStatus">🟢 Online</span></p>
+            <p><strong>Upload:</strong> <span id="uploadStatus">🟢 Online</span></p>
+            <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #999;">Last checked: <span id="lastStatusCheck">Just now</span></p>
+          </div>
         </div>
         <a href="admin.html" class="maintenance-btn">
           🛠️ Maintenance
@@ -1710,6 +1822,7 @@
         "signed-contracts": [],
       };
       let processedDocuments = 0;
+      let totalDocumentCount = 0; // Track total documents across all clients
       let selectedClient = "";
 
       // DOM Elements
@@ -2867,6 +2980,15 @@
           // Store clients for later use
           window.availableClients = clients;
           
+          // Count total documents across all clients (async operation)
+          countAllDocuments().then(count => {
+            totalDocumentCount = count;
+            updateSearchStatistics();
+          }).catch(err => {
+            console.warn('Could not count documents:', err);
+            updateSearchStatistics(); // Update with available data anyway
+          });
+          
         } catch (error) {
           console.error('Error loading clients from Azure:', error);
           
@@ -2892,6 +3014,59 @@
           .split(/[-_]/) // Split by dash or underscore
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ');
+      }
+      
+      // Count all documents across all clients
+      async function countAllDocuments() {
+        let totalCount = 0;
+        
+        try {
+          // If we have clients loaded, count documents for each
+          if (window.availableClients && window.availableClients.length > 0) {
+            // For performance, we'll estimate based on a sample or use a lighter query
+            // In production, this could be optimized with a server-side count endpoint
+            
+            for (const client of window.availableClients) {
+              try {
+                const prefix = `FCS-OriginalClients/${client.id}/`;
+                const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}&maxresults=1000`;
+                
+                const response = await fetch(listUrl, {
+                  method: 'GET',
+                  headers: {
+                    'Accept': 'application/xml'
+                  }
+                });
+                
+                if (response.ok) {
+                  const xmlText = await response.text();
+                  const parser = new DOMParser();
+                  const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                  const blobs = xmlDoc.getElementsByTagName("Blob");
+                  
+                  // Count actual files (not placeholders)
+                  for (let i = 0; i < blobs.length; i++) {
+                    const nameElement = blobs[i].getElementsByTagName("Name")[0];
+                    if (nameElement) {
+                      const fullPath = nameElement.textContent;
+                      const fileName = fullPath.split('/').pop();
+                      // Skip placeholder files and empty names
+                      if (fileName && fileName.length > 0 && !fileName.startsWith('.')) {
+                        totalCount++;
+                      }
+                    }
+                  }
+                }
+              } catch (err) {
+                console.warn(`Could not count documents for client ${client.id}:`, err);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error counting all documents:', error);
+        }
+        
+        return totalCount;
       }
       
       function updateClientDropdowns(clients) {
@@ -2928,6 +3103,65 @@
         }
       }
 
+      // Function to update search statistics
+      async function updateSearchStatistics() {
+        const docsCountElement = document.getElementById('totalDocsCount');
+        const clientsCountElement = document.getElementById('totalClientsCount');
+        
+        // Update based on loaded clients
+        if (window.availableClients) {
+          clientsCountElement.textContent = window.availableClients.length;
+          
+          // Use actual document count if available, otherwise use processed count
+          if (totalDocumentCount > 0) {
+            docsCountElement.textContent = totalDocumentCount;
+          } else {
+            docsCountElement.textContent = processedDocuments;
+          }
+        } else {
+          clientsCountElement.textContent = '0';
+          docsCountElement.textContent = processedDocuments;
+        }
+      }
+      
+      // Update detailed status indicators
+      function updateDetailedStatus() {
+        const chatStatusEl = document.getElementById('chatStatus');
+        const searchStatusEl = document.getElementById('searchStatus');
+        const uploadStatusEl = document.getElementById('uploadStatus');
+        const lastCheckEl = document.getElementById('lastStatusCheck');
+        
+        // Update service status indicators
+        if (systemStatus.chat) {
+          chatStatusEl.innerHTML = '🟢 Online';
+          chatStatusEl.style.color = '#4caf50';
+        } else {
+          chatStatusEl.innerHTML = '🔴 Offline';
+          chatStatusEl.style.color = '#f44336';
+        }
+        
+        if (systemStatus.clients) {
+          searchStatusEl.innerHTML = '🟢 Online';
+          searchStatusEl.style.color = '#4caf50';
+        } else {
+          searchStatusEl.innerHTML = '🔴 Offline';
+          searchStatusEl.style.color = '#f44336';
+        }
+        
+        if (systemStatus.upload) {
+          uploadStatusEl.innerHTML = '🟢 Online';
+          uploadStatusEl.style.color = '#4caf50';
+        } else {
+          uploadStatusEl.innerHTML = '🔴 Offline';
+          uploadStatusEl.style.color = '#f44336';
+        }
+        
+        // Update last check time
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        lastCheckEl.textContent = timeString;
+      }
+
       // Initialize system with lightweight status check
       window.addEventListener("load", async () => {
         try {
@@ -2936,6 +3170,8 @@
           
           updateFileCounts();
           updateMetadata();
+          updateSearchStatistics();
+          updateDetailedStatus();
 
           // Initialize file list with default message
           initializeFileList();
@@ -2946,7 +3182,13 @@
           }
           
           // Set up periodic connectivity checks (every 5 minutes - much less frequent)
-          setInterval(checkSystemStatus, 300000);
+          setInterval(async () => {
+            await checkSystemStatus();
+            updateDetailedStatus();
+          }, 300000);
+          
+          // Update search statistics periodically
+          setInterval(updateSearchStatistics, 60000); // Every minute
           
         } catch (error) {
           console.error("Initialization error:", error);
