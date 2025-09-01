@@ -1842,47 +1842,135 @@
       // Track chat context separately from upload client
       let chatContext = "general";
 
-      // Enhanced message formatting function
+      // Enhanced message formatting function - ChatGPT style
       function formatMessageContent(content) {
         if (!content) return '';
         
         // Ensure content is a string
         content = String(content);
         
-        // First, handle bullet points (convert - ** to proper bullets)
-        content = content.replace(/- \*\*(.*?)\*\*/g, '• **$1**');
+        // Handle file references with clickable links
+        // Format: [[filename.pdf]] or [[Client/Category/filename.pdf]]
+        content = content.replace(/\[\[([^\]]+)\]\]/g, (match, filePath) => {
+          const fileName = filePath.split('/').pop();
+          const clientName = selectedClient || 'general';
+          
+          // Generate Azure Blob URL for the file
+          const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+          const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${clientName}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+          
+          return `<a href="${fileUrl}" target="_blank" class="file-reference" style="color: var(--blueprint-blue); text-decoration: underline; font-weight: 500;">📄 ${fileName}</a>`;
+        });
+        
+        // Handle code blocks with proper formatting
+        content = content.replace(/```([\s\S]*?)```/g, '<pre style="background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow-x: auto; margin: 1rem 0;"><code>$1</code></pre>');
+        content = content.replace(/`([^`]+)`/g, '<code style="background: #f6f8fa; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: monospace;">$1</code>');
+        
+        // Handle numbered lists
+        content = content.replace(/^(\d+)\.\s+(.*)$/gm, (match, num, text) => {
+          return `<li style="margin-left: 1.5rem; list-style: decimal;">${text}</li>`;
+        });
+        
+        // Wrap consecutive list items in <ol> tags
+        content = content.replace(/(<li style="margin-left: 1\.5rem; list-style: decimal;">.*<\/li>\s*)+/g, (match) => {
+          return `<ol style="margin: 0.5rem 0; padding-left: 1rem;">${match}</ol>`;
+        });
+        
+        // Handle bullet lists (multiple formats)
+        content = content.replace(/^[•\-\*]\s+(.*)$/gm, '<li style="margin-left: 1.5rem; list-style: disc;">$1</li>');
+        
+        // Wrap consecutive bullet items in <ul> tags
+        content = content.replace(/(<li style="margin-left: 1\.5rem; list-style: disc;">.*<\/li>\s*)+/g, (match) => {
+          return `<ul style="margin: 0.5rem 0; padding-left: 1rem;">${match}</ul>`;
+        });
+        
+        // Handle headers (markdown style)
+        content = content.replace(/^### (.*)$/gm, '<h3 style="margin: 1rem 0 0.5rem 0; font-size: 1.1rem; font-weight: 600; color: var(--concrete-gray);">$1</h3>');
+        content = content.replace(/^## (.*)$/gm, '<h2 style="margin: 1rem 0 0.5rem 0; font-size: 1.3rem; font-weight: 600; color: var(--concrete-gray);">$1</h2>');
+        content = content.replace(/^# (.*)$/gm, '<h1 style="margin: 1rem 0 0.5rem 0; font-size: 1.5rem; font-weight: 700; color: var(--concrete-gray);">$1</h1>');
         
         // Convert line breaks to proper HTML paragraphs
-        content = content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+        const lines = content.split(/\n\n+/);
+        content = lines.map(line => {
+          // Don't wrap if already wrapped in HTML tags
+          if (line.trim().startsWith('<') || line.trim() === '') {
+            return line;
+          }
+          // Don't wrap list items or headers
+          if (line.includes('<li') || line.includes('<h1') || line.includes('<h2') || line.includes('<h3') || line.includes('<ul') || line.includes('<ol') || line.includes('<pre')) {
+            return line;
+          }
+          return `<p style="margin: 0.75rem 0; line-height: 1.6;">${line}</p>`;
+        }).join('\n');
         
-        // Wrap in paragraph tags if not already wrapped
-        if (!content.includes('<p>')) {
-          content = '<p>' + content + '</p>';
-        }
+        // Convert single line breaks to <br> within paragraphs
+        content = content.replace(/([^>])\n([^<])/g, '$1<br>$2');
         
-        // Convert markdown-style formatting BEFORE URL conversion
-        content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Convert markdown-style formatting
+        content = content.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        content = content.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        content = content.replace(/_(.+?)_/g, '<em>$1</em>');
         
-        // Convert URLs to clickable links with better styling
-        const urlRegex = /(https?:\/\/[^\s<>]+)/g;
-        content = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+        // Convert URLs to clickable links with better styling (but not those already in anchor tags)
+        const urlRegex = /(?<!href=")(?<!src=")(https?:\/\/[^\s<>"]+)(?![^<]*<\/a>)/g;
+        content = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--blueprint-blue); text-decoration: underline;">$1</a>');
         
-        // Convert horizontal rules
-        content = content.replace(/^---$/gm, '<hr>');
+        // Handle horizontal rules
+        content = content.replace(/^---+$/gm, '<hr style="border: none; border-top: 1px solid var(--medium-gray); margin: 1rem 0;">');
         
-        // Handle bullet points better (convert • to proper list items)
-        content = content.replace(/• /g, '<br>• ');
+        // Handle source citations with file links
+        content = content.replace(/📎\s*Source:\s*(.+?)(?=<|$)/g, (match, source) => {
+          // Check if it's a URL
+          if (source.startsWith('http')) {
+            return `<div style="margin: 0.75rem 0; padding: 0.75rem; background: linear-gradient(135deg, #f0f8ff, #e8f4fd); border-left: 3px solid var(--blueprint-blue); border-radius: 4px;">
+              <span style="font-size: 0.9rem; color: var(--steel-gray); font-weight: 500;">📎 Source:</span>
+              <a href="${source}" target="_blank" rel="noopener noreferrer" style="font-size: 0.9rem; color: var(--blueprint-blue); margin-left: 0.5rem;">${source}</a>
+            </div>`;
+          } else {
+            // It's a file name - create Azure Blob link
+            const clientName = chatContext || 'general';
+            const fileName = source.trim();
+            const encodedFile = encodeURIComponent(fileName);
+            const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${clientName}/${encodedFile}${AZURE_STORAGE.sasToken}`;
+            
+            return `<div style="margin: 0.75rem 0; padding: 0.75rem; background: linear-gradient(135deg, #f0f8ff, #e8f4fd); border-left: 3px solid var(--blueprint-blue); border-radius: 4px;">
+              <span style="font-size: 0.9rem; color: var(--steel-gray); font-weight: 500;">📎 Source:</span>
+              <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 0.9rem; color: var(--blueprint-blue); margin-left: 0.5rem;">📄 ${fileName}</a>
+            </div>`;
+          }
+        });
         
-        // Handle source citations (make them stand out)
-        content = content.replace(/📎 Source: (https?:\/\/[^\s<>]+)/g, 
-          '<div style="margin: 0.5rem 0; padding: 0.5rem; background: var(--light-gray); border-left: 3px solid var(--blueprint-blue); border-radius: 3px;"><span style="font-size: 0.9rem; color: var(--steel-gray);">📎 Source:</span> <a href="$1" target="_blank" rel="noopener noreferrer" style="font-size: 0.9rem;">$1</a></div>');
+        // Handle tables (simple markdown tables)
+        content = content.replace(/\|(.+)\|/g, (match) => {
+          const rows = match.split('\n').filter(row => row.trim());
+          if (rows.length > 0) {
+            let tableHtml = '<table style="border-collapse: collapse; margin: 1rem 0; width: 100%;">';
+            rows.forEach((row, index) => {
+              const cells = row.split('|').filter(cell => cell.trim());
+              const tag = index === 0 ? 'th' : 'td';
+              const style = index === 0 ? 
+                'style="padding: 0.5rem; border: 1px solid var(--medium-gray); background: var(--light-gray); font-weight: 600;"' : 
+                'style="padding: 0.5rem; border: 1px solid var(--medium-gray);"';
+              tableHtml += '<tr>';
+              cells.forEach(cell => {
+                tableHtml += `<${tag} ${style}>${cell.trim()}</${tag}>`;
+              });
+              tableHtml += '</tr>';
+            });
+            tableHtml += '</table>';
+            return tableHtml;
+          }
+          return match;
+        });
         
         // Clean up any empty paragraphs
-        content = content.replace(/<p><\/p>/g, '');
-        content = content.replace(/<p><br><\/p>/g, '');
+        content = content.replace(/<p[^>]*>\s*<\/p>/g, '');
+        content = content.replace(/<p[^>]*>\s*<br>\s*<\/p>/g, '');
         
-        return content;
+        // Add overall container for better styling
+        return `<div style="font-size: 0.95rem; color: var(--concrete-gray);">${content}</div>`;
       }
 
       // Enhanced addMessage function with better formatting

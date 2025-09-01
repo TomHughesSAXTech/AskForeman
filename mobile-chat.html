@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Ask Foreman AI - Mobile</title>
+    <meta name="description" content="Construction AI Assistant - Mobile Chat Interface">
+    <meta name="theme-color" content="#10a37f">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ask Foreman AI">
+    
+    <!-- Cache-busting headers -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <style>
+        :root {
+            /* Construction Theme Colors */
+            --construction-orange: #ff6b35;
+            --safety-yellow: #ffc107;
+            --concrete-gray: #424242;
+            --steel-gray: #616161;
+            --blueprint-blue: #1565c0;
+            --hi-vis-green: #76ff03;
+            --warning-red: #d32f2f;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #212121;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+            
+            /* Theme Variables */
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-chat: #fafafa;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+        }
+
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-chat: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border-color: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            height: -webkit-fill-available;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: pan-y;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--concrete-gray) 0%, var(--steel-gray) 100%);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-lg);
+            border-bottom: 3px solid var(--safety-yellow);
+            position: relative;
+            z-index: 1000;
+            min-height: 70px;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--safety-yellow) 0px,
+                var(--safety-yellow) 20px,
+                var(--dark-gray) 20px,
+                var(--dark-gray) 40px
+            );
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            flex: 1;
+        }
+
+        .logo h1 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--safety-yellow);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            line-height: 1.2;
+        }
+
+        .logo .tagline {
+            font-size: 0.7rem;
+            color: var(--medium-gray);
+            font-weight: 500;
+            margin-top: -2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.6rem;
+            background: rgba(118, 255, 3, 0.1);
+            border: 1px solid var(--hi-vis-green);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--hi-vis-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        /* Client Selector */
+        .client-selector {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .client-selector label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .client-selector select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .client-selector select:focus {
+            outline: none;
+            border-color: var(--construction-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-chat);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Messages */
+        .message {
+            display: flex;
+            margin-bottom: 1rem;
+            padding: 0 0.5rem;
+            animation: fadeInUp 0.3s ease-out;
+            max-width: 95%;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--safety-yellow) 0%, #f57f17 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            flex-shrink: 0;
+            font-size: 16px;
+            color: var(--dark-gray);
+        }
+
+        .message-content {
+            background: var(--bg-secondary);
+            padding: 0.75rem 1rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.5;
+            max-width: 100%;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--construction-orange) 0%, #ff8a50 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            border: 1px solid var(--border-color);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+            opacity: 0.7;
+        }
+
+        .message.user .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            width: fit-content;
+            margin-left: 42px;
+            border: 1px solid var(--border-color);
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--construction-orange);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            min-height: 44px;
+            max-height: 120px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 24px;
+            font-size: 16px; /* Prevent zoom on iOS */
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            -webkit-appearance: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--construction-orange);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--construction-orange) 0%, #ff8a50 100%);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--medium-gray);
+        }
+
+        /* AI Disclaimer */
+        .ai-disclaimer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid var(--safety-yellow);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Error Message */
+        .error-message {
+            background: linear-gradient(135deg, var(--warning-red), #b71c1c);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.5rem 1rem;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: slideInDown 0.3s ease-out;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* System Message */
+        .system-message .message-content {
+            background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+            color: var(--dark-gray);
+            border: none;
+        }
+
+        .system-message .message-avatar {
+            background: linear-gradient(135deg, var(--blueprint-blue), #0d47a1);
+            color: white;
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .header {
+                padding: 0.75rem;
+                min-height: 60px;
+            }
+            
+            .logo h1 {
+                font-size: 1rem;
+            }
+            
+            .logo .tagline {
+                font-size: 0.6rem;
+            }
+            
+            .status-indicator {
+                font-size: 0.6rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            .chat-messages {
+                padding: 0.75rem;
+                gap: 0.75rem;
+            }
+            
+            .message {
+                max-width: 95%;
+            }
+            
+            .chat-input {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .message, .typing-indicator, .error-message {
+                animation: none;
+            }
+            
+            .theme-toggle, .send-button {
+                transition: none;
+            }
+        }
+
+        /* Focus Styles for Accessibility */
+        .theme-toggle:focus,
+        .send-button:focus,
+        .client-selector select:focus {
+            outline: 2px solid var(--construction-orange);
+            outline-offset: 2px;
+        }
+
+        /* Pull to Refresh */
+        .pull-to-refresh {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 0 0 8px 8px;
+            box-shadow: var(--shadow);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .pull-to-refresh.visible {
+            opacity: 1;
+        }
+
+        /* Virtual Keyboard Adjustments */
+        .keyboard-visible {
+            height: calc(100vh - var(--keyboard-height, 0px));
+        }
+
+        /* Mobile PDF viewer styles */
+        .pdf-viewer-mobile {
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            background: rgba(33, 150, 243, 0.1);
+            border: 1px solid rgba(33, 150, 243, 0.3);
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .pdf-link {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-block;
+            padding: 0.25rem 0;
+            word-break: break-all;
+        }
+
+        .pdf-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Improved message formatting for mobile */
+        .formatted-content {
+            width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .formatted-content p {
+            margin: 0 0 0.5rem 0;
+        }
+
+        .formatted-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .formatted-content ul, .formatted-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .formatted-content li {
+            margin: 0.25rem 0;
+        }
+
+        .formatted-content a {
+            color: #1976d2;
+            word-break: break-all;
+        }
+
+        /* Better mobile table handling */
+        .formatted-content table {
+            width: 100%;
+            font-size: 0.85rem;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+            display: block;
+            white-space: nowrap;
+        }
+
+        .formatted-content th, 
+        .formatted-content td {
+            padding: 0.4rem 0.2rem;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            display: table-cell;
+        }
+
+        /* Long text handling */
+        .formatted-content code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+
+        .formatted-content pre {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.75rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="ForemanAI.png" alt="Ask Foreman AI" />
+            </div>
+            <div class="logo-text">
+                <h1>ASK FOREMAN AI</h1>
+                <p class="tagline">SAX Technology</p>
+            </div>
+        </div>
+        <div class="header-controls">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Online</span>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                🌙
+            </button>
+        </div>
+    </header>
+
+    <div class="client-selector">
+        <label for="clientSelect">🎯 Chat Context:</label>
+        <select id="clientSelect">
+            <option value="general">General Construction Knowledge</option>
+        </select>
+    </div>
+
+    <main class="chat-container">
+        <div class="pull-to-refresh" id="pullToRefresh">
+            ↓ Pull to refresh
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-avatar">🔨</div>
+                <div class="message-content">
+                    <div class="formatted-content">
+                        <p><strong>Hi, I'm your mobile AI Foreman!</strong></p>
+                        <p>I'm ready to help with construction questions, estimates, and project details. Select a project context above or ask me anything about construction!</p>
+                        <ul>
+                            <li>Cost estimates & takeoffs</li>
+                            <li>Material specifications</li>
+                            <li>Building codes & regulations</li>
+                            <li>Project planning assistance</li>
+                        </ul>
+                    </div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    </main>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <footer class="chat-input-container">
+        <div class="chat-input-wrapper">
+            <textarea 
+                id="chatInput" 
+                class="chat-input" 
+                placeholder="Ask me anything..."
+                rows="1"
+            ></textarea>
+            <button class="send-button" id="sendButton" title="Send message">
+                ➤
+            </button>
+        </div>
+        
+        <div class="ai-disclaimer">
+            <span>⚠️</span>
+            <span>Ask Foreman AI <strong>can make mistakes</strong> - verify important information.</span>
+        </div>
+    </footer>
+
+    <script>
+        // VERSION STAMP - UPDATED 2025-08-26 03:50 UTC - NO AZURE BLOB BACKUP
+        console.log('🚀 Mobile Chat v2.0 - NO AZURE BLOB BACKUP - Webhook Only');
+        console.log('📅 Version: 2025-08-26 03:50 UTC');
+        
+        // Configuration - Using ONLY n8n webhooks (NO AZURE BLOB BACKUP)
+        const API_CONFIG = {
+            chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
+            listClientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list"
+        };
+
+        // Global State
+        let selectedClient = "general";
+        let systemStatus = {
+            chat: true,
+            clients: true
+        };
+
+        // DOM Elements
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatMessages = document.getElementById('chatMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const clientSelect = document.getElementById('clientSelect');
+        const errorMessage = document.getElementById('errorMessage');
+        const themeToggle = document.getElementById('themeToggle');
+        const pullToRefresh = document.getElementById('pullToRefresh');
+
+        // Theme Management
+        function updateThemeToggle() {
+            const theme = document.documentElement.getAttribute('data-theme');
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeToggle();
+            
+            // Send message to parent for test.html integration
+            if (window.parent !== window) {
+                window.parent.postMessage('toggleTheme', '*');
+            }
+        }
+
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeToggle();
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // Listen for theme toggle from parent (test.html)
+        window.addEventListener('message', function(e) {
+            if (e.data === 'toggleTheme') {
+                toggleTheme();
+            }
+        });
+
+        // Auto-resize textarea
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        chatInput.addEventListener('input', function() {
+            autoResize(this);
+        });
+
+        // Enhanced message formatting with mobile optimization and PDF viewer support
+        function formatMessageContent(content) {
+            if (!content) return '';
+            
+            content = String(content);
+            
+            // Handle PDF viewer format from AI responses
+            // Format: [VIEWER:URL|Title|ID|Category|Type]
+            const pdfViewerRegex = /\[VIEWER:([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\]/g;
+            content = content.replace(pdfViewerRegex, (match, url, title, id, category, type) => {
+                const shortTitle = title.length > 40 ? title.substring(0, 37) + '...' : title;
+                return `<div class="pdf-viewer-mobile"><a href="${url}" target="_blank" class="pdf-link">📄 ${shortTitle}</a></div>`;
+            });
+            
+            // Convert line breaks
+            content = content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+            
+            // Wrap in paragraphs if needed
+            if (!content.includes('<p>')) {
+                content = '<p>' + content + '</p>';
+            }
+            
+            // Convert markdown-style formatting
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Convert URLs to links (but skip PDF viewer URLs already processed)
+            const urlRegex = /(https?:\/\/[^\s<>\]]+)/g;
+            content = content.replace(urlRegex, (url) => {
+                // Skip if it's already part of a processed PDF viewer link
+                if (content.includes(`href="${url}"`)) {
+                    return url;
+                }
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            });
+            
+            // Handle bullet points
+            content = content.replace(/• /g, '<br>• ');
+            
+            // Clean up empty paragraphs
+            content = content.replace(/<p><\/p>/g, '');
+            
+            // Ensure proper word wrapping for mobile
+            content = content.replace(/(\S{40,})/g, '<span style="word-break: break-all;">$1</span>');
+            
+            return content;
+        }
+
+        // Add message to chat
+        function addMessage(content, sender, isSystem = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender} ${isSystem ? 'system-message' : ''}`;
+            
+            const time = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const formattedContent = sender === 'assistant' || sender === 'system' 
+                ? formatMessageContent(content) 
+                : escapeHtml(content);
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="formatted-content">${formattedContent}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else {
+                const avatar = isSystem ? '⚠️' : '🔨';
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${avatar}</div>
+                    <div class="message-content">
+                        <div class="formatted-content">${formattedContent}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            }
+            
+            // Insert before typing indicator
+            if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+                chatMessages.insertBefore(messageDiv, typingIndicator);
+            } else {
+                chatMessages.appendChild(messageDiv);
+            }
+            
+            scrollToBottom();
+        }
+
+        // Escape HTML for user messages
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        // System message
+        function addSystemMessage(content) {
+            addMessage(content, 'assistant', true);
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            if (!systemStatus.chat) {
+                showError('Chat system is currently offline. Please try again later.');
+                return;
+            }
+            
+            // Add user message
+            addMessage(message, 'user');
+            
+            // Clear input and reset height
+            chatInput.value = '';
+            autoResize(chatInput);
+            
+            // Show typing indicator
+            typingIndicator.classList.add('active');
+            scrollToBottom();
+            
+            try {
+                const response = await fetch(API_CONFIG.chatWebhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        client: selectedClient,
+                        conversationId: `mobile_conv_${selectedClient}_${Date.now()}`,
+                        sessionId: `mobile_${selectedClient}`,
+                        source: 'mobile'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                typingIndicator.classList.remove('active');
+                
+                // Add assistant response
+                addMessage(
+                    data.response || "I received your message but couldn't generate a response. Please try again.",
+                    'assistant'
+                );
+                
+            } catch (error) {
+                typingIndicator.classList.remove('active');
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    systemStatus.chat = false;
+                    updateSystemStatus();
+                    addMessage(
+                        "Network connection lost. Please check your connection and try again.",
+                        'assistant'
+                    );
+                } else {
+                    addMessage(
+                        "Sorry, I encountered an error. Please try again or check your connection.",
+                        'assistant'
+                    );
+                }
+                
+                console.error('Chat error:', error);
+                showError(`Chat error: ${error.message}`);
+            }
+        }
+
+        // Fallback client list when webhook fails
+        function useFallbackClients() {
+            console.log('🔄 Loading fallback client list...');
+            
+            // Known client list from previous successful loads
+            const fallbackClients = [
+                { name: 'Amsterdam', displayName: 'Amsterdam' },
+                { name: 'Baruch', displayName: 'Baruch' },
+                { name: 'Brownsville', displayName: 'Brownsville' },
+                { name: 'Smith', displayName: 'Smith' },
+                { name: 'Sumner', displayName: 'Sumner' }
+            ];
+            
+            fallbackClients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.name;
+                option.textContent = client.displayName;
+                clientSelect.appendChild(option);
+            });
+            
+            systemStatus.clients = true; // Consider fallback as working
+            addSystemMessage(`⚙️ Loaded ${fallbackClients.length} clients from fallback list (webhook unavailable)`);
+        }
+
+        // Load clients
+        async function loadClients() {
+            console.log('🔄 Loading clients from webhook...');
+            
+            try {
+                const response = await fetch(API_CONFIG.listClientsWebhookUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log(`📡 Webhook response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                // Get response text first to check if it's empty
+                const responseText = await response.text();
+                console.log(`📝 Raw response (first 200 chars): ${responseText.substring(0, 200)}`);
+                
+                if (!responseText || responseText.trim() === '') {
+                    throw new Error('Empty response from webhook - n8n workflow may not be running');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('❌ JSON parsing failed:', jsonError);
+                    throw new Error(`Invalid JSON response: ${jsonError.message}`);
+                }
+                
+                console.log('✅ Parsed webhook data:', data);
+                
+                // Clear existing options (keep general)
+                clientSelect.innerHTML = '<option value="general">General Construction Knowledge</option>';
+                
+                // Add client options
+                if (data && data.clients && Array.isArray(data.clients)) {
+                    console.log(`📋 Adding ${data.clients.length} clients to dropdown`);
+                    data.clients.forEach(client => {
+                        const option = document.createElement('option');
+                        option.value = client.name || client;
+                        option.textContent = client.displayName || client.name || client;
+                        clientSelect.appendChild(option);
+                    });
+                    
+                    systemStatus.clients = true;
+                    addSystemMessage(`✅ Successfully loaded ${data.clients.length} client(s) from webhook`);
+                } else {
+                    console.warn('⚠️ No clients found in response or invalid format');
+                    // Use fallback client list
+                    useFallbackClients();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading clients:', error);
+                systemStatus.clients = false;
+                
+                // Use fallback client list when webhook fails
+                console.log('🔄 Using fallback client list due to webhook error');
+                useFallbackClients();
+                
+                // Add retry option
+                const retryOption = document.createElement('option');
+                retryOption.value = 'retry';
+                retryOption.textContent = '↻ Retry webhook clients';
+                clientSelect.appendChild(retryOption);
+            }
+            
+            updateSystemStatus();
+        }
+
+        // Update system status
+        function updateSystemStatus() {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusDot = document.querySelector('.status-dot');
+            const statusText = statusIndicator.querySelector('span');
+            
+            const isOnline = systemStatus.chat && systemStatus.clients;
+            
+            if (isOnline) {
+                statusText.textContent = 'Online';
+                statusDot.style.background = 'var(--hi-vis-green)';
+                statusIndicator.style.background = 'rgba(118, 255, 3, 0.1)';
+                statusIndicator.style.borderColor = 'var(--hi-vis-green)';
+            } else {
+                statusText.textContent = 'Offline';
+                statusDot.style.background = 'var(--warning-red)';
+                statusIndicator.style.background = 'rgba(211, 47, 47, 0.1)';
+                statusIndicator.style.borderColor = 'var(--warning-red)';
+            }
+        }
+
+        // Event Listeners
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendButton.addEventListener('click', sendMessage);
+
+        clientSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'retry') {
+                loadClients();
+                return;
+            }
+            
+            selectedClient = e.target.value;
+            
+            if (selectedClient === 'general') {
+                addSystemMessage(
+                    "🌐 Chat context set to General Construction Knowledge. I'll provide industry-standard guidance and best practices."
+                );
+                chatInput.placeholder = "Ask me anything...";
+            } else {
+                const clientName = clientSelect.options[clientSelect.selectedIndex].text;
+                addSystemMessage(
+                    `🎯 Chat context focused on ${clientName}. I'll prioritize information from this project's documents.`
+                );
+                chatInput.placeholder = `Ask about ${clientName}...`;
+            }
+        });
+
+        // Pull to refresh
+        let pullStart = 0;
+        let pullCurrent = 0;
+        let isPulling = false;
+
+        chatMessages.addEventListener('touchstart', (e) => {
+            if (chatMessages.scrollTop === 0) {
+                pullStart = e.touches[0].screenY;
+                isPulling = true;
+            }
+        });
+
+        chatMessages.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            
+            pullCurrent = e.touches[0].screenY;
+            const pullDistance = pullCurrent - pullStart;
+            
+            if (pullDistance > 0 && chatMessages.scrollTop === 0) {
+                e.preventDefault();
+                
+                if (pullDistance > 50) {
+                    pullToRefresh.classList.add('visible');
+                    pullToRefresh.textContent = '↻ Release to refresh';
+                } else {
+                    pullToRefresh.textContent = '↓ Pull to refresh';
+                }
+            }
+        });
+
+        chatMessages.addEventListener('touchend', () => {
+            if (!isPulling) return;
+            
+            const pullDistance = pullCurrent - pullStart;
+            
+            if (pullDistance > 50) {
+                // Refresh action
+                loadClients();
+                addSystemMessage('🔄 Refreshing client list...');
+            }
+            
+            pullToRefresh.classList.remove('visible');
+            isPulling = false;
+            pullStart = 0;
+            pullCurrent = 0;
+        });
+
+        // Virtual keyboard handling
+        function handleViewportChange() {
+            const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            const keyboardHeight = window.innerHeight - viewportHeight;
+            
+            if (keyboardHeight > 150) {
+                document.body.classList.add('keyboard-visible');
+                document.body.style.setProperty('--keyboard-height', keyboardHeight + 'px');
+            } else {
+                document.body.classList.remove('keyboard-visible');
+                document.body.style.removeProperty('--keyboard-height');
+            }
+            
+            setTimeout(scrollToBottom, 100);
+        }
+
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleViewportChange);
+        } else {
+            window.addEventListener('resize', handleViewportChange);
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClients();
+            scrollToBottom();
+            
+            // Initial focus for better UX
+            setTimeout(() => {
+                chatInput.focus();
+            }, 500);
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>
