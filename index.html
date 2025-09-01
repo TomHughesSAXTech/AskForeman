@@ -1850,13 +1850,42 @@
         content = String(content);
         
         // Handle file references with clickable links
-        // Format: [[filename.pdf]] or [[Client/Category/filename.pdf]]
+        // Format: [[filename.pdf]] or [[Category/filename.pdf]] or [[ClientName/Category/filename.pdf]]
         content = content.replace(/\[\[([^\]]+)\]\]/g, (match, filePath) => {
-          const fileName = filePath.split('/').pop();
-          const clientName = selectedClient || 'general';
+          const pathParts = filePath.split('/');
+          const fileName = pathParts[pathParts.length - 1];
+          
+          // Determine the client context - use chatContext for chat messages
+          let clientName = chatContext || 'general';
+          let finalPath = filePath;
+          
+          // If path has 3 parts, first might be client name
+          if (pathParts.length === 3) {
+            clientName = pathParts[0];
+            finalPath = pathParts.slice(1).join('/');
+          } else if (pathParts.length === 2) {
+            // Category/filename format - use current chat context
+            finalPath = filePath;
+          } else {
+            // Just filename - try to determine category from filename
+            if (fileName.toLowerCase().includes('proposal')) {
+              finalPath = `proposals/${fileName}`;
+            } else if (fileName.toLowerCase().includes('drawing') || fileName.toLowerCase().includes('plan')) {
+              finalPath = `drawings/${fileName}`;
+            } else if (fileName.toLowerCase().includes('estimate')) {
+              finalPath = `estimates/${fileName}`;
+            } else if (fileName.toLowerCase().includes('spec')) {
+              finalPath = `specs/${fileName}`;
+            } else if (fileName.toLowerCase().includes('contract')) {
+              finalPath = `signed-contracts/${fileName}`;
+            } else {
+              // Default to documents folder
+              finalPath = `documents/${fileName}`;
+            }
+          }
           
           // Generate Azure Blob URL for the file
-          const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+          const encodedPath = finalPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
           const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${clientName}/${encodedPath}${AZURE_STORAGE.sasToken}`;
           
           return `<a href="${fileUrl}" target="_blank" class="file-reference" style="color: var(--blueprint-blue); text-decoration: underline; font-weight: 500;">📄 ${fileName}</a>`;
