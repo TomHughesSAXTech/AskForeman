@@ -10,23 +10,35 @@ module.exports = async function (context, req) {
         // Get image from request - handle both Buffer and raw binary/base64 data
         let imageBuffer;
         
+        // Debug logging
+        context.log('Request body type:', typeof req.body);
+        context.log('Request body is Buffer:', Buffer.isBuffer(req.body));
+        context.log('Request rawBody type:', typeof req.rawBody);
+        context.log('Request rawBody is Buffer:', Buffer.isBuffer(req.rawBody));
+        
         // Check if req.body is already a Buffer
         if (Buffer.isBuffer(req.body)) {
+            context.log('Using req.body as Buffer');
             imageBuffer = req.body;
         } else if (req.body && req.body.type === 'Buffer' && req.body.data) {
             // Handle JSON-serialized Buffer
+            context.log('Using JSON-serialized Buffer');
             imageBuffer = Buffer.from(req.body.data);
         } else if (req.body && typeof req.body === 'string') {
             // Handle base64-encoded string (Azure Functions often converts binary to base64)
+            context.log('Decoding base64 string from req.body');
             imageBuffer = Buffer.from(req.body, 'base64');
         } else if (req.body) {
             // Handle raw binary data or ArrayBuffer
+            context.log('Converting req.body to Buffer');
             imageBuffer = Buffer.from(req.body);
         } else if (req.rawBody) {
             // Some Azure Functions provide rawBody
             if (typeof req.rawBody === 'string') {
+                context.log('Decoding base64 string from req.rawBody');
                 imageBuffer = Buffer.from(req.rawBody, 'base64');
             } else {
+                context.log('Using req.rawBody as-is');
                 imageBuffer = req.rawBody;
             }
         } else {
@@ -34,6 +46,24 @@ module.exports = async function (context, req) {
         }
         
         context.log(`Received image buffer of size: ${imageBuffer.length} bytes`);
+        
+        // Check if the buffer looks like a valid image
+        const first4Bytes = imageBuffer.slice(0, 4).toString('hex');
+        context.log(`First 4 bytes of buffer (hex): ${first4Bytes}`);
+        
+        // Common image signatures:
+        // JPEG: ffd8ff
+        // PNG: 89504e47
+        // GIF: 47494638
+        if (first4Bytes.startsWith('ffd8')) {
+            context.log('Image appears to be JPEG');
+        } else if (first4Bytes.startsWith('8950')) {
+            context.log('Image appears to be PNG');
+        } else if (first4Bytes.startsWith('4749')) {
+            context.log('Image appears to be GIF');
+        } else {
+            context.log('Warning: Buffer does not have a recognized image signature');
+        }
         const analysisType = req.query.analysisType || 'construction';
 
         // Get Computer Vision credentials
