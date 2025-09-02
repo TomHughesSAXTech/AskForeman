@@ -5,13 +5,12 @@
 
 class ChatImageHandler {
     constructor() {
-        // Azure Functions configuration
+        // Azure Functions configuration (will be loaded from API)
         this.config = {
-            // Update these URLs after deploying to Azure
             functionBaseUrl: window.location.hostname === 'localhost' 
                 ? 'http://localhost:7071/api' 
                 : 'https://askforeman-functions.azurewebsites.net/api',
-            functionKey: window.AZURE_FUNCTION_KEY || '', // Set via environment or config
+            functionKey: '', // Will be loaded from API
             endpoints: {
                 analyzeImage: '/analyze-image',
                 pdfChunker: '/pdf-chunker',
@@ -37,7 +36,10 @@ class ChatImageHandler {
         this.init();
     }
 
-    init() {
+    async init() {
+        // Load configuration from API
+        await this.loadConfiguration();
+        
         // Get DOM elements
         this.chatInput = document.getElementById('chatInput');
         this.sendButton = document.getElementById('sendButton');
@@ -53,6 +55,29 @@ class ChatImageHandler {
         this.initClientSelector();
         
         console.log('Chat Image Handler initialized');
+    }
+
+    async loadConfiguration() {
+        try {
+            // Try to load configuration from API endpoint
+            const response = await fetch('/api/config');
+            if (response.ok) {
+                const config = await response.json();
+                if (config.functionKey) {
+                    this.config.functionKey = config.functionKey;
+                    this.config.functionBaseUrl = config.functionBaseUrl || this.config.functionBaseUrl;
+                    this.config.endpoints = config.endpoints || this.config.endpoints;
+                    console.log('Configuration loaded from API');
+                }
+            }
+        } catch (error) {
+            console.log('Using default configuration');
+        }
+        
+        // Fallback to window variable if available (for local development)
+        if (!this.config.functionKey && window.AZURE_FUNCTION_KEY) {
+            this.config.functionKey = window.AZURE_FUNCTION_KEY;
+        }
     }
 
     setupEventListeners() {
