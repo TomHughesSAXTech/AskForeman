@@ -68,17 +68,12 @@ module.exports = async function (context, req) {
                 // 'Read'  // OCR for text extraction - removed as it might cause issues
             ];
 
-            // Create a function that returns a stream for the API
+            // Pass stream directly to the API
             const { Readable } = require('stream');
-            const streamFunction = () => {
-                const stream = new Readable();
-                stream.push(imageBuffer);
-                stream.push(null);
-                return stream;
-            };
+            const imageStream = Readable.from(imageBuffer);
             
             analysis = await client.analyzeImageInStream(
-                streamFunction,
+                imageStream,
                 { visualFeatures: features }
             );
         } catch (visionError) {
