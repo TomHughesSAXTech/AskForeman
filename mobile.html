@@ -746,16 +746,17 @@
     </footer>
 
     <!-- Enhanced Image Handler Script with Azure Computer Vision -->
-    <script src="js/chat-image-handler-v2.js?v=3.1"></script>
+    <script src="js/chat-image-handler-v2.js?v=3.2"></script>
     
     <!-- Knowledge Graph Integration -->
-    <script src="js/knowledge-graph.js?v=3.1"></script>
+    <script src="js/knowledge-graph.js?v=3.2"></script>
     
     <script>
-        // VERSION STAMP - v3.1 CORS FIX WITH PROXY ENDPOINTS
-        console.log('🚀 Mobile Chat v3.1 - CORS Fix with Proxy Endpoints');
-        console.log('📅 Version: 2025-09-02 - Build 3.1');
-        console.log('🔧 Using Azure proxy endpoints to avoid CORS');
+        // VERSION STAMP - v3.2 CORS FIX WITH ABSOLUTE PROXY PATHS
+        console.log('🚀 Mobile Chat v3.2 - CORS Fix with Absolute Proxy Paths');
+        console.log('📅 Version: 2025-09-02 - Build 3.2');
+        console.log('🔧 Using absolute /api/ proxy endpoints to avoid CORS');
+        console.log('🔄 Cache-busted to force fresh JavaScript load');
         
         // Configuration - ALWAYS use proxied endpoints on Azure to avoid CORS
         // The staticwebapp.config.json will handle the actual proxying
@@ -763,16 +764,20 @@
         console.log(`🌐 Current hostname: ${window.location.hostname}`);
         console.log(`📍 Is Azure host: ${isAzureHost}`);
         
+        // Build absolute URLs to ensure proxy works correctly
+        const baseUrl = window.location.origin;
         const API_CONFIG = {
-            // Always use proxied endpoints that work both locally and on Azure
-            chatWebhookUrl: "/api/webhook/ask-foreman/chat",
-            uploadWebhookUrl: "/api/webhook/ask-foreman/upload",
-            createClientWebhookUrl: "/api/webhook/ask-foreman/clients/create",
-            listClientsWebhookUrl: "/api/webhook/ask-foreman/clients/list",
+            // Use absolute paths starting with /api/ to ensure Azure proxy handles them
+            chatWebhookUrl: `${baseUrl}/api/webhook/ask-foreman/chat`,
+            uploadWebhookUrl: `${baseUrl}/api/webhook/ask-foreman/upload`,
+            createClientWebhookUrl: `${baseUrl}/api/webhook/ask-foreman/clients/create`,
+            listClientsWebhookUrl: `${baseUrl}/api/webhook/ask-foreman/clients/list`,
             indexName: "construction-docs-index"
         };
         
-        console.log(`📡 Using proxied API endpoints:`, API_CONFIG);
+        console.log(`📡 Using absolute proxied API endpoints:`, API_CONFIG);
+        console.log(`🌐 Base URL: ${baseUrl}`);
+        console.log(`📍 Chat endpoint: ${API_CONFIG.chatWebhookUrl}`);
         
         // Azure Blob Storage Configuration (matching desktop)
         const AZURE_STORAGE = {
