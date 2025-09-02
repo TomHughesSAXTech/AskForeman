@@ -1729,27 +1729,11 @@
               <div class="formatted-content">
                 <p><strong>Hi, I'm your AI Foreman!</strong></p>
                 <p>
-                  I'm ready to help with construction estimating, specifications,
-                  and project questions. I can assist with:
+                  I help with construction estimating, specifications, and project questions.
                 </p>
-                <ul>
-                  <li>Paint scope, quantities, and color schedules</li>
-                  <li>Floor coatings and finish specifications</li>
-                  <li>Room schedules and area calculations</li>
-                  <li>Material specifications and building codes</li>
-                  <li>Door/frame schedules and hardware</li>
-                  <li>Structural steel and CMU calculations</li>
-                  <li>Cost estimates and construction takeoffs</li>
-                </ul>
                 <p>
                   <strong>💡 Pro tip:</strong> Use the "Focus on" dropdown below
-                  to search specific project documents, or keep it on "General"
-                  for industry knowledge. The upload section above is for adding
-                  NEW documents to the system.
-                </p>
-                <p style="margin-top: 1rem; padding: 0.75rem; background: #f0f8ff; border-left: 3px solid var(--blueprint-blue); border-radius: 4px;">
-                  <strong>📄 Document Links:</strong> When I reference documents, they'll appear as clickable links like this:<br>
-                  <span style="font-family: monospace; background: #f6f8fa; padding: 0.2rem 0.4rem; border-radius: 3px;">[[filename.pdf]]</span> → clickable link to download/view
+                  to search specific project documents.
                 </p>
               </div>
               <div class="message-time">Just now</div>
@@ -2562,6 +2546,9 @@
         typingIndicator.classList.add("active");
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
+        // Add system prompt to instruct AI about file link format
+        const systemPrompt = `IMPORTANT: When referencing PDF or document files, always use the double bracket format [[filename.pdf]] so they appear as clickable links. Never use bold markdown format like **filename.pdf**. For example: [[Section 09 91 00 - Painting.pdf]]\n\n`;
+        
         try {
           const response = await fetch(API_CONFIG.chatWebhookUrl, {
             method: "POST",
@@ -2569,7 +2556,7 @@
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              message: message,
+              message: systemPrompt + message,
               client: chatContext, // Use chat context instead of upload client
               conversationId: `conv_${chatContext}_${Date.now()}`,
               sessionId: chatContext,
