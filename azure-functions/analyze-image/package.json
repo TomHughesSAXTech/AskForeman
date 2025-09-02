@@ -1,0 +1,18 @@
+{
+  "name": "analyze-image-function",
+  "version": "1.0.0",
+  "description": "Azure Function for analyzing construction drawings and images",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests configured\""
+  },
+  "dependencies": {
+    "@azure/cognitiveservices-computervision": "^8.2.0",
+    "@azure/ms-rest-js": "^2.6.0",
+    "sharp": "^0.32.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {},
+  "author": "SAX Technology Advisors",
+  "license": "ISC"
+}

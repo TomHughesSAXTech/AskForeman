@@ -1,12 +1,13 @@
 {
   "bindings": [
     {
-      "authLevel": "function",
+      "authLevel": "anonymous",
       "type": "httpTrigger",
       "direction": "in",
       "name": "req",
       "methods": [
-        "post"
+        "post",
+        "options"
       ],
       "route": "analyze-image"
     },
@@ -16,5 +17,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../index.js"
+  "scriptFile": "index.js"
 }

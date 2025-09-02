@@ -1895,8 +1895,8 @@
                     position: relative;
                     font-weight: 500;
                     transition: all 0.2s ease;
-                  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 2px 8px rgba(21,101,192,0.3)'" 
-                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 2px 8px rgba(21,101,192,0.3)'; this.querySelector('.capabilities-dropdown').style.display='block'" 
+                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'; this.querySelector('.capabilities-dropdown').style.display='none'">
                     View Capabilities
                     <div class="capabilities-dropdown" style="
                       position: absolute;
@@ -2792,7 +2792,7 @@
           
           // Step 2: Trigger the Azure Function to process the uploaded file
           // The Function App URL should be configured for processing large PDFs
-          const functionUrl = 'https://askforeman-functions.azurewebsites.net/api/ProcessLargePDF';
+          const functionUrl = 'https://saxtech-docconverter.azurewebsites.net/api/ProcessLargePDF';
           
           const processingData = {
             blobPath: blobPath,
@@ -2812,7 +2812,7 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-functions-key': '' // Add function key if required
+              'x-functions-key': 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==' // Master key for SAXTech-DocConverter
             },
             body: JSON.stringify(processingData)
           });
