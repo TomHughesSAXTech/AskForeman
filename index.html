@@ -53,8 +53,8 @@
         
         // Determine where to redirect - redirect to the mobile site hosted on Azure
         if (!forceDesktop && (forceMobile || (isMobileDevice() && viewPreference !== 'desktop'))) {
-          // Redirect to mobile version hosted on Azure Static Web Apps
-          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/mobile-chat.html');
+          // Redirect to mobile version hosted on Azure Static Web Apps (new file to bypass cache)
+          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/mobile.html');
         }
         // If it's desktop or forced desktop, continue loading this page normally
       })();
