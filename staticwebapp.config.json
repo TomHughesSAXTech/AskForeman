@@ -1,6 +1,12 @@
 {
   "routes": [
     {
+      "route": "/api/webhook/ask-foreman/*",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/config",
       "methods": ["GET"],
       "allowedRoles": ["anonymous"]

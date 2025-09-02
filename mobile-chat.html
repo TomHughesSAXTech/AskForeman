@@ -756,14 +756,25 @@
         console.log('🚀 Mobile Chat v3.0 - Full Webhook Integration');
         console.log('📅 Version: ' + new Date().toISOString());
         
-        // Configuration - Production webhook URLs (matching desktop)
-        const API_CONFIG = {
+        // Configuration - Use proxied endpoints when on Azure, direct URLs otherwise
+        const isAzureHost = window.location.hostname.includes('azurestaticapps.net');
+        const API_CONFIG = isAzureHost ? {
+            // Proxied endpoints for Azure Static Web Apps (avoids CORS)
+            chatWebhookUrl: "/api/webhook/ask-foreman/chat",
+            uploadWebhookUrl: "/api/webhook/ask-foreman/upload",
+            createClientWebhookUrl: "/api/webhook/ask-foreman/clients/create",
+            listClientsWebhookUrl: "/api/webhook/ask-foreman/clients/list",
+            indexName: "construction-docs-index"
+        } : {
+            // Direct endpoints for local development or other hosting
             chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
             uploadWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
             createClientWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
             listClientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
             indexName: "construction-docs-index"
         };
+        
+        console.log(`📡 Using ${isAzureHost ? 'proxied' : 'direct'} API endpoints`);
         
         // Azure Blob Storage Configuration (matching desktop)
         const AZURE_STORAGE = {
