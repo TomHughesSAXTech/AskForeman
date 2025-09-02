@@ -746,15 +746,16 @@
     </footer>
 
     <!-- Enhanced Image Handler Script with Azure Computer Vision -->
-    <script src="js/chat-image-handler-v2.js"></script>
+    <script src="js/chat-image-handler-v2.js?v=3.1"></script>
     
     <!-- Knowledge Graph Integration -->
-    <script src="js/knowledge-graph.js"></script>
+    <script src="js/knowledge-graph.js?v=3.1"></script>
     
     <script>
-        // VERSION STAMP - UPDATED WITH FULL WEBHOOK SUPPORT
-        console.log('🚀 Mobile Chat v3.0 - Full Webhook Integration');
-        console.log('📅 Version: ' + new Date().toISOString());
+        // VERSION STAMP - v3.1 CORS FIX WITH PROXY ENDPOINTS
+        console.log('🚀 Mobile Chat v3.1 - CORS Fix with Proxy Endpoints');
+        console.log('📅 Version: 2025-09-02 - Build 3.1');
+        console.log('🔧 Using Azure proxy endpoints to avoid CORS');
         
         // Configuration - ALWAYS use proxied endpoints on Azure to avoid CORS
         // The staticwebapp.config.json will handle the actual proxying
