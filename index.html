@@ -3577,115 +3577,74 @@
         const indexStatusElement = document.getElementById('indexStatus');
         
         try {
-          // Query Azure Search directly for accurate statistics
-          const searchApiKey = 'UsSBLISH5UsbNGeUkBeCa1YZJ0SJPfRJwXBrAWY7kSAzSeABQBCv';
-          const searchServiceName = 'fcssearchservice';
-          const indexName = 'fcs-construction-docs-index-v2';
-          
-          // Get document count from Azure Search
-          const countResponse = await fetch(
-            `https://${searchServiceName}.search.windows.net/indexes/${indexName}/docs/$count?api-version=2023-11-01`,
-            {
-              method: 'GET',
-              headers: {
-                'api-key': searchApiKey,
-                'Content-Type': 'application/json'
-              }
+          // Use n8n webhook to get index statistics (avoids CORS issues)
+          const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook-test/ask-foreman/index/stats', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
             }
-          );
+          });
           
-          if (countResponse.ok) {
-            const docCount = parseInt(await countResponse.text()) || 0;
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            const stats = Array.isArray(statsData) ? statsData[0] : statsData;
             
             // Update document counts
+            const docCount = stats.documentCount || stats.docCount || 0;
             docsCountElement.textContent = docCount.toLocaleString();
             docCountElement.textContent = docCount.toLocaleString();
             
-            // Get index statistics
-            const statsResponse = await fetch(
-              `https://${searchServiceName}.search.windows.net/indexes/${indexName}/stats?api-version=2023-11-01`,
-              {
-                method: 'GET',
-                headers: {
-                  'api-key': searchApiKey,
-                  'Content-Type': 'application/json'
-                }
-              }
-            );
-            
-            if (statsResponse.ok) {
-              const stats = await statsResponse.json();
-              
-              // Update storage size
-              if (stats.storageSize) {
-                const sizeInMB = (stats.storageSize / (1024 * 1024)).toFixed(2);
-                indexSizeElement.textContent = `${sizeInMB} MB`;
-              } else {
-                indexSizeElement.textContent = '0 MB';
-              }
-              
-              // Update status based on document count
-              if (docCount > 0) {
-                indexStatusElement.textContent = 'Active';
-                indexStatusElement.className = 'metadata-value status-active';
-              } else {
-                indexStatusElement.textContent = 'Empty';
-                indexStatusElement.className = 'metadata-value';
-                indexStatusElement.style.color = '#ff9800';
-              }
+            // Update storage size
+            if (stats.storageSize) {
+              const sizeInMB = (stats.storageSize / (1024 * 1024)).toFixed(2);
+              indexSizeElement.textContent = `${sizeInMB} MB`;
             } else {
-              // Stats request failed but count succeeded
-              indexSizeElement.textContent = 'N/A';
-              indexStatusElement.textContent = docCount > 0 ? 'Partial' : 'Empty';
+              indexSizeElement.textContent = '0 MB';
+            }
+            
+            // Update status based on document count
+            if (docCount > 0) {
+              indexStatusElement.textContent = 'Active';
+              indexStatusElement.className = 'metadata-value status-active';
+              indexStatusElement.style.color = ''; // Reset to default
+            } else {
+              indexStatusElement.textContent = 'Empty';
               indexStatusElement.className = 'metadata-value';
+              indexStatusElement.style.color = '#ff9800';
             }
             
             // Update last updated time
             lastUpdatedElement.textContent = new Date().toLocaleTimeString();
             
           } else {
-            // Search service not accessible, show offline status
+            // Webhook not accessible, show offline status
+            console.warn('Index stats webhook returned status:', statsResponse.status);
             docsCountElement.textContent = '0';
             docCountElement.textContent = '0';
             indexSizeElement.textContent = '0 MB';
             indexStatusElement.textContent = 'Offline';
             indexStatusElement.className = 'metadata-value';
             indexStatusElement.style.color = '#f44336';
-            lastUpdatedElement.textContent = 'Connection failed';
+            lastUpdatedElement.textContent = 'Stats unavailable';
           }
         } catch (error) {
           console.warn('Could not fetch index statistics:', error);
-          // Fall back to showing error state
+          // Fall back to showing minimal state
           docsCountElement.textContent = '0';
           docCountElement.textContent = '0';
           indexSizeElement.textContent = '0 MB';
-          indexStatusElement.textContent = 'Error';
+          indexStatusElement.textContent = 'Unknown';
           indexStatusElement.className = 'metadata-value';
-          indexStatusElement.style.color = '#f44336';
-          lastUpdatedElement.textContent = 'Error fetching data';
+          indexStatusElement.style.color = '#9e9e9e';
+          lastUpdatedElement.textContent = 'Unable to fetch';
         }
         
         // Always update client count from loaded data
         if (window.availableClients && window.availableClients.length > 0) {
           clientsCountElement.textContent = window.availableClients.length;
         } else {
-          // Count actual clients in storage if available
-          try {
-            const clientsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients', {
-              method: 'GET'
-            });
-            
-            if (clientsResponse.ok) {
-              const clients = await clientsResponse.json();
-              const clientCount = Array.isArray(clients) ? clients.length : 0;
-              clientsCountElement.textContent = clientCount;
-              window.availableClients = clients;
-            } else {
-              clientsCountElement.textContent = '0';
-            }
-          } catch (error) {
-            clientsCountElement.textContent = '0';
-          }
+          // Count from actual Azure blob storage folders if clients not loaded
+          clientsCountElement.textContent = '0';
         }
       }
       

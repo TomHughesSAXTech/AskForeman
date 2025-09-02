@@ -2,6 +2,7 @@
 // Processes pasted images and drawings to extract construction data
 
 const axios = require('axios');
+const FormData = require('form-data');
 
 module.exports = async function (context, req) {
     context.log('Image analysis function triggered');
@@ -89,17 +90,43 @@ module.exports = async function (context, req) {
             // Make REST API call to Computer Vision
             const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${features}`;
             
-            const response = await axios.post(analyzeUrl, imageBuffer, {
-                headers: {
-                    'Ocp-Apim-Subscription-Key': computerVisionKey,
-                    'Content-Type': 'application/octet-stream'
-                },
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
+            // Try sending as multipart/form-data first
+            const formData = new FormData();
+            formData.append('image', imageBuffer, {
+                filename: 'image.jpg',
+                contentType: 'image/jpeg'
             });
             
-            analysis = response.data;
-            context.log('Image analysis successful');
+            context.log('Attempting to send image as multipart/form-data');
+            
+            try {
+                const response = await axios.post(analyzeUrl, formData, {
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': computerVisionKey,
+                        ...formData.getHeaders()
+                    },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                
+                analysis = response.data;
+                context.log('Image analysis successful with multipart/form-data');
+            } catch (formDataError) {
+                // If multipart fails, try raw binary
+                context.log('Multipart failed, trying raw binary:', formDataError.response?.data?.error?.message || formDataError.message);
+                
+                const response = await axios.post(analyzeUrl, imageBuffer, {
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': computerVisionKey,
+                        'Content-Type': 'application/octet-stream'
+                    },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                
+                analysis = response.data;
+                context.log('Image analysis successful with raw binary');
+            }
             
         } catch (visionError) {
             context.log.error('Computer Vision API error:', visionError.response?.data || visionError.message);
@@ -109,10 +136,17 @@ module.exports = async function (context, req) {
                 const simpleFeatures = ['Description', 'Tags'].join(',');
                 const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${simpleFeatures}`;
                 
-                const response = await axios.post(analyzeUrl, imageBuffer, {
+                // Try with multipart/form-data for fallback
+                const formData = new FormData();
+                formData.append('image', imageBuffer, {
+                    filename: 'image.jpg',
+                    contentType: 'image/jpeg'
+                });
+                
+                const response = await axios.post(analyzeUrl, formData, {
                     headers: {
                         'Ocp-Apim-Subscription-Key': computerVisionKey,
-                        'Content-Type': 'application/octet-stream'
+                        ...formData.getHeaders()
                     },
                     maxBodyLength: Infinity,
                     maxContentLength: Infinity
@@ -216,14 +250,36 @@ async function extractTextFromImage(endpoint, apiKey, imageBuffer, context) {
         // Submit image for OCR processing
         const readUrl = `${endpoint}vision/v3.2/read/analyze`;
         
-        const submitResponse = await axios.post(readUrl, imageBuffer, {
-            headers: {
-                'Ocp-Apim-Subscription-Key': apiKey,
-                'Content-Type': 'application/octet-stream'
-            },
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity
+        // Try multipart/form-data first for OCR
+        const FormData = require('form-data');
+        const formData = new FormData();
+        formData.append('image', imageBuffer, {
+            filename: 'image.jpg',
+            contentType: 'image/jpeg'
         });
+        
+        let submitResponse;
+        try {
+            submitResponse = await axios.post(readUrl, formData, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': apiKey,
+                    ...formData.getHeaders()
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            });
+        } catch (formError) {
+            // Fallback to raw binary if multipart fails
+            context.log('OCR multipart failed, trying raw binary');
+            submitResponse = await axios.post(readUrl, imageBuffer, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': apiKey,
+                    'Content-Type': 'application/octet-stream'
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            });
+        }
         
         // Get the operation location from response headers
         const operationLocation = submitResponse.headers['operation-location'];
