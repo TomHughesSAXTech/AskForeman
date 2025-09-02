@@ -13,6 +13,29 @@ module.exports = async function (context, req) {
             context.log('URL-based analysis requested');
             return await analyzeImageFromUrl(context, req.body.url, req.query.analysisType);
         }
+        
+        // Check if base64 image data was provided in JSON format (from frontend)
+        if (req.body && req.body.imageData) {
+            context.log('Base64 JSON image data received');
+            const imageBuffer = Buffer.from(req.body.imageData, 'base64');
+            context.log(`Decoded image buffer size: ${imageBuffer.length} bytes`);
+            
+            // Check if the buffer looks like a valid image
+            const first4Bytes = imageBuffer.slice(0, 4).toString('hex');
+            context.log(`First 4 bytes of decoded buffer (hex): ${first4Bytes}`);
+            
+            if (first4Bytes.startsWith('ffd8')) {
+                context.log('Image appears to be JPEG');
+            } else if (first4Bytes.startsWith('8950')) {
+                context.log('Image appears to be PNG');
+            } else {
+                context.log('Warning: Buffer may not be a valid image');
+            }
+            
+            // Process the image
+            return await processImageBuffer(context, imageBuffer, req.query.analysisType || 'construction');
+        }
+        
         // Get image from request - handle both Buffer and raw binary/base64 data
         let imageBuffer;
         
@@ -534,6 +557,147 @@ function extractRevisions(text) {
 // Count specific element types
 function countElements(elements, type) {
     return elements.filter(el => el.type === type).length;
+}
+
+// Process image buffer
+async function processImageBuffer(context, imageBuffer, analysisType = 'construction') {
+    try {
+        const axios = require('axios');
+        
+        // Get Computer Vision credentials
+        const computerVisionKey = process.env.COMPUTER_VISION_KEY;
+        const computerVisionEndpoint = process.env.COMPUTER_VISION_ENDPOINT;
+        
+        // Validate credentials
+        if (!computerVisionKey || !computerVisionEndpoint) {
+            throw new Error('Missing Computer Vision credentials');
+        }
+        
+        context.log(`Processing image buffer, size: ${imageBuffer.length} bytes`);
+        
+        // Define visual features to analyze
+        const features = ['Categories', 'Description', 'Objects', 'Tags'].join(',');
+        const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${features}`;
+        
+        // Analyze image
+        let analysis;
+        try {
+            const response = await axios.post(analyzeUrl, imageBuffer, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': computerVisionKey,
+                    'Content-Type': 'application/octet-stream'
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            });
+            
+            analysis = response.data;
+            context.log('Image analysis successful');
+            
+        } catch (visionError) {
+            context.log.error('Computer Vision API error:', visionError.response?.data || visionError.message);
+            
+            // Try simpler analysis without advanced features
+            try {
+                const simpleFeatures = ['Description', 'Tags'].join(',');
+                const simpleUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${simpleFeatures}`;
+                
+                const response = await axios.post(simpleUrl, imageBuffer, {
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': computerVisionKey,
+                        'Content-Type': 'application/octet-stream'
+                    },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                
+                analysis = response.data;
+                context.log('Fallback analysis successful');
+                
+            } catch (fallbackError) {
+                const errorMessage = fallbackError.response?.data?.error?.message || fallbackError.message;
+                throw new Error(`Computer Vision API failed: ${errorMessage}`);
+            }
+        }
+        
+        // Process construction-specific analysis
+        let constructionData = {
+            type: 'unknown',
+            elements: [],
+            measurements: [],
+            text: '',
+            dimensions: null,
+            materials: [],
+            rooms: []
+        };
+        
+        // Extract text from image using OCR if needed
+        if (analysisType === 'construction' || analysisType === 'ocr') {
+            const textResults = await extractTextFromImage(computerVisionEndpoint, computerVisionKey, imageBuffer, context);
+            constructionData.text = textResults.text;
+            constructionData.measurements = extractMeasurements(textResults.text);
+        }
+        
+        // Identify construction elements
+        if (analysis.objects) {
+            constructionData.elements = analysis.objects.map(obj => ({
+                type: translateToConstructionTerm(obj.object),
+                confidence: obj.confidence,
+                location: obj.rectangle,
+                description: obj.object
+            }));
+        }
+        
+        // Determine drawing type based on tags and description
+        if (analysis.tags) {
+            constructionData.type = determineDrawingType(analysis.tags);
+        }
+        
+        // Extract dimensions if it's a floor plan
+        if (constructionData.type === 'floor_plan' || constructionData.type === 'blueprint') {
+            constructionData.dimensions = await extractDimensions(imageBuffer);
+            constructionData.rooms = extractRoomInfo(constructionData.text, analysis.objects);
+        }
+        
+        // Identify materials from text and tags
+        constructionData.materials = extractMaterials(
+            constructionData.text,
+            analysis.tags
+        );
+        
+        // Enhanced analysis for specific construction drawing types
+        if (analysisType === 'construction') {
+            constructionData = await enhancedConstructionAnalysis(
+                imageBuffer,
+                constructionData,
+                analysis
+            );
+        }
+        
+        context.res = {
+            status: 200,
+            body: {
+                success: true,
+                analysis: constructionData,
+                raw: {
+                    description: analysis.description,
+                    categories: analysis.categories,
+                    tags: analysis.tags
+                },
+                message: 'Image analyzed successfully from base64 data'
+            }
+        };
+        
+    } catch (error) {
+        context.log.error('Image processing error:', error.message);
+        context.res = {
+            status: 500,
+            body: {
+                error: 'Failed to analyze image',
+                details: error.message
+            }
+        };
+    }
 }
 
 // Analyze image from URL

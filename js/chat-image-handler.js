@@ -302,15 +302,19 @@ class ChatImageHandler {
         this.showStatus('Analyzing drawing...', 'info');
         
         try {
-            // Convert file to ArrayBuffer for sending as binary data
-            const arrayBuffer = await file.arrayBuffer();
+            // Convert file to base64 for sending as JSON
+            const base64 = await this.fileToBase64(file);
             
             const response = await this.callAzureFunction('analyzeImage', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/octet-stream'
+                    'Content-Type': 'application/json'
                 },
-                body: arrayBuffer
+                body: JSON.stringify({
+                    imageData: base64,
+                    filename: file.name,
+                    mimeType: file.type
+                })
             });
             
             if (response.success) {
@@ -324,6 +328,20 @@ class ChatImageHandler {
             console.error('Drawing analysis error:', error);
             this.showStatus('Failed to analyze drawing', 'error');
         }
+    }
+    
+    // Convert file to base64 string
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+                const base64 = reader.result.split(',')[1];
+                resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     }
 
     // Display analysis results
