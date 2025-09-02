@@ -11,7 +11,7 @@ class ChatImageHandler {
             functionBaseUrl: window.location.hostname === 'localhost' 
                 ? 'http://localhost:7071/api' 
                 : 'https://askforeman-functions.azurewebsites.net/api',
-            functionKey: '', // Add your function key here for production
+            functionKey: window.AZURE_FUNCTION_KEY || '', // Set via environment or config
             endpoints: {
                 analyzeImage: '/analyze-image',
                 pdfChunker: '/pdf-chunker',

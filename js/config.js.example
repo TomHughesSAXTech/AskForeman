@@ -1,0 +1,15 @@
+// Configuration for AskForeman Chat Image Handler
+// Copy this file to config.js and update with your actual values
+
+// Azure Function Key Configuration
+// This key should be set in production via Azure Static Web Apps configuration
+// For local development, you can set it here
+window.AZURE_FUNCTION_KEY = 'YOUR_FUNCTION_KEY_HERE';
+
+// Instructions for production deployment:
+// 1. Go to Azure Portal -> Your Static Web App
+// 2. Navigate to Configuration -> Application Settings
+// 3. Add a new setting:
+//    Name: AZURE_FUNCTION_KEY
+//    Value: Your actual function key
+// 4. The app will automatically use this value in production
