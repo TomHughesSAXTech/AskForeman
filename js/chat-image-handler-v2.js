@@ -5,7 +5,8 @@
 class ChatImageHandler {
     constructor() {
         this.attachedImages = [];
-        this.azureFunctionUrl = 'https://askforeman-functions.azurewebsites.net/api/analyze-image';
+        this.azureFunctionUrl = 'https://saxtech-functionapps.azurewebsites.net/api/analyze-image';
+        this.azureFunctionKey = 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng=='; // Master key
         this.maxImageSize = 20 * 1024 * 1024; // 20MB
         this.initializeHandlers();
     }
@@ -140,10 +141,8 @@ class ChatImageHandler {
         
         this.attachedImages.push(imageData);
         
-        // Auto-analyze if it's a construction drawing
-        if (this.isConstructionDrawing(file)) {
-            await this.analyzeImage(imageData);
-        }
+        // Auto-analyze all images (not just construction drawings)
+        await this.analyzeImage(imageData);
         
         this.updateAttachmentIndicator();
     }
@@ -244,11 +243,12 @@ class ChatImageHandler {
                 analysisType: 'construction'
             };
             
-            // Call Azure Function
-            const response = await fetch(`${this.azureFunctionUrl}?analysisType=construction`, {
+            // Call Azure Function with authentication
+            const response = await fetch(this.azureFunctionUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'x-functions-key': this.azureFunctionKey
                 },
                 body: JSON.stringify(requestBody)
             });
