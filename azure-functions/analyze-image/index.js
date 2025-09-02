@@ -3,7 +3,7 @@
 
 const { ComputerVisionClient } = require('@azure/cognitiveservices-computervision');
 const { ApiKeyCredentials } = require('@azure/ms-rest-js');
-const sharp = require('sharp');
+// const sharp = require('sharp'); // Removed - causes issues in Azure Functions
 const FormData = require('form-data');
 
 module.exports = async function (context, req) {
@@ -274,18 +274,14 @@ function determineDrawingType(tags) {
 
 // Extract dimensions from image
 async function extractDimensions(imageBuffer) {
-    try {
-        const metadata = await sharp(imageBuffer).metadata();
-        
-        return {
-            width: metadata.width,
-            height: metadata.height,
-            aspectRatio: (metadata.width / metadata.height).toFixed(2)
-        };
-    } catch (error) {
-        console.error('Dimension extraction error:', error);
-        return null;
-    }
+    // Sharp is not available in Azure Functions, return buffer size as approximation
+    return {
+        bufferSize: imageBuffer.length,
+        // Can't get actual dimensions without image processing library
+        width: null,
+        height: null,
+        aspectRatio: null
+    };
 }
 
 // Extract room information
