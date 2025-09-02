@@ -1,10 +1,7 @@
 // Azure Function: Analyze Image
 // Processes pasted images and drawings to extract construction data
 
-const { ComputerVisionClient } = require('@azure/cognitiveservices-computervision');
-const { ApiKeyCredentials } = require('@azure/ms-rest-js');
-// const sharp = require('sharp'); // Removed - causes issues in Azure Functions
-const FormData = require('form-data');
+const axios = require('axios');
 
 module.exports = async function (context, req) {
     context.log('Image analysis function triggered');
@@ -32,7 +29,7 @@ module.exports = async function (context, req) {
         context.log(`Received image buffer of size: ${imageBuffer.length} bytes`);
         const analysisType = req.query.analysisType || 'construction';
 
-        // Initialize Computer Vision client
+        // Get Computer Vision credentials
         const computerVisionKey = process.env.COMPUTER_VISION_KEY;
         const computerVisionEndpoint = process.env.COMPUTER_VISION_ENDPOINT;
         
@@ -46,55 +43,50 @@ module.exports = async function (context, req) {
         
         context.log(`Using Computer Vision endpoint: ${computerVisionEndpoint}`);
         
-        const cognitiveServiceCredentials = new ApiKeyCredentials({
-            inHeader: {
-                'Ocp-Apim-Subscription-Key': computerVisionKey
-            }
-        });
-        
-        const client = new ComputerVisionClient(
-            cognitiveServiceCredentials,
-            computerVisionEndpoint
-        );
-
-        // Analyze image
+        // Analyze image using REST API
         let analysis;
         try {
-            const features = [
-                'Categories',
-                'Description',
-                'Objects',
-                'Tags'
-                // 'Read'  // OCR for text extraction - removed as it might cause issues
-            ];
-
-            // Pass stream directly to the API
-            const { Readable } = require('stream');
-            const imageStream = Readable.from(imageBuffer);
+            // Define visual features to analyze
+            const features = ['Categories', 'Description', 'Objects', 'Tags'].join(',');
             
-            analysis = await client.analyzeImageInStream(
-                imageStream,
-                { visualFeatures: features }
-            );
+            // Make REST API call to Computer Vision
+            const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${features}`;
+            
+            const response = await axios.post(analyzeUrl, imageBuffer, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': computerVisionKey,
+                    'Content-Type': 'application/octet-stream'
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
+            });
+            
+            analysis = response.data;
+            context.log('Image analysis successful');
+            
         } catch (visionError) {
-            context.log.error('Computer Vision API error:', visionError);
+            context.log.error('Computer Vision API error:', visionError.response?.data || visionError.message);
+            
             // Try simpler analysis without advanced features
             try {
-                // Create a function that returns a stream for fallback
-                const { Readable } = require('stream');
-                const streamFunction = () => {
-                    const stream = new Readable();
-                    stream.push(imageBuffer);
-                    stream.push(null);
-                    return stream;
-                };
+                const simpleFeatures = ['Description', 'Tags'].join(',');
+                const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${simpleFeatures}`;
                 
-                analysis = await client.analyzeImageInStream(
-                    streamFunction,
-                    { visualFeatures: ['Description', 'Tags'] }
-                );
+                const response = await axios.post(analyzeUrl, imageBuffer, {
+                    headers: {
+                        'Ocp-Apim-Subscription-Key': computerVisionKey,
+                        'Content-Type': 'application/octet-stream'
+                    },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                
+                analysis = response.data;
+                context.log('Fallback analysis successful');
+                
             } catch (fallbackError) {
-                throw new Error(`Computer Vision API failed: ${fallbackError.message}`);
+                const errorMessage = fallbackError.response?.data?.error?.message || fallbackError.message;
+                throw new Error(`Computer Vision API failed: ${errorMessage}`);
             }
         }
 
@@ -109,9 +101,10 @@ module.exports = async function (context, req) {
             rooms: []
         };
 
-        // Extract text from image
-        if (analysis.read) {
-            const textResults = await extractTextFromImage(client, imageBuffer);
+        // Extract text from image using OCR if needed
+        // Note: OCR is a separate API call, only do it if we need text extraction
+        if (analysisType === 'construction' || analysisType === 'ocr') {
+            const textResults = await extractTextFromImage(computerVisionEndpoint, computerVisionKey, imageBuffer, context);
             constructionData.text = textResults.text;
             constructionData.measurements = extractMeasurements(textResults.text);
         }
@@ -178,47 +171,78 @@ module.exports = async function (context, req) {
     }
 };
 
-// Extract text from image using OCR
-async function extractTextFromImage(client, imageBuffer) {
+// Extract text from image using OCR REST API
+async function extractTextFromImage(endpoint, apiKey, imageBuffer, context) {
     try {
-        // Create a function that returns a stream for OCR API
-        const { Readable } = require('stream');
-        const streamFunction = () => {
-            const stream = new Readable();
-            stream.push(imageBuffer);
-            stream.push(null);
-            return stream;
-        };
-        const result = await client.readInStream(streamFunction);
-        const operation = result.operationLocation.split('/').slice(-1)[0];
+        const axios = require('axios');
         
-        // Wait for OCR to complete
-        let readResult;
+        // Submit image for OCR processing
+        const readUrl = `${endpoint}vision/v3.2/read/analyze`;
+        
+        const submitResponse = await axios.post(readUrl, imageBuffer, {
+            headers: {
+                'Ocp-Apim-Subscription-Key': apiKey,
+                'Content-Type': 'application/octet-stream'
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        });
+        
+        // Get the operation location from response headers
+        const operationLocation = submitResponse.headers['operation-location'];
+        if (!operationLocation) {
+            throw new Error('No operation location returned from OCR API');
+        }
+        
+        context.log('OCR operation started, waiting for results...');
+        
+        // Poll for OCR results
+        let result;
+        let attempts = 0;
+        const maxAttempts = 10;
+        
         do {
             await new Promise(resolve => setTimeout(resolve, 1000));
-            readResult = await client.getReadResult(operation);
-        } while (readResult.status !== 'succeeded');
-
-        // Extract text
+            
+            const resultResponse = await axios.get(operationLocation, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': apiKey
+                }
+            });
+            
+            result = resultResponse.data;
+            attempts++;
+            
+        } while (result.status === 'running' && attempts < maxAttempts);
+        
+        if (result.status !== 'succeeded') {
+            throw new Error(`OCR failed with status: ${result.status}`);
+        }
+        
+        // Extract text from results
         let fullText = '';
         const lines = [];
         
-        for (const page of readResult.analyzeResult.readResults) {
-            for (const line of page.lines) {
-                fullText += line.text + '\n';
-                lines.push({
-                    text: line.text,
-                    boundingBox: line.boundingBox
-                });
+        if (result.analyzeResult && result.analyzeResult.readResults) {
+            for (const page of result.analyzeResult.readResults) {
+                for (const line of page.lines) {
+                    fullText += line.text + '\n';
+                    lines.push({
+                        text: line.text,
+                        boundingBox: line.boundingBox
+                    });
+                }
             }
         }
-
+        
+        context.log(`OCR extracted ${lines.length} lines of text`);
+        
         return {
             text: fullText,
             lines: lines
         };
     } catch (error) {
-        console.error('OCR error:', error);
+        console.error('OCR error:', error.message);
         return { text: '', lines: [] };
     }
 }
