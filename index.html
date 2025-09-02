@@ -2547,7 +2547,7 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
         // Add system prompt to instruct AI about file link format
-        const systemPrompt = `IMPORTANT: When referencing PDF or document files, always use the double bracket format [[filename.pdf]] so they appear as clickable links. Never use bold markdown format like **filename.pdf**. For example: [[Section 09 91 00 - Painting.pdf]]\n\n`;
+        const systemPrompt = `IMPORTANT: When referencing PDF or document files, ONLY use the double bracket format [[filename.pdf]] so they appear as clickable links. Do NOT include sandbox paths, markdown links, or any other format. Never use bold markdown like **filename.pdf**. Never use markdown links like [text](url). Just use [[filename.pdf]] format only. Example: [[Proposal - NYCHA Amsterdam Houses WDF.pdf]]\n\n`;
         
         try {
           const response = await fetch(API_CONFIG.chatWebhookUrl, {
