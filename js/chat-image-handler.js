@@ -353,39 +353,91 @@ class ChatImageHandler {
         const results = document.createElement('div');
         results.className = 'analysis-results';
         
-        // Add detected text
-        if (analysis.text && analysis.text.length > 0) {
+        // Add drawing type
+        if (analysis.type) {
+            const typeSection = document.createElement('div');
+            typeSection.className = 'result-section';
+            typeSection.innerHTML = `
+                <h4>Drawing Type:</h4>
+                <p>${analysis.type.replace(/_/g, ' ').charAt(0).toUpperCase() + analysis.type.slice(1).replace(/_/g, ' ')}</p>
+            `;
+            results.appendChild(typeSection);
+        }
+        
+        // Add detected text (text is a string, not an array)
+        if (analysis.text && analysis.text.trim().length > 0) {
             const textSection = document.createElement('div');
             textSection.className = 'result-section';
+            const truncatedText = analysis.text.length > 200 
+                ? analysis.text.substring(0, 200) + '...' 
+                : analysis.text;
             textSection.innerHTML = `
                 <h4>Detected Text:</h4>
-                <p>${analysis.text.join(', ')}</p>
+                <pre style="white-space: pre-wrap; font-size: 0.9em;">${truncatedText}</pre>
             `;
             results.appendChild(textSection);
         }
         
-        // Add detected objects
-        if (analysis.objects && analysis.objects.length > 0) {
-            const objectsSection = document.createElement('div');
-            objectsSection.className = 'result-section';
-            objectsSection.innerHTML = `
-                <h4>Detected Objects:</h4>
-                <ul>${analysis.objects.map(obj => `<li>${obj.name} (${Math.round(obj.confidence * 100)}%)</li>`).join('')}</ul>
+        // Add detected elements (not objects)
+        if (analysis.elements && analysis.elements.length > 0) {
+            const elementsSection = document.createElement('div');
+            elementsSection.className = 'result-section';
+            elementsSection.innerHTML = `
+                <h4>Detected Elements:</h4>
+                <ul>${analysis.elements.map(elem => 
+                    `<li>${elem.description || elem.type} (${Math.round(elem.confidence * 100)}%)</li>`
+                ).join('')}</ul>
             `;
-            results.appendChild(objectsSection);
+            results.appendChild(elementsSection);
         }
         
-        // Add construction-specific analysis
-        if (analysis.construction) {
-            const constructionSection = document.createElement('div');
-            constructionSection.className = 'result-section construction';
-            constructionSection.innerHTML = `
-                <h4>Construction Analysis:</h4>
-                ${analysis.construction.materials ? `<p><strong>Materials:</strong> ${analysis.construction.materials.join(', ')}</p>` : ''}
-                ${analysis.construction.rooms ? `<p><strong>Rooms:</strong> ${analysis.construction.rooms.join(', ')}</p>` : ''}
-                ${analysis.construction.dimensions ? `<p><strong>Dimensions:</strong> ${analysis.construction.dimensions.join(', ')}</p>` : ''}
+        // Add materials
+        if (analysis.materials && analysis.materials.length > 0) {
+            const materialsSection = document.createElement('div');
+            materialsSection.className = 'result-section';
+            materialsSection.innerHTML = `
+                <h4>Materials Detected:</h4>
+                <p>${analysis.materials.join(', ')}</p>
             `;
-            results.appendChild(constructionSection);
+            results.appendChild(materialsSection);
+        }
+        
+        // Add rooms
+        if (analysis.rooms && analysis.rooms.length > 0) {
+            const roomsSection = document.createElement('div');
+            roomsSection.className = 'result-section';
+            roomsSection.innerHTML = `
+                <h4>Rooms Identified:</h4>
+                <ul>${analysis.rooms.map(room => `<li>${room.name}</li>`).join('')}</ul>
+            `;
+            results.appendChild(roomsSection);
+        }
+        
+        // Add measurements
+        if (analysis.measurements && analysis.measurements.length > 0) {
+            const measurementsSection = document.createElement('div');
+            measurementsSection.className = 'result-section';
+            measurementsSection.innerHTML = `
+                <h4>Measurements Found:</h4>
+                <ul>${analysis.measurements.map(m => `<li>${m.value}</li>`).join('')}</ul>
+            `;
+            results.appendChild(measurementsSection);
+        }
+        
+        // Add element counts for floor plans
+        if (analysis.elementCounts) {
+            const countsSection = document.createElement('div');
+            countsSection.className = 'result-section';
+            countsSection.innerHTML = `
+                <h4>Element Counts:</h4>
+                <ul>
+                    ${analysis.elementCounts.doors ? `<li>Doors: ${analysis.elementCounts.doors}</li>` : ''}
+                    ${analysis.elementCounts.windows ? `<li>Windows: ${analysis.elementCounts.windows}</li>` : ''}
+                    ${analysis.elementCounts.rooms ? `<li>Rooms: ${analysis.elementCounts.rooms}</li>` : ''}
+                    ${analysis.elementCounts.fixtures ? `<li>Fixtures: ${analysis.elementCounts.fixtures}</li>` : ''}
+                </ul>
+            `;
+            results.appendChild(countsSection);
         }
         
         preview.appendChild(results);
