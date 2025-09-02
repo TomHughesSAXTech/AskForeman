@@ -1,0 +1,27 @@
+{
+  "azure_openai_deployments": {
+    "embedding_model": {
+      "deployment_name": "text-embedding-ada-002",
+      "endpoint": "https://saxtechopenai.openai.azure.com/",
+      "api_key": "9NjdW7IV9g0nnd6qOfz5D2vxyfuyyEBrMx618DclXhPeISBvfcHHJQQJ99BHACHYHv6XJ3w3AAABACOGPfCS",
+      "api_version": "2024-02-01",
+      "model": "text-embedding-ada-002",
+      "dimension": 1536,
+      "status": "✅ Verified and working"
+    },
+    "chat_model": {
+      "deployment_name": "gpt-4.1-mini",
+      "endpoint": "https://thugh-mf2kmhc0-eastus.cognitiveservices.azure.com/",
+      "api_key": "EfOf7lVjUa9YcjJCWOhgpTREOJhdV2p3lKLPc90PnO5Om57XBpf0JQQJ99BIACYeBjFXJ3w3AAAAACOGTqOD",
+      "api_version": "2025-01-01-preview",
+      "model": "gpt-4.1-mini",
+      "status": "✅ Verified and working"
+    }
+  },
+  "knowledge_graph_requirements": {
+    "embedding_generation": "text-embedding-ada-002 (for vectorizing text chunks)",
+    "entity_extraction": "gpt-4.1-mini (for extracting entities from documents)",
+    "both_verified": true,
+    "ready_for_use": true
+  }
+}

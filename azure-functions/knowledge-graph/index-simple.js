@@ -109,7 +109,7 @@ async function extractEntities(content, openaiClient, context) {
         ];
 
         const result = await openaiClient.getChatCompletions(
-            "gpt-4o-mini",  // deployment name
+            "gpt-4.1-mini",  // deployment name - Updated to match your deployment
             messages,
             {
                 temperature: 0.3,
