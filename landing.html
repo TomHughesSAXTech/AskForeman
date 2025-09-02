@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForemanAI - Professional Construction Intelligence Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Industrial Color Palette */
+            --painting-blue: #2E86AB;
+            --fireproofing-orange: #F24236;
+            --insulation-yellow: #F6AE2D;
+            --flooring-gray: #2F2F2F;
+            --safety-green: #26C485;
+            --steel-silver: #B8C5D6;
+            --concrete-gray: #6C757D;
+            --warning-red: #DC3545;
+            --white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --dark-gray: #212529;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Industrial Pattern Background */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 40px,
+                    rgba(246, 174, 45, 0.02) 40px,
+                    rgba(246, 174, 45, 0.02) 80px
+                ),
+                repeating-linear-gradient(
+                    -45deg,
+                    transparent,
+                    transparent 40px,
+                    rgba(242, 66, 54, 0.02) 40px,
+                    rgba(242, 66, 54, 0.02) 80px
+                );
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--flooring-gray) 100%);
+            padding: 2rem 3rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 10;
+            border-bottom: 5px solid var(--insulation-yellow);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--white);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 15px;
+        }
+
+        .logo-text h1 {
+            font-size: 2.5rem;
+            color: var(--insulation-yellow);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .logo-text .tagline {
+            color: var(--steel-silver);
+            font-size: 1.1rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .industries {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .industry-tag {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: var(--white);
+            font-size: 0.85rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2.5rem;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: block;
+            min-height: 350px;
+        }
+
+        .service-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            transition: height 0.3s ease;
+        }
+
+        .service-card.general::before {
+            background: linear-gradient(90deg, var(--painting-blue), var(--fireproofing-orange), var(--insulation-yellow), var(--flooring-gray));
+        }
+
+        .service-card.estimating::before {
+            background: linear-gradient(90deg, var(--fireproofing-orange), var(--insulation-yellow));
+        }
+
+        .service-card.project::before {
+            background: linear-gradient(90deg, var(--painting-blue), var(--safety-green));
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .service-card:hover::before {
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            font-size: 2.5rem;
+        }
+
+        .service-card.general .service-icon {
+            background: linear-gradient(135deg, var(--painting-blue), var(--fireproofing-orange));
+            box-shadow: 0 8px 20px rgba(46, 134, 171, 0.3);
+        }
+
+        .service-card.estimating .service-icon {
+            background: linear-gradient(135deg, var(--fireproofing-orange), var(--insulation-yellow));
+            box-shadow: 0 8px 20px rgba(242, 66, 54, 0.3);
+        }
+
+        .service-card.project .service-icon {
+            background: linear-gradient(135deg, var(--painting-blue), var(--safety-green));
+            box-shadow: 0 8px 20px rgba(38, 196, 133, 0.3);
+        }
+
+        .service-title {
+            font-size: 1.8rem;
+            color: var(--dark-gray);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .service-description {
+            color: var(--concrete-gray);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        .service-features {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .service-features li {
+            padding: 0.5rem 0;
+            color: var(--flooring-gray);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .service-features li::before {
+            content: "✓";
+            color: var(--safety-green);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .service-badge {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge-live {
+            background: rgba(38, 196, 133, 0.2);
+            color: var(--safety-green);
+            border: 2px solid var(--safety-green);
+        }
+
+        .badge-rag {
+            background: rgba(242, 66, 54, 0.2);
+            color: var(--fireproofing-orange);
+            border: 2px solid var(--fireproofing-orange);
+        }
+
+        .badge-beta {
+            background: rgba(46, 134, 171, 0.2);
+            color: var(--painting-blue);
+            border: 2px solid var(--painting-blue);
+        }
+
+        /* Enter Button */
+        .enter-button {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--insulation-yellow), var(--fireproofing-orange));
+            color: var(--white);
+            border: none;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(246, 174, 45, 0.3);
+        }
+
+        .enter-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(246, 174, 45, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--dark-gray);
+            color: var(--steel-silver);
+            padding: 1.5rem;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: var(--safety-green);
+            box-shadow: 0 0 10px var(--safety-green);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1.5rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .logo-text h1 {
+                font-size: 2rem;
+            }
+
+            .industries {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .service-card {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <img src="ForemanAI.png" alt="ForemanAI Logo">
+                </div>
+                <div class="logo-text">
+                    <h1>ForemanAI</h1>
+                    <div class="tagline">Professional Construction Intelligence</div>
+                </div>
+            </div>
+            <div class="industries">
+                <span class="industry-tag">🎨 Commercial Painting</span>
+                <span class="industry-tag">🔥 Fireproofing</span>
+                <span class="industry-tag">🏗️ Insulation</span>
+                <span class="industry-tag">🏢 Resinous Flooring</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="services-grid">
+            <!-- General Chat -->
+            <a href="general-chat.html" class="service-card general">
+                <span class="service-badge badge-live">Live</span>
+                <div class="service-icon">💬</div>
+                <h2 class="service-title">General Chat</h2>
+                <p class="service-description">
+                    Industry-standard guidance powered by AI for all your construction needs. Get instant answers about best practices, materials, and methods.
+                </p>
+                <ul class="service-features">
+                    <li>Commercial & Industrial Painting expertise</li>
+                    <li>Fireproofing & Insulation knowledge</li>
+                    <li>Resinous Flooring specifications</li>
+                    <li>Construction calculator & tools</li>
+                    <li>Image analysis capabilities</li>
+                </ul>
+                <button class="enter-button">Enter →</button>
+            </a>
+
+            <!-- Estimating Assistant -->
+            <a href="index.html" class="service-card estimating">
+                <span class="service-badge badge-rag">RAG Enhanced</span>
+                <div class="service-icon">📊</div>
+                <h2 class="service-title">Estimating Assistant</h2>
+                <p class="service-description">
+                    Build accurate bid estimates from drawings, specifications, and project documents. AI-powered document analysis for precise cost estimation.
+                </p>
+                <ul class="service-features">
+                    <li>Upload drawings & specifications</li>
+                    <li>Automated quantity takeoffs</li>
+                    <li>Material & labor calculations</li>
+                    <li>Historical project comparisons</li>
+                    <li>Export-ready estimates</li>
+                </ul>
+                <button class="enter-button">Enter →</button>
+            </a>
+
+            <!-- Project Management -->
+            <a href="project-management.html" class="service-card project">
+                <span class="service-badge badge-beta">Beta</span>
+                <div class="service-icon">📁</div>
+                <h2 class="service-title">Project Management</h2>
+                <p class="service-description">
+                    Comprehensive project document management. Access proposals, submittals, contracts, and estimates with intelligent search and insights.
+                </p>
+                <ul class="service-features">
+                    <li>Proposal tracking & management</li>
+                    <li>Submittal specifications</li>
+                    <li>Signed contract repository</li>
+                    <li>Generated estimate archives</li>
+                    <li>Cross-project analytics</li>
+                </ul>
+                <button class="enter-button">Enter →</button>
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot online"></span>
+                <span>All Systems Operational</span>
+            </div>
+            <div class="status-item">
+                <span>Powered by Azure OpenAI</span>
+            </div>
+            <div class="status-item">
+                <span>© 2025 SAXTechnology</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

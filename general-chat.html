@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>General Chat - ForemanAI Construction Intelligence</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --painting-blue: #2E86AB;
+            --fireproofing-orange: #F24236;
+            --insulation-yellow: #F6AE2D;
+            --flooring-gray: #2F2F2F;
+            --safety-green: #26C485;
+            --steel-silver: #B8C5D6;
+            --concrete-gray: #6C757D;
+            --warning-red: #DC3545;
+            --white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --dark-gray: #212529;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, var(--flooring-gray) 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 4px solid var(--insulation-yellow);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text h1 {
+            font-size: 1.8rem;
+            color: var(--insulation-yellow);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-text .tagline {
+            font-size: 0.9rem;
+            color: var(--steel-silver);
+            margin-top: -0.25rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .nav-btn.home {
+            background: linear-gradient(135deg, var(--insulation-yellow), var(--fireproofing-orange));
+            border: none;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+            gap: 2rem;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--painting-blue), var(--fireproofing-orange));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .capabilities-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .capabilities-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .capabilities-popup {
+            display: none;
+            position: absolute;
+            top: 4rem;
+            right: 1.5rem;
+            background: white;
+            color: var(--dark-gray);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            width: 350px;
+            z-index: 1000;
+        }
+
+        .capabilities-popup.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .capabilities-popup h3 {
+            color: var(--painting-blue);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .capability-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .capability-item:last-child {
+            border-bottom: none;
+        }
+
+        .capability-icon {
+            font-size: 1.2rem;
+            margin-top: 0.1rem;
+        }
+
+        /* Chat Messages Area */
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 500px;
+            max-height: 600px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message.system {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .message.system .message-content {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(246, 174, 45, 0.1);
+            border: 1px solid var(--insulation-yellow);
+            border-radius: 20px;
+            color: var(--flooring-gray);
+            font-size: 0.85rem;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--painting-blue), var(--fireproofing-orange));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--painting-blue), var(--fireproofing-orange));
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid var(--light-gray);
+            color: var(--dark-gray);
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1rem;
+            background: white;
+            border: 1px solid var(--light-gray);
+            border-radius: 15px;
+            border-bottom-left-radius: 5px;
+            margin-left: 3.5rem;
+            width: fit-content;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--concrete-gray);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Chat Input Area */
+        .chat-input-container {
+            padding: 1.5rem;
+            background: white;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .chat-input-group {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 25px;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+            min-height: 50px;
+            max-height: 150px;
+        }
+
+        .chat-input:focus {
+            border-color: var(--painting-blue);
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+
+        .image-paste-indicator {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+            font-size: 0.75rem;
+            color: var(--concrete-gray);
+            display: none;
+        }
+
+        .image-paste-indicator.show {
+            display: block;
+        }
+
+        .input-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .send-button, .stop-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--painting-blue), var(--fireproofing-orange));
+            color: white;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(46, 134, 171, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stop-button {
+            background: var(--warning-red);
+            color: white;
+            display: none;
+        }
+
+        .stop-button.show {
+            display: flex;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .info-card h3 {
+            color: var(--painting-blue);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .specialties-list {
+            list-style: none;
+        }
+
+        .specialties-list li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--concrete-gray);
+        }
+
+        .specialty-icon {
+            font-size: 1.2rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .tool-item {
+            padding: 0.75rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tool-item:hover {
+            background: linear-gradient(135deg, rgba(46, 134, 171, 0.1), rgba(242, 66, 54, 0.1));
+            transform: translateX(5px);
+        }
+
+        .tool-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .image-preview.show {
+            display: block;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--warning-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .info-panel {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .info-card {
+                min-width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .logo-text h1 {
+                font-size: 1.4rem;
+            }
+
+            .nav-buttons {
+                gap: 0.5rem;
+            }
+
+            .nav-btn {
+                padding: 0.4rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .capabilities-popup {
+                width: 90%;
+                right: 5%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="ForemanAI.png" alt="ForemanAI">
+            </div>
+            <div class="logo-text">
+                <h1>ForemanAI</h1>
+                <div class="tagline">General Construction Knowledge</div>
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <a href="landing.html" class="nav-btn home">← Back to Home</a>
+            <a href="index.html" class="nav-btn">Estimating</a>
+            <a href="project-management.html" class="nav-btn">Projects</a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Chat Section -->
+        <div class="chat-section">
+            <div class="chat-header">
+                <h2>🏗️ Construction AI Assistant</h2>
+                <p>Hi, I'm your AI Foreman! I help with construction estimating, specifications, and project questions.</p>
+                <button class="capabilities-button" onclick="toggleCapabilities()">View Capabilities</button>
+                <div class="capabilities-popup" id="capabilitiesPopup">
+                    <h3>What I Can Help With:</h3>
+                    <div class="capability-item">
+                        <span class="capability-icon">🎨</span>
+                        <div>
+                            <strong>Commercial Painting</strong>
+                            <p style="font-size: 0.85rem; color: var(--concrete-gray); margin-top: 0.25rem;">Surface prep, coating systems, specifications</p>
+                        </div>
+                    </div>
+                    <div class="capability-item">
+                        <span class="capability-icon">🔥</span>
+                        <div>
+                            <strong>Fireproofing</strong>
+                            <p style="font-size: 0.85rem; color: var(--concrete-gray); margin-top: 0.25rem;">Intumescent, cementitious, fire ratings</p>
+                        </div>
+                    </div>
+                    <div class="capability-item">
+                        <span class="capability-icon">🏗️</span>
+                        <div>
+                            <strong>Insulation</strong>
+                            <p style="font-size: 0.85rem; color: var(--concrete-gray); margin-top: 0.25rem;">Thermal, acoustic, vapor barriers</p>
+                        </div>
+                    </div>
+                    <div class="capability-item">
+                        <span class="capability-icon">🏢</span>
+                        <div>
+                            <strong>Resinous Flooring</strong>
+                            <p style="font-size: 0.85rem; color: var(--concrete-gray); margin-top: 0.25rem;">Epoxy, urethane, MMA systems</p>
+                        </div>
+                    </div>
+                    <div class="capability-item">
+                        <span class="capability-icon">📸</span>
+                        <div>
+                            <strong>Image Analysis</strong>
+                            <p style="font-size: 0.85rem; color: var(--concrete-gray); margin-top: 0.25rem;">Paste images for instant analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message system">
+                    <div class="message-content">
+                        🌐 General Construction Knowledge mode active. Ask me anything about commercial painting, fireproofing, insulation, or resinous flooring!
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImg" src="" alt="Pasted image">
+                    <button class="remove-image" onclick="removeImage()">×</button>
+                </div>
+                <div class="input-wrapper">
+                    <div class="chat-input-group">
+                        <textarea 
+                            class="chat-input" 
+                            id="chatInput" 
+                            placeholder="Ask about construction estimating, specifications, or paste an image..."
+                            rows="1"
+                        ></textarea>
+                        <span class="image-paste-indicator" id="pasteIndicator">📸 Paste image with Ctrl+V</span>
+                    </div>
+                    <div class="input-buttons">
+                        <button class="send-button" id="sendButton" onclick="sendMessage()">
+                            <span>Send</span>
+                            <span>→</span>
+                        </button>
+                        <button class="stop-button" id="stopButton" onclick="stopGeneration()">
+                            <span>Stop</span>
+                            <span>⏹</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <div class="info-card">
+                <h3><span>🎯</span> Specialties</h3>
+                <ul class="specialties-list">
+                    <li><span class="specialty-icon">🎨</span> Commercial & Industrial Painting</li>
+                    <li><span class="specialty-icon">🔥</span> Fireproofing Systems</li>
+                    <li><span class="specialty-icon">🏗️</span> Insulation Solutions</li>
+                    <li><span class="specialty-icon">🏢</span> Resinous Flooring</li>
+                    <li><span class="specialty-icon">📐</span> Estimating & Takeoffs</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3><span>🛠️</span> Quick Tools</h3>
+                <div class="tools-grid">
+                    <div class="tool-item" onclick="quickTool('calculator')">
+                        <span class="tool-icon">🧮</span>
+                        <span>Coverage Calculator</span>
+                    </div>
+                    <div class="tool-item" onclick="quickTool('converter')">
+                        <span class="tool-icon">📏</span>
+                        <span>Unit Converter</span>
+                    </div>
+                    <div class="tool-item" onclick="quickTool('standards')">
+                        <span class="tool-icon">📋</span>
+                        <span>Industry Standards</span>
+                    </div>
+                    <div class="tool-item" onclick="quickTool('safety')">
+                        <span class="tool-icon">⚠️</span>
+                        <span>Safety Guidelines</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h3><span>💡</span> Pro Tips</h3>
+                <ul class="specialties-list">
+                    <li style="font-size: 0.9rem;">• Paste images directly for instant analysis</li>
+                    <li style="font-size: 0.9rem;">• Ask for specific coating recommendations</li>
+                    <li style="font-size: 0.9rem;">• Request material calculations</li>
+                    <li style="font-size: 0.9rem;">• Get compliance guidance</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const N8N_WEBHOOK_URL = 'https://workflows.saxtechnology.com/webhook/ask-foreman/chat'; // General Chat RAG webhook
+        
+        let currentImageData = null;
+        let isGenerating = false;
+        let abortController = null;
+
+        // DOM Elements
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const stopButton = document.getElementById('stopButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        const pasteIndicator = document.getElementById('pasteIndicator');
+        const capabilitiesPopup = document.getElementById('capabilitiesPopup');
+
+        // Toggle capabilities popup
+        function toggleCapabilities() {
+            capabilitiesPopup.classList.toggle('show');
+        }
+
+        // Close popup when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.capabilities-button') && !e.target.closest('.capabilities-popup')) {
+                capabilitiesPopup.classList.remove('show');
+            }
+        });
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+            
+            // Show/hide paste indicator
+            if (chatInput.value.length > 0) {
+                pasteIndicator.classList.remove('show');
+            } else {
+                pasteIndicator.classList.add('show');
+            }
+        });
+
+        // Handle Enter key
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Handle image paste
+        document.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    const blob = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        currentImageData = event.target.result;
+                        previewImg.src = currentImageData;
+                        imagePreview.classList.add('show');
+                        pasteIndicator.classList.remove('show');
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+
+        // Remove pasted image
+        function removeImage() {
+            currentImageData = null;
+            imagePreview.classList.remove('show');
+            previewImg.src = '';
+            if (!chatInput.value) {
+                pasteIndicator.classList.add('show');
+            }
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            
+            if (!message && !currentImageData) return;
+            if (isGenerating) return;
+
+            isGenerating = true;
+            abortController = new AbortController();
+            
+            // Update UI
+            sendButton.disabled = true;
+            stopButton.classList.add('show');
+            
+            // Add user message
+            if (message || currentImageData) {
+                addMessage('user', message, currentImageData);
+            }
+            
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            removeImage();
+            
+            // Show typing indicator
+            typingIndicator.classList.add('show');
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            try {
+                // Send to n8n webhook
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        image: currentImageData,
+                        context: 'general',
+                        timestamp: new Date().toISOString()
+                    }),
+                    signal: abortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                const data = await response.json();
+                
+                // Add assistant response
+                addMessage('assistant', data.response || data.message || 'I apologize, but I encountered an error. Please try again.');
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    addMessage('system', 'Response generation stopped.');
+                } else {
+                    addMessage('assistant', 'I apologize, but I encountered an error connecting to the service. Please try again in a moment.');
+                    console.error('Error:', error);
+                }
+            } finally {
+                // Reset UI
+                typingIndicator.classList.remove('show');
+                isGenerating = false;
+                sendButton.disabled = false;
+                stopButton.classList.remove('show');
+                abortController = null;
+            }
+        }
+
+        // Stop generation
+        function stopGeneration() {
+            if (abortController) {
+                abortController.abort();
+            }
+        }
+
+        // Add message to chat
+        function addMessage(type, content, imageData = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (type === 'assistant') {
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">🔨</div>
+                    <div class="message-content">
+                        <div>${formatContent(content)}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else if (type === 'user') {
+                let messageContent = content ? `<div>${escapeHtml(content)}</div>` : '';
+                if (imageData) {
+                    messageContent += `<img src="${imageData}" style="max-width: 200px; max-height: 200px; border-radius: 5px; margin-top: 0.5rem;">`;
+                }
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${messageContent}
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else if (type === 'system') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">${content}</div>
+                `;
+            }
+            
+            // Insert before typing indicator if it exists
+            if (typingIndicator.parentNode === chatMessages) {
+                chatMessages.insertBefore(messageDiv, typingIndicator);
+            } else {
+                chatMessages.appendChild(messageDiv);
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Format content with basic markdown support
+        function formatContent(content) {
+            if (!content) return '';
+            
+            // Escape HTML first
+            content = escapeHtml(content);
+            
+            // Convert markdown-style formatting
+            content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            content = content.replace(/`(.+?)`/g, '<code style="background: var(--light-gray); padding: 2px 6px; border-radius: 3px;">$1</code>');
+            
+            // Convert line breaks
+            content = content.replace(/\n/g, '<br>');
+            
+            // Convert bullet points
+            content = content.replace(/^- (.+)$/gm, '• $1');
+            
+            return content;
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Quick tool actions
+        function quickTool(tool) {
+            let message = '';
+            switch(tool) {
+                case 'calculator':
+                    message = 'I need help calculating coverage for my project';
+                    break;
+                case 'converter':
+                    message = 'Can you help me convert units for my measurements?';
+                    break;
+                case 'standards':
+                    message = 'What are the industry standards for my project type?';
+                    break;
+                case 'safety':
+                    message = 'What safety guidelines should I follow for this work?';
+                    break;
+            }
+            chatInput.value = message;
+            chatInput.focus();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            chatInput.focus();
+            pasteIndicator.classList.add('show');
+        });
+    </script>
+</body>
+</html>

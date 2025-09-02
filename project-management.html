@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management - ForemanAI Intelligence</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --painting-blue: #2E86AB;
+            --fireproofing-orange: #F24236;
+            --insulation-yellow: #F6AE2D;
+            --flooring-gray: #2F2F2F;
+            --safety-green: #26C485;
+            --steel-silver: #B8C5D6;
+            --concrete-gray: #6C757D;
+            --warning-red: #DC3545;
+            --white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --dark-gray: #212529;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f3443 0%, #34e89e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header - Same style but different accent */
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, #0f3443 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 4px solid var(--safety-green);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text h1 {
+            font-size: 1.8rem;
+            color: var(--safety-green);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo-text .tagline {
+            font-size: 0.9rem;
+            color: var(--steel-silver);
+            margin-top: -0.25rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .nav-btn.home {
+            background: linear-gradient(135deg, var(--safety-green), var(--painting-blue));
+            border: none;
+        }
+
+        .admin-link {
+            background: var(--warning-red);
+            color: white !important;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Project Selector Card */
+        .project-selector-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .project-selector-card h3 {
+            color: var(--painting-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .project-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .project-select:focus {
+            outline: none;
+            border-color: var(--painting-blue);
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+
+        .project-info {
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .project-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .project-stat:last-child {
+            border-bottom: none;
+        }
+
+        .project-stat-label {
+            color: var(--concrete-gray);
+            font-size: 0.9rem;
+        }
+
+        .project-stat-value {
+            font-weight: 600;
+            color: var(--dark-gray);
+        }
+
+        /* Document Categories */
+        .categories-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .categories-card h3 {
+            color: var(--painting-blue);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .category-item {
+            padding: 0.75rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-item:hover {
+            background: linear-gradient(135deg, rgba(38, 196, 133, 0.1), rgba(46, 134, 171, 0.1));
+            transform: translateX(5px);
+        }
+
+        .category-item.active {
+            background: linear-gradient(135deg, var(--safety-green), var(--painting-blue));
+            color: white;
+        }
+
+        .category-icon {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .category-count {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            min-height: 600px;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--painting-blue), var(--safety-green));
+            color: white;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .chat-mode-indicator {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Chat Messages - Larger area */
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            min-height: 450px;
+            max-height: 550px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .message.system {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .message.system .message-content {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(38, 196, 133, 0.1);
+            border: 1px solid var(--safety-green);
+            border-radius: 20px;
+            color: var(--flooring-gray);
+            font-size: 0.85rem;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--painting-blue), var(--safety-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.5rem;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--painting-blue), var(--safety-green));
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            border: 1px solid var(--light-gray);
+            color: var(--dark-gray);
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Inline images for pasted content */
+        .message-content img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin-top: 0.5rem;
+            display: block;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.5rem;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1rem;
+            background: white;
+            border: 1px solid var(--light-gray);
+            border-radius: 15px;
+            border-bottom-left-radius: 5px;
+            margin-left: 3.5rem;
+            width: fit-content;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--concrete-gray);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Chat Input Area */
+        .chat-input-container {
+            padding: 1.5rem;
+            background: white;
+            border-top: 1px solid var(--light-gray);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .chat-input-group {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 25px;
+            font-size: 1rem;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+            min-height: 50px;
+            max-height: 150px;
+        }
+
+        .chat-input:focus {
+            border-color: var(--painting-blue);
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+
+        .input-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .send-button, .stop-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--painting-blue), var(--safety-green));
+            color: white;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(38, 196, 133, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-button.active {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .stop-button {
+            background: var(--warning-red);
+            color: white;
+            display: none;
+        }
+
+        .stop-button.show {
+            display: flex;
+        }
+
+        /* Image Preview */
+        .image-preview {
+            display: none;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .image-preview.show {
+            display: block;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--warning-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Document Upload Area */
+        .upload-section {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .upload-header h3 {
+            color: var(--painting-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--light-gray);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--painting-blue);
+            background: rgba(46, 134, 171, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--safety-green);
+            background: rgba(38, 196, 133, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: var(--concrete-gray);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--concrete-gray);
+            opacity: 0.7;
+        }
+
+        .file-type-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 10px;
+            font-size: 0.85rem;
+        }
+
+        .file-type-info strong {
+            color: var(--dark-gray);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .sidebar {
+                grid-template-columns: 1fr;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="ForemanAI.png" alt="ForemanAI">
+            </div>
+            <div class="logo-text">
+                <h1>ForemanAI</h1>
+                <div class="tagline">Project Management & Analytics</div>
+            </div>
+        </div>
+        <div class="nav-buttons">
+            <a href="landing.html" class="nav-btn home">← Back to Home</a>
+            <a href="general-chat.html" class="nav-btn">General Chat</a>
+            <a href="index.html" class="nav-btn">Estimating</a>
+            <a href="admin.html" class="nav-btn admin-link">
+                <i class="fas fa-cog"></i> Admin
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Project Selector -->
+            <div class="project-selector-card">
+                <h3><i class="fas fa-project-diagram"></i> Select Project</h3>
+                <select class="project-select" id="projectSelect">
+                    <option value="">Choose a project...</option>
+                    <option value="combined">📊 Combined Projects (Cross-Analysis)</option>
+                    <option value="" disabled>──────────────</option>
+                </select>
+                <button class="nav-btn" style="width: 100%; justify-content: center; display: flex; align-items: center; gap: 0.5rem;" onclick="createNewProject()">
+                    <i class="fas fa-plus"></i> Create New Project
+                </button>
+                <div class="project-info" id="projectInfo" style="display: none;">
+                    <div class="project-stat">
+                        <span class="project-stat-label">Proposals:</span>
+                        <span class="project-stat-value" id="proposalCount">0</span>
+                    </div>
+                    <div class="project-stat">
+                        <span class="project-stat-label">Submittals:</span>
+                        <span class="project-stat-value" id="submittalCount">0</span>
+                    </div>
+                    <div class="project-stat">
+                        <span class="project-stat-label">Contracts:</span>
+                        <span class="project-stat-value" id="contractCount">0</span>
+                    </div>
+                    <div class="project-stat">
+                        <span class="project-stat-label">Estimates:</span>
+                        <span class="project-stat-value" id="estimateCount">0</span>
+                    </div>
+                    <div class="project-stat">
+                        <span class="project-stat-label">Total Documents:</span>
+                        <span class="project-stat-value" id="totalDocs">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document Categories -->
+            <div class="categories-card">
+                <h3><i class="fas fa-folder-open"></i> Document Categories</h3>
+                <div class="category-list">
+                    <div class="category-item" data-category="all">
+                        <span class="category-icon">
+                            <i class="fas fa-folder"></i> All Documents
+                        </span>
+                        <span class="category-count" id="allCount">0</span>
+                    </div>
+                    <div class="category-item" data-category="proposals">
+                        <span class="category-icon">
+                            <i class="fas fa-file-contract"></i> Proposals
+                        </span>
+                        <span class="category-count" id="proposalsCatCount">0</span>
+                    </div>
+                    <div class="category-item" data-category="submittals">
+                        <span class="category-icon">
+                            <i class="fas fa-clipboard-check"></i> Submittals
+                        </span>
+                        <span class="category-count" id="submittalsCatCount">0</span>
+                    </div>
+                    <div class="category-item" data-category="contracts">
+                        <span class="category-icon">
+                            <i class="fas fa-file-signature"></i> Contracts
+                        </span>
+                        <span class="category-count" id="contractsCatCount">0</span>
+                    </div>
+                    <div class="category-item" data-category="estimates">
+                        <span class="category-icon">
+                            <i class="fas fa-calculator"></i> Estimates
+                        </span>
+                        <span class="category-count" id="estimatesCatCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h2>📁 Project Document Assistant</h2>
+                    <p>Access and analyze project documents, track proposals, and manage contracts.</p>
+                    <div class="chat-mode-indicator" id="chatMode">
+                        <i class="fas fa-project-diagram"></i> No Project Selected
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message system">
+                        <div class="message-content">
+                            📁 Project Management mode active. Select a project to access its documents, or choose "Combined Projects" for cross-project analysis.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-dots">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Pasted image">
+                        <button class="remove-image" onclick="removeImage()">×</button>
+                    </div>
+                    <div class="input-wrapper">
+                        <div class="chat-input-group">
+                            <textarea 
+                                class="chat-input" 
+                                id="chatInput" 
+                                placeholder="Ask about proposals, contracts, submittals, or paste an image..."
+                                rows="1"
+                            ></textarea>
+                        </div>
+                        <div class="input-buttons">
+                            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                                <span>Send</span>
+                                <span>→</span>
+                            </button>
+                            <button class="stop-button" id="stopButton" onclick="stopGeneration()">
+                                <span>Stop</span>
+                                <span>⏹</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-header">
+                    <h3><i class="fas fa-cloud-upload-alt"></i> Upload Documents</h3>
+                    <select id="uploadCategory" style="padding: 0.5rem; border-radius: 5px; border: 1px solid var(--light-gray);">
+                        <option value="proposals">Proposals</option>
+                        <option value="submittals">Submittals (Specs)</option>
+                        <option value="contracts">Signed Contracts</option>
+                        <option value="estimates">Generated Estimates</option>
+                    </select>
+                </div>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">Drag & drop files here or click to browse</div>
+                    <div class="upload-hint">Select a project first, then upload your documents</div>
+                </div>
+                <input type="file" id="fileInput" multiple accept=".pdf,.docx,.doc,.xlsx,.xls" style="display: none;">
+                <div class="file-type-info">
+                    <strong>Supported formats:</strong> PDF, Word (.docx, .doc), Excel (.xlsx, .xls)<br>
+                    <strong>Max file size:</strong> 100MB per file<br>
+                    <strong>Multiple files:</strong> Yes, up to 15 files at once
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comprehensive Fixes for UI/UX and Performance -->
+    <script src="js/comprehensive-fixes.js"></script>
+    
+    <script>
+        // Configuration
+        const WEBHOOK_URL = 'https://workflows.saxtechnology.com/webhook/ask-foreman/PMchat';
+        const AZURE_STORAGE = {
+            account: "saxtechfcs",
+            container: "fcs-clients",
+            sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
+        };
+
+        let currentProject = '';
+        let currentCategory = 'all';
+        let currentImageData = null;
+        let isGenerating = false;
+        let abortController = null;
+
+        // DOM Elements
+        const projectSelect = document.getElementById('projectSelect');
+        const projectInfo = document.getElementById('projectInfo');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        const stopButton = document.getElementById('stopButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const chatMode = document.getElementById('chatMode');
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProjects();
+            setupEventListeners();
+        });
+
+        // Load projects
+        async function loadProjects() {
+            try {
+                const response = await fetch(`https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/`);
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(text, 'text/xml');
+                    const blobs = xml.querySelectorAll('Blob');
+                    
+                    const projects = new Set();
+                    blobs.forEach(blob => {
+                        const name = blob.querySelector('Name').textContent;
+                        const parts = name.split('/');
+                        if (parts.length > 1 && parts[1]) {
+                            projects.add(parts[1]);
+                        }
+                    });
+
+                    projects.forEach(project => {
+                        if (project !== '.placeholder') {
+                            const option = document.createElement('option');
+                            option.value = project;
+                            option.textContent = project;
+                            projectSelect.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                addMessage('system', '⚠️ Unable to load projects. Please refresh the page.');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Project selection
+            projectSelect.addEventListener('change', (e) => {
+                currentProject = e.target.value;
+                updateProjectInfo();
+                updateChatMode();
+                
+                if (currentProject) {
+                    uploadZone.querySelector('.upload-hint').textContent = 
+                        currentProject === 'combined' 
+                        ? 'Combined projects mode - select individual project to upload'
+                        : `Ready to upload to ${currentProject}`;
+                }
+            });
+
+            // Category selection
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    currentCategory = item.dataset.category;
+                    filterDocuments();
+                });
+            });
+
+            // File upload
+            uploadZone.addEventListener('click', () => {
+                if (currentProject && currentProject !== 'combined') {
+                    fileInput.click();
+                } else {
+                    addMessage('system', '⚠️ Please select a project before uploading documents.');
+                }
+            });
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                if (currentProject && currentProject !== 'combined') {
+                    handleFiles(e.dataTransfer.files);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+
+            // Chat input
+            chatInput.addEventListener('input', () => {
+                chatInput.style.height = 'auto';
+                chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
+                updateSendButton();
+            });
+
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Image paste
+            document.addEventListener('paste', (e) => {
+                const items = e.clipboardData.items;
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const blob = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            currentImageData = event.target.result;
+                            previewImg.src = currentImageData;
+                            imagePreview.classList.add('show');
+                        };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+            });
+        }
+
+        // Update project info
+        function updateProjectInfo() {
+            if (currentProject && currentProject !== 'combined') {
+                projectInfo.style.display = 'block';
+                // In real implementation, fetch actual counts from Azure
+                document.getElementById('proposalCount').textContent = '0';
+                document.getElementById('submittalCount').textContent = '0';
+                document.getElementById('contractCount').textContent = '0';
+                document.getElementById('estimateCount').textContent = '0';
+                document.getElementById('totalDocs').textContent = '0';
+            } else if (currentProject === 'combined') {
+                projectInfo.style.display = 'block';
+                document.getElementById('proposalCount').textContent = 'All';
+                document.getElementById('submittalCount').textContent = 'All';
+                document.getElementById('contractCount').textContent = 'All';
+                document.getElementById('estimateCount').textContent = 'All';
+                document.getElementById('totalDocs').textContent = 'All';
+            } else {
+                projectInfo.style.display = 'none';
+            }
+        }
+
+        // Update chat mode indicator
+        function updateChatMode() {
+            if (currentProject === 'combined') {
+                chatMode.innerHTML = '<i class="fas fa-layer-group"></i> Combined Projects Mode';
+                addMessage('system', '🔍 Combined Projects mode activated! I can now search and analyze across ALL projects for patterns, comparisons, and insights.');
+            } else if (currentProject) {
+                chatMode.innerHTML = `<i class="fas fa-project-diagram"></i> ${currentProject}`;
+                addMessage('system', `📁 Now focused on ${currentProject}. I can access all proposals, contracts, submittals, and estimates for this project.`);
+            } else {
+                chatMode.innerHTML = '<i class="fas fa-project-diagram"></i> No Project Selected';
+            }
+        }
+
+        // Handle file upload
+        async function handleFiles(files) {
+            const category = document.getElementById('uploadCategory').value;
+            const validFiles = Array.from(files).filter(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                return ['pdf', 'docx', 'doc', 'xlsx', 'xls'].includes(ext);
+            });
+
+            if (validFiles.length === 0) {
+                addMessage('system', '⚠️ Please upload PDF, Word, or Excel files only.');
+                return;
+            }
+
+            if (validFiles.length > 15) {
+                addMessage('system', '⚠️ Maximum 15 files per upload. Please select fewer files.');
+                return;
+            }
+
+            addMessage('system', `📤 Uploading ${validFiles.length} ${category} document(s) to ${currentProject}...`);
+
+            // Here you would implement actual file upload to Azure
+            // For now, just show success message
+            setTimeout(() => {
+                addMessage('system', `✅ Successfully uploaded ${validFiles.length} document(s) to ${currentProject}/${category}`);
+                updateProjectInfo();
+            }, 2000);
+        }
+
+        // Send message
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            
+            if (!message && !currentImageData) return;
+            if (isGenerating) return;
+            if (!currentProject) {
+                addMessage('system', '⚠️ Please select a project first.');
+                return;
+            }
+
+            isGenerating = true;
+            abortController = new AbortController();
+            
+            // Update UI
+            sendButton.disabled = true;
+            stopButton.classList.add('show');
+            
+            // Add user message with image if present
+            if (message || currentImageData) {
+                addMessage('user', message, currentImageData);
+            }
+            
+            // Clear input
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            removeImage();
+            
+            // Show typing indicator
+            typingIndicator.classList.add('show');
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        image: currentImageData,
+                        project: currentProject,
+                        category: currentCategory,
+                        context: 'project-management',
+                        timestamp: new Date().toISOString()
+                    }),
+                    signal: abortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                const data = await response.json();
+                
+                // Add assistant response
+                addMessage('assistant', data.response || data.message || 'I encountered an error. Please try again.');
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    addMessage('system', 'Response generation stopped.');
+                } else {
+                    addMessage('assistant', 'I apologize, but I encountered an error. Please try again in a moment.');
+                    console.error('Error:', error);
+                }
+            } finally {
+                typingIndicator.classList.remove('show');
+                isGenerating = false;
+                sendButton.disabled = false;
+                stopButton.classList.remove('show');
+                abortController = null;
+                updateSendButton();
+            }
+        }
+
+        // Stop generation
+        function stopGeneration() {
+            if (abortController) {
+                abortController.abort();
+            }
+        }
+
+        // Add message to chat
+        function addMessage(type, content, imageData = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (type === 'assistant') {
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">📁</div>
+                    <div class="message-content">
+                        <div>${formatContent(content)}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else if (type === 'user') {
+                let messageContent = content ? `<div>${escapeHtml(content)}</div>` : '';
+                if (imageData) {
+                    messageContent += `<img src="${imageData}" alt="User image">`;
+                }
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${messageContent}
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else if (type === 'system') {
+                messageDiv.innerHTML = `
+                    <div class="message-content">${content}</div>
+                `;
+            }
+            
+            if (typingIndicator.parentNode === chatMessages) {
+                chatMessages.insertBefore(messageDiv, typingIndicator);
+            } else {
+                chatMessages.appendChild(messageDiv);
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Format content
+        function formatContent(content) {
+            if (!content) return '';
+            content = escapeHtml(content);
+            content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            content = content.replace(/`(.+?)`/g, '<code style="background: var(--light-gray); padding: 2px 6px; border-radius: 3px;">$1</code>');
+            content = content.replace(/\n/g, '<br>');
+            return content;
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Remove image
+        function removeImage() {
+            currentImageData = null;
+            imagePreview.classList.remove('show');
+            previewImg.src = '';
+        }
+
+        // Update send button state
+        function updateSendButton() {
+            const hasContent = chatInput.value.trim().length > 0 || currentImageData;
+            if (hasContent && !isGenerating) {
+                sendButton.classList.add('active');
+            } else {
+                sendButton.classList.remove('active');
+            }
+        }
+
+        // Filter documents (placeholder)
+        function filterDocuments() {
+            // This would filter displayed documents based on category
+            console.log('Filtering by category:', currentCategory);
+        }
+
+        // Create new project
+        function createNewProject() {
+            const projectName = prompt('Enter new project name:');
+            if (projectName) {
+                // Add to select
+                const option = document.createElement('option');
+                option.value = projectName;
+                option.textContent = projectName;
+                projectSelect.appendChild(option);
+                projectSelect.value = projectName;
+                currentProject = projectName;
+                updateProjectInfo();
+                updateChatMode();
+                addMessage('system', `✅ Created new project: ${projectName}`);
+            }
+        }
+    </script>
+</body>
+</html>

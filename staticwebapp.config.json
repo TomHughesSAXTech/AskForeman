@@ -1,8 +1,25 @@
 {
   "routes": [
     {
+      "route": "/",
+      "rewrite": "/landing.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/webhook/ask-foreman/chat",
       "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/estimator",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/estimator",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/PMchat",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/PMchat",
       "methods": ["GET", "POST", "OPTIONS"],
       "allowedRoles": ["anonymous"]
     },
@@ -25,6 +42,18 @@
       "allowedRoles": ["anonymous"]
     },
     {
+      "route": "/api/webhook/ask-foreman/index/stats",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/files/delete",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/files/delete",
+      "methods": ["POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
       "route": "/api/config",
       "methods": ["GET"],
       "allowedRoles": ["anonymous"]
@@ -34,17 +63,29 @@
       "allowedRoles": ["anonymous"]
     },
     {
-      "route": "/",
+      "route": "/index.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/general-chat.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/project-management.html",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/landing.html",
       "allowedRoles": ["anonymous"]
     }
   ],
   "navigationFallback": {
-    "rewrite": "/index.html",
+    "rewrite": "/landing.html",
     "exclude": ["/api/*", "/*.{css,js,json,png,jpg,jpeg,gif,ico,svg}"]
   },
   "responseOverrides": {
     "404": {
-      "rewrite": "/index.html",
+      "rewrite": "/landing.html",
       "statusCode": 200
     }
   },
