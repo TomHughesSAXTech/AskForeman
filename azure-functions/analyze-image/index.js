@@ -68,18 +68,34 @@ module.exports = async function (context, req) {
                 // 'Read'  // OCR for text extraction - removed as it might cause issues
             ];
 
-            // Pass buffer directly to the API
+            // Create a function that returns a stream for the API
+            const { Readable } = require('stream');
+            const streamFunction = () => {
+                const stream = new Readable();
+                stream.push(imageBuffer);
+                stream.push(null);
+                return stream;
+            };
+            
             analysis = await client.analyzeImageInStream(
-                imageBuffer,
+                streamFunction,
                 { visualFeatures: features }
             );
         } catch (visionError) {
             context.log.error('Computer Vision API error:', visionError);
             // Try simpler analysis without advanced features
             try {
-                // Pass buffer directly to the API for fallback
+                // Create a function that returns a stream for fallback
+                const { Readable } = require('stream');
+                const streamFunction = () => {
+                    const stream = new Readable();
+                    stream.push(imageBuffer);
+                    stream.push(null);
+                    return stream;
+                };
+                
                 analysis = await client.analyzeImageInStream(
-                    imageBuffer,
+                    streamFunction,
                     { visualFeatures: ['Description', 'Tags'] }
                 );
             } catch (fallbackError) {
@@ -170,8 +186,15 @@ module.exports = async function (context, req) {
 // Extract text from image using OCR
 async function extractTextFromImage(client, imageBuffer) {
     try {
-        // Pass buffer directly to the OCR API
-        const result = await client.readInStream(imageBuffer);
+        // Create a function that returns a stream for OCR API
+        const { Readable } = require('stream');
+        const streamFunction = () => {
+            const stream = new Readable();
+            stream.push(imageBuffer);
+            stream.push(null);
+            return stream;
+        };
+        const result = await client.readInStream(streamFunction);
         const operation = result.operationLocation.split('/').slice(-1)[0];
         
         // Wait for OCR to complete
