@@ -750,10 +750,20 @@
         console.log('🚀 Mobile Chat v2.0 - NO AZURE BLOB BACKUP - Webhook Only');
         console.log('📅 Version: 2025-08-26 03:50 UTC');
         
-        // Configuration - Using ONLY n8n webhooks (NO AZURE BLOB BACKUP)
+        // Configuration - Production webhook URLs
         const API_CONFIG = {
             chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
-            listClientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list"
+            uploadWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
+            createClientWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
+            listClientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
+            indexName: "construction-docs-index"
+        };
+        
+        // Azure Blob Storage Configuration (for file references)
+        const AZURE_STORAGE = {
+            account: "saxtechfcs",
+            container: "fcs-clients",
+            sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
         };
 
         // Global State
@@ -816,19 +826,63 @@
             autoResize(this);
         });
 
-        // Enhanced message formatting with mobile optimization and PDF viewer support
+        // Enhanced message formatting with mobile optimization and file reference support
         function formatMessageContent(content) {
             if (!content) return '';
             
             content = String(content);
             
-            // Handle PDF viewer format from AI responses
-            // Format: [VIEWER:URL|Title|ID|Category|Type]
-            const pdfViewerRegex = /\[VIEWER:([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\|([^\|]+)\]/g;
-            content = content.replace(pdfViewerRegex, (match, url, title, id, category, type) => {
-                const shortTitle = title.length > 40 ? title.substring(0, 37) + '...' : title;
-                return `<div class="pdf-viewer-mobile"><a href="${url}" target="_blank" class="pdf-link">📄 ${shortTitle}</a></div>`;
+            // Handle file references with clickable links
+            // Format: [[filename.pdf]] or [[Category/filename.pdf]] or [[ClientName/Category/filename.pdf]]
+            content = content.replace(/\[\[([^\]]+)\]\]/g, (match, filePath) => {
+                const pathParts = filePath.split('/');
+                const fileName = pathParts[pathParts.length - 1];
+                
+                // Determine the client context
+                let clientName = selectedClient || 'general';
+                let finalPath = filePath;
+                
+                // If path has 3 parts, first might be client name
+                if (pathParts.length === 3) {
+                    clientName = pathParts[0];
+                    finalPath = pathParts.slice(1).join('/');
+                } else if (pathParts.length === 2) {
+                    // Category/filename format - use current context
+                    finalPath = filePath;
+                } else {
+                    // Just filename - try to determine category from filename
+                    if (fileName.toLowerCase().includes('proposal')) {
+                        finalPath = `proposals/${fileName}`;
+                    } else if (fileName.toLowerCase().includes('drawing') || fileName.toLowerCase().includes('plan')) {
+                        finalPath = `drawings/${fileName}`;
+                    } else if (fileName.toLowerCase().includes('estimate')) {
+                        finalPath = `estimates/${fileName}`;
+                    } else if (fileName.toLowerCase().includes('spec')) {
+                        finalPath = `specs/${fileName}`;
+                    } else if (fileName.toLowerCase().includes('contract')) {
+                        finalPath = `signed-contracts/${fileName}`;
+                    } else {
+                        // Default to documents folder
+                        finalPath = `documents/${fileName}`;
+                    }
+                }
+                
+                // Generate Azure Blob URL for the file
+                const encodedPath = finalPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+                const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${clientName}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+                
+                // Add Content-Disposition inline to force browser display instead of download
+                const displayUrl = fileUrl + '&response-content-disposition=' + encodeURIComponent('inline');
+                
+                const shortTitle = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+                return `<div class="pdf-viewer-mobile"><a href="${displayUrl}" target="_blank" class="pdf-link">📄 ${shortTitle}</a></div>`;
             });
+            
+            // Handle HTML content from AI (tables, lists, etc.)
+            // If content already contains HTML tags, don't process markdown
+            if (content.includes('<table') || content.includes('<ul') || content.includes('<ol') || content.includes('<div')) {
+                return content; // Return as-is since it's already formatted HTML
+            }
             
             // Convert line breaks
             content = content.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
@@ -842,21 +896,21 @@
             content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
             
-            // Convert URLs to links (but skip PDF viewer URLs already processed)
-            const urlRegex = /(https?:\/\/[^\s<>\]]+)/g;
-            content = content.replace(urlRegex, (url) => {
-                // Skip if it's already part of a processed PDF viewer link
-                if (content.includes(`href="${url}"`)) {
-                    return url;
-                }
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-            });
+            // Convert URLs to links (but skip if already in anchor tags)
+            const urlRegex = /(?<!href=")(?<!src=")(https?:\/\/[^\s<>"]+)(?![^<]*<\/a>)/g;
+            content = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
             
             // Handle bullet points
-            content = content.replace(/• /g, '<br>• ');
+            content = content.replace(/^[•\-\*]\s+(.*)$/gm, '<li>$1</li>');
+            
+            // Wrap consecutive list items in <ul> tags
+            content = content.replace(/(<li>.*<\/li>\s*)+/g, (match) => {
+                return `<ul style="margin: 0.5rem 0; padding-left: 1.5rem;">${match}</ul>`;
+            });
             
             // Clean up empty paragraphs
             content = content.replace(/<p><\/p>/g, '');
+            content = content.replace(/<p>\s*<br>\s*<\/p>/g, '');
             
             // Ensure proper word wrapping for mobile
             content = content.replace(/(\S{40,})/g, '<span style="word-break: break-all;">$1</span>');
@@ -1065,8 +1119,26 @@
                 
                 console.log('✅ Parsed webhook data:', data);
                 
-                // Clear existing options (keep general)
-                clientSelect.innerHTML = '<option value="general">General Construction Knowledge</option>';
+                // Clear existing options and rebuild
+                clientSelect.innerHTML = '';
+                
+                // Add General option
+                const generalOption = document.createElement('option');
+                generalOption.value = 'general';
+                generalOption.textContent = 'General Construction Knowledge';
+                clientSelect.appendChild(generalOption);
+                
+                // Add All Clients option for knowledge graph
+                const allClientsOption = document.createElement('option');
+                allClientsOption.value = 'all-clients';
+                allClientsOption.textContent = '🌐 All Clients';
+                clientSelect.appendChild(allClientsOption);
+                
+                // Add separator
+                const separator = document.createElement('option');
+                separator.disabled = true;
+                separator.textContent = '────────';
+                clientSelect.appendChild(separator);
                 
                 // Add client options
                 if (data && data.clients && Array.isArray(data.clients)) {
@@ -1148,6 +1220,11 @@
                     "🌐 Chat context set to General Construction Knowledge. I'll provide industry-standard guidance and best practices."
                 );
                 chatInput.placeholder = "Ask me anything...";
+            } else if (selectedClient === 'all-clients') {
+                addSystemMessage(
+                    "🔍 Knowledge Graph mode! Searching across ALL projects for patterns and insights."
+                );
+                chatInput.placeholder = "Search all projects...";
             } else {
                 const clientName = clientSelect.options[clientSelect.selectedIndex].text;
                 addSystemMessage(
