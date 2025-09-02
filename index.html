@@ -1895,8 +1895,8 @@
                     position: relative;
                     font-weight: 500;
                     transition: all 0.2s ease;
-                  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 2px 8px rgba(21,101,192,0.3)'; this.querySelector('.capabilities-dropdown').style.display='block'" 
-                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'; this.querySelector('.capabilities-dropdown').style.display='none'">
+                  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 2px 8px rgba(21,101,192,0.3)'; var dropdown = this.querySelector('.capabilities-dropdown'); if(dropdown) dropdown.style.display='block';" 
+                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'; var dropdown = this.querySelector('.capabilities-dropdown'); if(dropdown) dropdown.style.display='none';">
                     View Capabilities
                     <div class="capabilities-dropdown" style="
                       position: absolute;
