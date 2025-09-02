@@ -1958,6 +1958,9 @@
         </div>
 
         <div class="chat-input-container">
+          <!-- Image preview area for pasted/attached images -->
+          <div id="imagePreviewArea" class="image-preview-area" style="display: none;"></div>
+          
           <div class="chat-input-wrapper">
             <div class="chat-context-selector">
               <label for="chatClientSelect">🎯 Focus on:</label>
@@ -1972,8 +1975,10 @@
                 id="chatInput"
                 placeholder="Ask about construction estimating, specifications, or any project questions..."
               />
-              <input type="file" id="chatImageInput" accept="image/*,.pdf" style="display: none;" multiple />
-              <button class="image-attach-button" id="imageAttachBtn" title="Attach images or drawings">
+              <!-- Hidden file input for image attachments -->
+              <input type="file" id="imageFileInput" accept="image/*,.pdf" style="display: none;" multiple />
+              <!-- Attachment button -->
+              <button class="image-attach-button" id="attachButton" title="Attach images or drawings">
                 📎
               </button>
               <button class="send-button" id="sendButton">
@@ -2693,7 +2698,22 @@
       }
 
       async function processFile(file, category) {
-        // Convert file to base64 for n8n webhook
+        const MAX_WEBHOOK_SIZE = 50 * 1024 * 1024; // 50MB limit for webhook
+        
+        // Check file size
+        if (file.size > MAX_WEBHOOK_SIZE) {
+          // Large file - use direct Azure upload + Function App
+          console.log(`Large file detected (${formatFileSize(file.size)}), using direct Azure upload...`);
+          return processLargeFile(file, category);
+        } else {
+          // Small file - use existing webhook approach
+          console.log(`Standard file size (${formatFileSize(file.size)}), using webhook upload...`);
+          return processStandardFile(file, category);
+        }
+      }
+      
+      // Process standard files under 50MB via webhook
+      async function processStandardFile(file, category) {
         const reader = new FileReader();
         
         return new Promise((resolve, reject) => {
@@ -2740,6 +2760,106 @@
           // Read file as base64
           reader.readAsDataURL(file);
         });
+      }
+      
+      // Process large files over 50MB via direct Azure upload
+      async function processLargeFile(file, category) {
+        try {
+          const clientName = selectedClient || 'general';
+          
+          // Step 1: Upload directly to Azure Blob Storage
+          const blobPath = `FCS-OriginalClients/${clientName}/${category}/${file.name}`;
+          const uploadUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodeURIComponent(blobPath)}${AZURE_STORAGE.sasToken}`;
+          
+          console.log(`Uploading large file directly to Azure: ${blobPath}`);
+          addSystemMessage(`📤 Uploading large file "${file.name}" (${formatFileSize(file.size)}) directly to Azure Storage...`);
+          
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+              'x-ms-blob-type': 'BlockBlob',
+              'Content-Type': file.type || 'application/octet-stream',
+              'x-ms-blob-content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+            },
+            body: file
+          });
+          
+          if (!uploadResponse.ok && uploadResponse.status !== 201) {
+            throw new Error(`Azure upload failed with status ${uploadResponse.status}`);
+          }
+          
+          console.log('File uploaded to Azure successfully');
+          
+          // Step 2: Trigger the Azure Function to process the uploaded file
+          // The Function App URL should be configured for processing large PDFs
+          const functionUrl = 'https://askforeman-functions.azurewebsites.net/api/ProcessLargePDF';
+          
+          const processingData = {
+            blobPath: blobPath,
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || 'application/pdf',
+            category: category,
+            client: clientName,
+            containerName: AZURE_STORAGE.container,
+            storageAccount: AZURE_STORAGE.account
+          };
+          
+          console.log('Triggering Azure Function to process the file...');
+          addSystemMessage(`⚙️ Processing "${file.name}" with Azure Function (this may take a few minutes for large files)...`);
+          
+          const functionResponse = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-functions-key': '' // Add function key if required
+            },
+            body: JSON.stringify(processingData)
+          });
+          
+          if (functionResponse.ok) {
+            const result = await functionResponse.json();
+            console.log('Azure Function processing initiated:', result);
+            addSystemMessage(`✅ Large file "${file.name}" uploaded and processing started. The document will be indexed shortly.`);
+            return result;
+          } else {
+            // If Function App is not available, fall back to webhook notification
+            console.warn('Azure Function not available, notifying via webhook...');
+            
+            // Notify the n8n workflow about the uploaded file (without the file content)
+            const notifyData = {
+              action: 'process-large-file',
+              blobPath: blobPath,
+              fileName: file.name,
+              fileSize: file.size,
+              mimeType: file.type || 'application/pdf',
+              category: category,
+              client: clientName
+            };
+            
+            const notifyResponse = await fetch(API_CONFIG.uploadWebhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(notifyData)
+            });
+            
+            if (notifyResponse.ok) {
+              addSystemMessage(`✅ Large file "${file.name}" uploaded. Processing will continue in the background.`);
+              return await notifyResponse.json();
+            } else {
+              console.warn('Webhook notification also failed');
+              // File is uploaded but not processed - still consider it a partial success
+              addSystemMessage(`⚠️ File "${file.name}" uploaded to storage but automatic processing failed. Please trigger reindexing manually.`);
+              return { uploaded: true, processed: false, blobPath: blobPath };
+            }
+          }
+          
+        } catch (error) {
+          console.error('Error processing large file:', error);
+          throw error;
+        }
       }
 
       // Chat Functionality
@@ -5050,6 +5170,9 @@
       window.loadClientFiles = loadClientFiles;
       window.deleteClientFile = deleteClientFile;
     </script>
+    
+    <!-- Chat Image Handler for paste, drag-drop, and enhanced features -->
+    <script src="js/chat-image-handler.js"></script>
   </body>
 </html>
         
