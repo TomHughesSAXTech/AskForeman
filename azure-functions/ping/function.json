@@ -6,11 +6,10 @@
       "direction": "in",
       "name": "req",
       "methods": [
-        "post",
-        "options"
+        "get",
+        "post"
       ],
-      "route": "analyze-image",
-      "dataType": "binary"
+      "route": "ping"
     },
     {
       "type": "http",

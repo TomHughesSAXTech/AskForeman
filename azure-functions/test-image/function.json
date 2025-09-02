@@ -9,7 +9,7 @@
         "post",
         "options"
       ],
-      "route": "analyze-image",
+      "route": "test-image",
       "dataType": "binary"
     },
     {

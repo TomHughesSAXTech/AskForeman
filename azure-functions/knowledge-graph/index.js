@@ -20,7 +20,10 @@ module.exports = async function (context, req) {
 
         // Initialize OpenAI for entity extraction
         const openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY
+            apiKey: process.env.AZURE_OPENAI_KEY,
+            baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}openai/deployments/gpt-4o-mini`,
+            defaultQuery: { 'api-version': '2024-02-15-preview' },
+            defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_KEY }
         });
 
         // Extract entities from document
@@ -103,7 +106,7 @@ async function extractEntities(content, metadata, openai, context) {
     try {
         // Use GPT to extract construction-specific entities
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
@@ -176,7 +179,7 @@ async function extractRelationships(entities, content, openai, context) {
         
         // Use GPT to identify relationships
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
@@ -344,9 +347,9 @@ async function createCrossReferences(entities, currentClient, context) {
 
 // Update Azure Cognitive Search index
 async function updateSearchIndex(metadata, entities, relationships, crossReferences, context) {
-    const searchEndpoint = process.env.SEARCH_ENDPOINT;
-    const searchKey = process.env.SEARCH_API_KEY;
-    const indexName = 'construction-knowledge-graph';
+    const searchEndpoint = process.env.AZURE_SEARCH_ENDPOINT || process.env.SEARCH_ENDPOINT;
+    const searchKey = process.env.AZURE_SEARCH_KEY || process.env.SEARCH_API_KEY;
+    const indexName = process.env.AZURE_SEARCH_INDEX || 'fcs-construction-docs-index-v2';
     
     const searchClient = new SearchClient(
         searchEndpoint,
@@ -384,9 +387,9 @@ async function updateSearchIndex(metadata, entities, relationships, crossReferen
 async function findSimilarDocuments(entities, currentClient, context) {
     const similarities = [];
     
-    const searchEndpoint = process.env.SEARCH_ENDPOINT;
-    const searchKey = process.env.SEARCH_API_KEY;
-    const indexName = 'construction-knowledge-graph';
+    const searchEndpoint = process.env.AZURE_SEARCH_ENDPOINT || process.env.SEARCH_ENDPOINT;
+    const searchKey = process.env.AZURE_SEARCH_KEY || process.env.SEARCH_API_KEY;
+    const indexName = process.env.AZURE_SEARCH_INDEX || 'fcs-construction-docs-index-v2';
     
     const searchClient = new SearchClient(
         searchEndpoint,

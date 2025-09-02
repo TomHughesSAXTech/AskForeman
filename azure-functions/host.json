@@ -13,7 +13,8 @@
       "routePrefix": "api",
       "maxOutstandingRequests": 200,
       "maxConcurrentRequests": 100,
-      "dynamicThrottlesEnabled": true
+      "dynamicThrottlesEnabled": true,
+      "dataType": "binary"
     }
   },
   "functionTimeout": "00:10:00"
