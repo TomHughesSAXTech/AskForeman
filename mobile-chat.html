@@ -756,25 +756,22 @@
         console.log('🚀 Mobile Chat v3.0 - Full Webhook Integration');
         console.log('📅 Version: ' + new Date().toISOString());
         
-        // Configuration - Use proxied endpoints when on Azure, direct URLs otherwise
+        // Configuration - ALWAYS use proxied endpoints on Azure to avoid CORS
+        // The staticwebapp.config.json will handle the actual proxying
         const isAzureHost = window.location.hostname.includes('azurestaticapps.net');
-        const API_CONFIG = isAzureHost ? {
-            // Proxied endpoints for Azure Static Web Apps (avoids CORS)
+        console.log(`🌐 Current hostname: ${window.location.hostname}`);
+        console.log(`📍 Is Azure host: ${isAzureHost}`);
+        
+        const API_CONFIG = {
+            // Always use proxied endpoints that work both locally and on Azure
             chatWebhookUrl: "/api/webhook/ask-foreman/chat",
             uploadWebhookUrl: "/api/webhook/ask-foreman/upload",
             createClientWebhookUrl: "/api/webhook/ask-foreman/clients/create",
             listClientsWebhookUrl: "/api/webhook/ask-foreman/clients/list",
             indexName: "construction-docs-index"
-        } : {
-            // Direct endpoints for local development or other hosting
-            chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
-            uploadWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
-            createClientWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
-            listClientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
-            indexName: "construction-docs-index"
         };
         
-        console.log(`📡 Using ${isAzureHost ? 'proxied' : 'direct'} API endpoints`);
+        console.log(`📡 Using proxied API endpoints:`, API_CONFIG);
         
         // Azure Blob Storage Configuration (matching desktop)
         const AZURE_STORAGE = {
@@ -1334,7 +1331,7 @@
                 pullStart = e.touches[0].screenY;
                 isPulling = true;
             }
-        });
+        }, { passive: true }); // Add passive flag for better performance
 
         chatMessages.addEventListener('touchmove', (e) => {
             if (!isPulling) return;
@@ -1343,8 +1340,7 @@
             const pullDistance = pullCurrent - pullStart;
             
             if (pullDistance > 0 && chatMessages.scrollTop === 0) {
-                e.preventDefault();
-                
+                // Can't preventDefault with passive listener, but that's OK for this use case
                 if (pullDistance > 50) {
                     pullToRefresh.classList.add('visible');
                     pullToRefresh.textContent = '↻ Release to refresh';
@@ -1352,7 +1348,7 @@
                     pullToRefresh.textContent = '↓ Pull to refresh';
                 }
             }
-        });
+        }, { passive: true }); // Add passive flag for better performance
 
         chatMessages.addEventListener('touchend', () => {
             if (!isPulling) return;

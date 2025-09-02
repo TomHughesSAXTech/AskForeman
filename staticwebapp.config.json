@@ -1,8 +1,26 @@
 {
   "routes": [
     {
-      "route": "/api/webhook/ask-foreman/*",
-      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/",
+      "route": "/api/webhook/ask-foreman/chat",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/clients/list",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/clients/create",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/webhook/ask-foreman/upload",
+      "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
       "methods": ["GET", "POST", "OPTIONS"],
       "allowedRoles": ["anonymous"]
     },
