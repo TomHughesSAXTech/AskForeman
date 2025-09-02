@@ -18,13 +18,12 @@ module.exports = async function (context, req) {
             extractionMode = 'full'  // 'full' or 'incremental'
         } = req.body;
 
-        // Initialize OpenAI for entity extraction
-        const openai = new OpenAI({
-            apiKey: process.env.AZURE_OPENAI_KEY,
-            baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}openai/deployments/gpt-4o-mini`,
-            defaultQuery: { 'api-version': '2024-02-15-preview' },
-            defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_KEY }
-        });
+        // Initialize Azure OpenAI for entity extraction
+        const { OpenAIClient, AzureKeyCredential } = require('@azure/openai');
+        const openaiClient = new OpenAIClient(
+            process.env.AZURE_OPENAI_ENDPOINT,
+            new AzureKeyCredential(process.env.AZURE_OPENAI_KEY)
+        );
 
         // Extract entities from document
         const entities = await extractEntities(

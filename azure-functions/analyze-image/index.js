@@ -68,16 +68,23 @@ module.exports = async function (context, req) {
                 // 'Read'  // OCR for text extraction - removed as it might cause issues
             ];
 
+            // Convert buffer to stream for the API
+            const { Readable } = require('stream');
+            const imageStream = Readable.from(imageBuffer);
+            
             analysis = await client.analyzeImageInStream(
-                imageBuffer,
+                imageStream,
                 { visualFeatures: features }
             );
         } catch (visionError) {
             context.log.error('Computer Vision API error:', visionError);
             // Try simpler analysis without advanced features
             try {
+                const { Readable } = require('stream');
+                const imageStream = Readable.from(imageBuffer);
+                
                 analysis = await client.analyzeImageInStream(
-                    imageBuffer,
+                    imageStream,
                     { visualFeatures: ['Description', 'Tags'] }
                 );
             } catch (fallbackError) {
@@ -168,7 +175,9 @@ module.exports = async function (context, req) {
 // Extract text from image using OCR
 async function extractTextFromImage(client, imageBuffer) {
     try {
-        const result = await client.readInStream(imageBuffer);
+        const { Readable } = require('stream');
+        const imageStream = Readable.from(imageBuffer);
+        const result = await client.readInStream(imageStream);
         const operation = result.operationLocation.split('/').slice(-1)[0];
         
         // Wait for OCR to complete
