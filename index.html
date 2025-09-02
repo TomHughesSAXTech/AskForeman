@@ -3695,6 +3695,34 @@
       // Initialize system with lightweight status check
       window.addEventListener("load", async () => {
         try {
+          // Initialize View Capabilities button
+          const capabilitiesBtn = document.querySelector('.capabilities-btn');
+          const capabilitiesDropdown = document.querySelector('.capabilities-dropdown');
+          
+          if (capabilitiesBtn && capabilitiesDropdown) {
+            // Handle click to toggle dropdown
+            capabilitiesBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const isVisible = capabilitiesDropdown.style.display === 'block';
+              capabilitiesDropdown.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Make the button look more clickable
+            capabilitiesBtn.style.cursor = 'pointer';
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+              if (capabilitiesDropdown) {
+                capabilitiesDropdown.style.display = 'none';
+              }
+            });
+            
+            // Prevent dropdown from closing when clicking inside it
+            capabilitiesDropdown.addEventListener('click', (e) => {
+              e.stopPropagation();
+            });
+          }
+          
           // Lightweight connectivity check (no n8n executions)
           await checkSystemStatus();
           

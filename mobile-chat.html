@@ -745,12 +745,18 @@
         </div>
     </footer>
 
+    <!-- Enhanced Image Handler Script with Azure Computer Vision -->
+    <script src="js/chat-image-handler-v2.js"></script>
+    
+    <!-- Knowledge Graph Integration -->
+    <script src="js/knowledge-graph.js"></script>
+    
     <script>
-        // VERSION STAMP - UPDATED 2025-08-26 03:50 UTC - NO AZURE BLOB BACKUP
-        console.log('🚀 Mobile Chat v2.0 - NO AZURE BLOB BACKUP - Webhook Only');
-        console.log('📅 Version: 2025-08-26 03:50 UTC');
+        // VERSION STAMP - UPDATED WITH FULL WEBHOOK SUPPORT
+        console.log('🚀 Mobile Chat v3.0 - Full Webhook Integration');
+        console.log('📅 Version: ' + new Date().toISOString());
         
-        // Configuration - Production webhook URLs
+        // Configuration - Production webhook URLs (matching desktop)
         const API_CONFIG = {
             chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
             uploadWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
@@ -759,18 +765,21 @@
             indexName: "construction-docs-index"
         };
         
-        // Azure Blob Storage Configuration (for file references)
+        // Azure Blob Storage Configuration (matching desktop)
         const AZURE_STORAGE = {
             account: "saxtechfcs",
-            container: "fcs-clients",
+            container: "fcs-clients", // Single container with two folders: FCS-OriginalClients and FCS-ConvertedClients
             sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
         };
 
         // Global State
         let selectedClient = "general";
+        let chatContext = "general"; // Track chat context separately
+        let totalDocumentCount = 0; // Track total documents
         let systemStatus = {
             chat: true,
-            clients: true
+            clients: true,
+            upload: true
         };
 
         // DOM Elements
@@ -1015,10 +1024,11 @@
                     },
                     body: JSON.stringify({
                         message: message,
-                        client: selectedClient,
-                        conversationId: `mobile_conv_${selectedClient}_${Date.now()}`,
-                        sessionId: `mobile_${selectedClient}`,
-                        source: 'mobile'
+                        client: chatContext || selectedClient, // Use chatContext for queries
+                        conversationId: `mobile_conv_${chatContext || selectedClient}_${Date.now()}`,
+                        sessionId: `mobile_${chatContext || selectedClient}`,
+                        source: 'mobile',
+                        imageAnalysis: window.currentImageAnalysis || null // Include image analysis if available
                     })
                 });
                 
@@ -1196,6 +1206,75 @@
                 statusIndicator.style.borderColor = 'var(--warning-red)';
             }
         }
+
+        // Check system connectivity (lightweight - matching desktop)
+        async function checkSystemStatus() {
+            try {
+                // Simple network connectivity test to your domain (doesn't hit webhook endpoints)
+                const connectivityTest = fetch('https://workflows.saxtechnology.com/', {
+                    method: 'HEAD',
+                    mode: 'no-cors', // Avoid CORS issues, just test connectivity
+                    cache: 'no-cache'
+                }).then(() => true).catch(() => false);
+                
+                const isConnected = await Promise.race([
+                    connectivityTest,
+                    new Promise(resolve => setTimeout(() => resolve(false), 3000))
+                ]);
+                
+                if (isConnected) {
+                    systemStatus.chat = true;
+                    systemStatus.clients = true;
+                    systemStatus.upload = true;
+                } else {
+                    systemStatus.chat = false;
+                    systemStatus.clients = false;
+                    systemStatus.upload = false;
+                }
+                
+                updateSystemStatus();
+                
+            } catch (error) {
+                console.error('Connectivity check failed:', error);
+                systemStatus.chat = false;
+                systemStatus.clients = false;
+                systemStatus.upload = false;
+                updateSystemStatus();
+            }
+        }
+
+        // Client selection handler (matching desktop behavior)
+        clientSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'retry') {
+                loadClients();
+                return;
+            }
+            
+            chatContext = e.target.value;
+            selectedClient = e.target.value;
+            const contextName = clientSelect.options[clientSelect.selectedIndex].text;
+            
+            if (chatContext === 'general') {
+                addSystemMessage(
+                    '🌐 Chat context set to General Construction Knowledge. I\'ll provide industry-standard guidance and best practices.'
+                );
+                chatInput.placeholder = 'Ask about construction estimating, specifications, or any project questions...';
+            } else if (chatContext === 'all-clients') {
+                addSystemMessage(
+                    '🔍 Knowledge Graph mode activated! I can now search and correlate information across ALL client projects. This allows me to:\n' +
+                    '• Find similar solutions from other projects\n' +
+                    '• Compare specifications and costs across clients\n' +
+                    '• Identify patterns and best practices\n' +
+                    '• Cross-reference materials and methods'
+                );
+                chatInput.placeholder = 'Search across all projects for patterns, comparisons, or insights...';
+            } else {
+                addSystemMessage(
+                    `🎯 Chat context focused on ${contextName}. I'll prioritize information from this project's documents.`
+                );
+                chatInput.placeholder = `Ask about ${contextName} project details, specifications, or requirements...`;
+            }
+        });
 
         // Event Listeners
         chatInput.addEventListener('keypress', (e) => {
