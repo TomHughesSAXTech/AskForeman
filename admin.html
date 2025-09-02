@@ -373,17 +373,17 @@
         </header>
 
         <div class="content">
-            <!-- Client List Panel -->
+            <!-- Project List Panel -->
             <div class="panel">
-                <h2>🏗️ Client Projects</h2>
+                <h2>🏗️ Projects</h2>
                 <div class="client-list" id="clientList">
-                    <!-- Client items will be loaded here -->
+                    <!-- Project items will be loaded here -->
                 </div>
             </div>
 
-            <!-- Client Details Panel -->
+            <!-- Project Details Panel -->
             <div class="panel">
-                <h2>📋 Client Management</h2>
+                <h2>📋 Project Management</h2>
                 
                 <!-- Tabs -->
                 <div class="tabs">
@@ -396,7 +396,7 @@
                 <div id="detailsTab" class="tab-content active">
                     <div id="clientDetails">
                         <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
-                            Select a client from the list to view details
+                            Select a project from the list to view details
                         </p>
                     </div>
                 </div>
@@ -405,7 +405,7 @@
                 <div id="documentsTab" class="tab-content">
                     <div id="documentManagement">
                         <p style="color: var(--steel-gray); text-align: center; padding: 2rem;">
-                            Select a client to manage documents
+                            Select a project to manage documents
                         </p>
                     </div>
                 </div>
@@ -419,19 +419,45 @@
                                 <button class="btn btn-primary" onclick="syncAzureStorage()" style="width: 100%;">
                                     ☁️ Sync Azure Storage
                                 </button>
-                                <p class="help-text">Scan Azure for new clients and update document counts</p>
+                                <p class="help-text">Scan Azure for new projects and update document counts</p>
                             </div>
                             <div>
                                 <button class="btn" onclick="exportClientData()" style="width: 100%; background: #6c757d; color: white;">
-                                    📥 Export Client Data
+                                    📥 Export Project Data
                                 </button>
-                                <p class="help-text">Download client list as JSON</p>
+                                <p class="help-text">Download project list as JSON</p>
                             </div>
                         </div>
                         
                         <!-- Index Management Section -->
                         <div style="margin-top: 2rem; padding: 1rem; background: #fff3e0; border-radius: 5px; border: 2px solid var(--safety-yellow);">
                             <h4>🔍 Search Index Management</h4>
+                            
+                            <!-- Index Status Panel (moved from index.html) -->
+                            <div style="margin: 1rem 0; padding: 1rem; background: white; border-radius: 8px; border: 1px solid var(--medium-gray);">
+                                <h5 style="margin-bottom: 1rem; color: var(--concrete-gray); display: flex; align-items: center; gap: 0.5rem;">
+                                    📊 Index Status
+                                </h5>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem;">
+                                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--light-gray); border-radius: 5px;">
+                                        <span style="font-weight: 600; color: var(--concrete-gray);">Indexed Files:</span>
+                                        <span style="color: var(--steel-gray); font-weight: 600;" id="indexedFilesCount">0</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--light-gray); border-radius: 5px;">
+                                        <span style="font-weight: 600; color: var(--concrete-gray);">Index Size:</span>
+                                        <span style="color: var(--steel-gray); font-weight: 600;" id="indexSizeDisplay">0 MB</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--light-gray); border-radius: 5px;">
+                                        <span style="font-weight: 600; color: var(--concrete-gray);">Last Updated:</span>
+                                        <span style="color: var(--steel-gray); font-weight: 600;" id="lastUpdatedDisplay">Never</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--light-gray); border-radius: 5px;">
+                                        <span style="font-weight: 600; color: var(--concrete-gray);">Status:</span>
+                                        <span style="color: var(--hi-vis-green); font-weight: bold;" id="indexStatusDisplay">Ready</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div style="margin: 1rem 0;">
                                 <button class="btn btn-primary" onclick="viewIndexContents()" style="margin-right: 0.5rem;">
                                     📊 View Index Contents
@@ -665,7 +691,7 @@
             
             detailsContainer.innerHTML = `
                 <div class="form-group">
-                    <label>Client Name</label>
+                    <label>Project Name</label>
                     <input type="text" id="clientName" value="${selectedClient.name}">
                 </div>
                 <div class="form-group">
@@ -690,7 +716,7 @@
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                     <button class="btn btn-primary" onclick="updateClient()">💾 Save Changes</button>
-                    <button class="btn btn-danger" onclick="deleteClient()">🗑️ Delete Client</button>
+                    <button class="btn btn-danger" onclick="deleteClient()">🗑️ Delete Project</button>
                 </div>
             `;
         }
@@ -894,7 +920,7 @@
                     selectedClient.projectType = clientData.projectType;
                     selectedClient.description = clientData.description;
                     
-                    showStatus('success', 'Client details saved to Azure successfully');
+                    showStatus('success', 'Project details saved to Azure successfully');
                     renderClients();
                 } else {
                     throw new Error('Failed to save metadata');
@@ -907,11 +933,11 @@
         }
 
         async function deleteClient() {
-            if (!confirm(`Delete client "${selectedClient.name}"? This will delete all documents and cannot be undone.`)) {
+            if (!confirm(`Delete project "${selectedClient.name}"? This will delete all documents and cannot be undone.`)) {
                 return;
             }
             
-            showLoading('Deleting client and all associated files...');
+            showLoading('Deleting project and all associated files...');
             try {
                 // Use n8n webhook for complete client deletion including index updates
                 const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/delete', {
@@ -929,18 +955,18 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    showStatus('success', `Client deleted successfully. All files and index entries removed.`);
+                    showStatus('success', `Project deleted successfully. All files and index entries removed.`);
                     selectedClient = null;
                     loadClients();
                     // Clear the details panel
-                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client from the list to view details</p>';
-                    document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a client to manage documents</p>';
+                    document.getElementById('clientDetails').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a project from the list to view details</p>';
+                    document.getElementById('documentManagement').innerHTML = '<p style="color: var(--steel-gray); text-align: center; padding: 2rem;">Select a project to manage documents</p>';
                 } else {
                     const errorText = await response.text();
-                    showStatus('error', `Failed to delete client: ${errorText}`);
+                    showStatus('error', `Failed to delete project: ${errorText}`);
                 }
             } catch (error) {
-                showStatus('error', `Failed to delete client: ${error.message}`);
+                showStatus('error', `Failed to delete project: ${error.message}`);
             } finally {
                 hideLoading();
             }
@@ -950,7 +976,7 @@
             const name = prompt('Enter client name:');
             if (!name) return;
             
-            showStatus('success', `To create client "${name}", use the main app's "Create New Client" feature`);
+            showStatus('success', `To create project "${name}", use the main app's "Create New Project" feature`);
         }
 
         // Document operations
@@ -1017,12 +1043,12 @@
 
         // System operations
         async function syncAzureStorage() {
-            if (!confirm(`Sync with Azure Storage?\n\nWhat this does:\n- Scans all folders in Azure Blob Storage\n- Updates the client list\n- Identifies new or removed clients\n- Refreshes document counts\n\nUse this when files were added/removed outside the app.`)) {
+            if (!confirm(`Sync with Azure Storage?\n\nWhat this does:\n- Scans all folders in Azure Blob Storage\n- Updates the project list\n- Identifies new or removed projects\n- Refreshes document counts\n\nUse this when files were added/removed outside the app.`)) {
                 return;
             }
             
             await loadClients();
-            showStatus('success', `Azure Storage synced. Found ${clients.length} clients.`);
+            showStatus('success', `Azure Storage synced. Found ${clients.length} projects.`);
         }
 
         function exportClientData() {
@@ -1036,7 +1062,7 @@
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
             
-            showStatus('success', 'Client data exported');
+            showStatus('success', 'Project data exported');
         }
 
         // Store selected files for preview
@@ -1049,7 +1075,7 @@
             if (!files || files.length === 0) return;
             
             if (!selectedClient) {
-                showStatus('error', 'Please select a client first');
+                showStatus('error', 'Please select a project first');
                 event.target.value = '';
                 return;
             }
@@ -1144,7 +1170,7 @@
             }
             
             if (!selectedClient) {
-                showStatus('error', 'Please select a client first');
+                showStatus('error', 'Please select a project first');
                 return;
             }
             
@@ -1460,6 +1486,25 @@
                     const actualDocCount = window.lastKnownDocumentCount || 0;
                     if (actualDocCount > 0 && stats.documentCount !== actualDocCount) {
                         console.warn(`Stats mismatch: API says ${stats.documentCount}, but we counted ${actualDocCount} documents`);
+                    }
+                    
+                    // Update the Index Status panel if it exists
+                    const indexedFilesEl = document.getElementById('indexedFilesCount');
+                    const indexSizeEl = document.getElementById('indexSizeDisplay');
+                    const lastUpdatedEl = document.getElementById('lastUpdatedDisplay');
+                    const indexStatusEl = document.getElementById('indexStatusDisplay');
+                    
+                    if (indexedFilesEl) indexedFilesEl.textContent = stats.documentCount || 0;
+                    if (indexSizeEl) indexSizeEl.textContent = formatFileSize(stats.storageSize || 0);
+                    if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleString();
+                    if (indexStatusEl) {
+                        if ((stats.documentCount || 0) > 0) {
+                            indexStatusEl.textContent = 'Active';
+                            indexStatusEl.style.color = 'var(--hi-vis-green)';
+                        } else {
+                            indexStatusEl.textContent = 'Empty';
+                            indexStatusEl.style.color = '#ff9800';
+                        }
                     }
                     
                     const indexStats = document.getElementById('indexStats');

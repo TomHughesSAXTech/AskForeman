@@ -53,8 +53,8 @@
         
         // Determine where to redirect - redirect to the mobile site hosted on Azure
         if (!forceDesktop && (forceMobile || (isMobileDevice() && viewPreference !== 'desktop'))) {
-          // Redirect to mobile version hosted on Azure Static Web Apps (new file to bypass cache)
-          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/mobile.html');
+          // Redirect to mobile version hosted on Azure Static Web Apps (m.html to bypass all caching)
+          window.location.replace('https://gentle-pond-0c4e3b90f.2.azurestaticapps.net/m.html');
         }
         // If it's desktop or forced desktop, continue loading this page normally
       })();
@@ -1635,7 +1635,7 @@
           </div>
           <div class="search-stat">
             <span class="search-stat-value" id="totalClientsCount">0</span>
-            <span class="search-stat-label">Clients</span>
+            <span class="search-stat-label">Projects</span>
           </div>
         </div>
         <div class="status-indicator">
@@ -1659,9 +1659,9 @@
       <aside class="sidebar">
         <div class="card">
           <div class="client-selector">
-            <label for="clientSelect">🏢 Select Client Project:</label>
+            <label for="clientSelect">🏢 Select Project:</label>
             <select id="clientSelect">
-              <option value="">Loading clients...</option>
+              <option value="">Please select a project first</option>
             </select>
           </div>
 
@@ -1840,31 +1840,11 @@
               margin-top: 0.5rem;
             "
           >
-            ➕ Create New Client
+            ➕ Create New Project
           </button>
         </div>
 
-        <div class="card metadata-panel">
-          <h3>Index Status</h3>
-          <div class="metadata-item">
-            <span class="metadata-label">Documents:</span>
-            <span class="metadata-value" id="docCount">0</span>
-          </div>
-          <div class="metadata-item">
-            <span class="metadata-label">Index Size:</span>
-            <span class="metadata-value" id="indexSize">0 MB</span>
-          </div>
-          <div class="metadata-item">
-            <span class="metadata-label">Last Updated:</span>
-            <span class="metadata-value" id="lastUpdated">Never</span>
-          </div>
-          <div class="metadata-item">
-            <span class="metadata-label">Status:</span>
-            <span class="metadata-value status-active" id="indexStatus"
-              >Ready</span
-            >
-          </div>
-        </div>
+        <!-- Index Status moved to admin.html -->
       </aside>
 
       <main class="card chat-container">
@@ -3012,10 +2992,10 @@
               max-width: 500px;
               box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             ">
-              <h2 style="margin-bottom: 1.5rem; color: var(--concrete-gray);">🏗️ Create New Client</h2>
+              <h2 style="margin-bottom: 1.5rem; color: var(--concrete-gray);">🏗️ Create New Project</h2>
               
               <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Client Name *</label>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Name *</label>
                 <input type="text" id="clientNameInput" placeholder="e.g. ABC Construction" style="
                   width: 100%;
                   padding: 0.75rem;
@@ -3076,7 +3056,7 @@
                   border-radius: 5px;
                   cursor: pointer;
                   font-weight: 600;
-                ">Create Client</button>
+                ">Create Project</button>
               </div>
             </div>
           </div>
@@ -3099,7 +3079,7 @@
         const projectDescription = document.getElementById('projectDescInput').value.trim();
         
         if (!clientName) {
-          alert('Client name is required');
+          alert('Project name is required');
           return;
         }
         
@@ -3107,7 +3087,7 @@
         const createBtn = event.target || document.querySelector('#clientModal button[onclick="createClient()"]');
         if (createBtn) {
           createBtn.disabled = true;
-          createBtn.textContent = 'Creating client folders...';
+          createBtn.textContent = 'Creating project folders...';
         }
         
         try {
