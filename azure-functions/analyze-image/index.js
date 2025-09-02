@@ -33,7 +33,9 @@ module.exports = async function (context, req) {
             }
             
             // Process the image
-            return await processImageBuffer(context, imageBuffer, req.query.analysisType || 'construction');
+            const result = await processImageBuffer(context, imageBuffer, req.query.analysisType || 'construction');
+            context.res = result;
+            return;
         }
         
         // Get image from request - handle both Buffer and raw binary/base64 data
@@ -674,7 +676,7 @@ async function processImageBuffer(context, imageBuffer, analysisType = 'construc
             );
         }
         
-        context.res = {
+        return {
             status: 200,
             body: {
                 success: true,
@@ -690,7 +692,7 @@ async function processImageBuffer(context, imageBuffer, analysisType = 'construc
         
     } catch (error) {
         context.log.error('Image processing error:', error.message);
-        context.res = {
+        return {
             status: 500,
             body: {
                 error: 'Failed to analyze image',
