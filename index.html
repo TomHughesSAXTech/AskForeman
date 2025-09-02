@@ -1998,6 +1998,9 @@
       </main>
     </div>
 
+    <!-- Enhanced Image Handler Script with Azure Computer Vision -->
+    <script src="js/chat-image-handler-v2.js"></script>
+    
     <script>
       // Configuration - Production webhook URLs
       const API_CONFIG = {
@@ -2791,7 +2794,7 @@
           
           // Step 2: Trigger the Azure Function to process the uploaded file
           // The Function App URL should be configured for processing large PDFs
-          const functionUrl = 'https://saxtech-docconverter.azurewebsites.net/api/ProcessLargePDF';
+          const functionUrl = 'https://saxtech-functionapps.azurewebsites.net/api/ProcessLargePDF';
           
           const processingData = {
             blobPath: blobPath,
@@ -2811,7 +2814,7 @@
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-functions-key': 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==' // Master key for SAXTech-DocConverter
+              'x-functions-key': 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng==' // Master key for SAXTech-FunctionApps
             },
             body: JSON.stringify(processingData)
           });
