@@ -302,13 +302,15 @@ class ChatImageHandler {
         this.showStatus('Analyzing drawing...', 'info');
         
         try {
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('source', 'paste');
+            // Convert file to ArrayBuffer for sending as binary data
+            const arrayBuffer = await file.arrayBuffer();
             
             const response = await this.callAzureFunction('analyzeImage', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: arrayBuffer
             });
             
             if (response.success) {

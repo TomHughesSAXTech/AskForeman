@@ -1,0 +1,28 @@
+[
+  {
+    "name": "ConvertDocument",
+    "scriptFile": "SAXTech-FunctionApps2.dll",
+    "entryPoint": "SAXTech.FunctionApps.ConvertDocument.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "post"
+        ],
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  }
+]
