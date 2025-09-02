@@ -8,6 +8,11 @@ module.exports = async function (context, req) {
     context.log('Image analysis function triggered');
 
     try {
+        // Check if a URL was provided instead of binary data
+        if (req.body && req.body.url) {
+            context.log('URL-based analysis requested');
+            return await analyzeImageFromUrl(context, req.body.url, req.query.analysisType);
+        }
         // Get image from request - handle both Buffer and raw binary/base64 data
         let imageBuffer;
         
@@ -87,46 +92,22 @@ module.exports = async function (context, req) {
             // Define visual features to analyze
             const features = ['Categories', 'Description', 'Objects', 'Tags'].join(',');
             
-            // Make REST API call to Computer Vision
+            // Make REST API call to Computer Vision - it only accepts raw binary
             const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${features}`;
             
-            // Try sending as multipart/form-data first
-            const formData = new FormData();
-            formData.append('image', imageBuffer, {
-                filename: 'image.jpg',
-                contentType: 'image/jpeg'
+            context.log('Sending image to Computer Vision API');
+            
+            const response = await axios.post(analyzeUrl, imageBuffer, {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': computerVisionKey,
+                    'Content-Type': 'application/octet-stream'
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity
             });
             
-            context.log('Attempting to send image as multipart/form-data');
-            
-            try {
-                const response = await axios.post(analyzeUrl, formData, {
-                    headers: {
-                        'Ocp-Apim-Subscription-Key': computerVisionKey,
-                        ...formData.getHeaders()
-                    },
-                    maxBodyLength: Infinity,
-                    maxContentLength: Infinity
-                });
-                
-                analysis = response.data;
-                context.log('Image analysis successful with multipart/form-data');
-            } catch (formDataError) {
-                // If multipart fails, try raw binary
-                context.log('Multipart failed, trying raw binary:', formDataError.response?.data?.error?.message || formDataError.message);
-                
-                const response = await axios.post(analyzeUrl, imageBuffer, {
-                    headers: {
-                        'Ocp-Apim-Subscription-Key': computerVisionKey,
-                        'Content-Type': 'application/octet-stream'
-                    },
-                    maxBodyLength: Infinity,
-                    maxContentLength: Infinity
-                });
-                
-                analysis = response.data;
-                context.log('Image analysis successful with raw binary');
-            }
+            analysis = response.data;
+            context.log('Image analysis successful');
             
         } catch (visionError) {
             context.log.error('Computer Vision API error:', visionError.response?.data || visionError.message);
@@ -136,17 +117,10 @@ module.exports = async function (context, req) {
                 const simpleFeatures = ['Description', 'Tags'].join(',');
                 const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${simpleFeatures}`;
                 
-                // Try with multipart/form-data for fallback
-                const formData = new FormData();
-                formData.append('image', imageBuffer, {
-                    filename: 'image.jpg',
-                    contentType: 'image/jpeg'
-                });
-                
-                const response = await axios.post(analyzeUrl, formData, {
+                const response = await axios.post(analyzeUrl, imageBuffer, {
                     headers: {
                         'Ocp-Apim-Subscription-Key': computerVisionKey,
-                        ...formData.getHeaders()
+                        'Content-Type': 'application/octet-stream'
                     },
                     maxBodyLength: Infinity,
                     maxContentLength: Infinity
@@ -250,36 +224,14 @@ async function extractTextFromImage(endpoint, apiKey, imageBuffer, context) {
         // Submit image for OCR processing
         const readUrl = `${endpoint}vision/v3.2/read/analyze`;
         
-        // Try multipart/form-data first for OCR
-        const FormData = require('form-data');
-        const formData = new FormData();
-        formData.append('image', imageBuffer, {
-            filename: 'image.jpg',
-            contentType: 'image/jpeg'
+        const submitResponse = await axios.post(readUrl, imageBuffer, {
+            headers: {
+                'Ocp-Apim-Subscription-Key': apiKey,
+                'Content-Type': 'application/octet-stream'
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
         });
-        
-        let submitResponse;
-        try {
-            submitResponse = await axios.post(readUrl, formData, {
-                headers: {
-                    'Ocp-Apim-Subscription-Key': apiKey,
-                    ...formData.getHeaders()
-                },
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
-            });
-        } catch (formError) {
-            // Fallback to raw binary if multipart fails
-            context.log('OCR multipart failed, trying raw binary');
-            submitResponse = await axios.post(readUrl, imageBuffer, {
-                headers: {
-                    'Ocp-Apim-Subscription-Key': apiKey,
-                    'Content-Type': 'application/octet-stream'
-                },
-                maxBodyLength: Infinity,
-                maxContentLength: Infinity
-            });
-        }
         
         // Get the operation location from response headers
         const operationLocation = submitResponse.headers['operation-location'];
@@ -582,4 +534,86 @@ function extractRevisions(text) {
 // Count specific element types
 function countElements(elements, type) {
     return elements.filter(el => el.type === type).length;
+}
+
+// Analyze image from URL
+async function analyzeImageFromUrl(context, imageUrl, analysisType = 'construction') {
+    try {
+        const axios = require('axios');
+        
+        // Get Computer Vision credentials
+        const computerVisionKey = process.env.COMPUTER_VISION_KEY;
+        const computerVisionEndpoint = process.env.COMPUTER_VISION_ENDPOINT;
+        
+        // Validate credentials
+        if (!computerVisionKey || !computerVisionEndpoint) {
+            throw new Error('Missing Computer Vision credentials');
+        }
+        
+        context.log(`Analyzing image from URL: ${imageUrl}`);
+        
+        // Define visual features to analyze
+        const features = ['Categories', 'Description', 'Objects', 'Tags'].join(',');
+        const analyzeUrl = `${computerVisionEndpoint}vision/v3.2/analyze?visualFeatures=${features}`;
+        
+        const response = await axios.post(analyzeUrl, { url: imageUrl }, {
+            headers: {
+                'Ocp-Apim-Subscription-Key': computerVisionKey,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const analysis = response.data;
+        
+        // Process construction-specific analysis
+        let constructionData = {
+            type: 'unknown',
+            elements: [],
+            measurements: [],
+            text: '',
+            dimensions: null,
+            materials: [],
+            rooms: []
+        };
+        
+        // Identify construction elements
+        if (analysis.objects) {
+            constructionData.elements = analysis.objects.map(obj => ({
+                type: translateToConstructionTerm(obj.object),
+                confidence: obj.confidence,
+                location: obj.rectangle,
+                description: obj.object
+            }));
+        }
+        
+        // Determine drawing type based on tags and description
+        if (analysis.tags) {
+            constructionData.type = determineDrawingType(analysis.tags);
+            constructionData.materials = extractMaterials('', analysis.tags);
+        }
+        
+        context.res = {
+            status: 200,
+            body: {
+                success: true,
+                analysis: constructionData,
+                raw: {
+                    description: analysis.description,
+                    categories: analysis.categories,
+                    tags: analysis.tags
+                },
+                message: 'Image analyzed successfully from URL'
+            }
+        };
+        
+    } catch (error) {
+        context.log.error('URL analysis error:', error.message);
+        context.res = {
+            status: 500,
+            body: {
+                error: 'Failed to analyze image from URL',
+                details: error.message
+            }
+        };
+    }
 }
