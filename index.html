@@ -3578,7 +3578,7 @@
         
         try {
           // Use n8n webhook to get index statistics (avoids CORS issues)
-          const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook-test/ask-foreman/index/stats', {
+          const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats', {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json'
