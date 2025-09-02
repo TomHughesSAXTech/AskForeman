@@ -80,11 +80,15 @@
         --dark-gray: #212121;
         --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.2);
+        /* Estimating Theme Colors */
+        --estimating-gold: #FFD700;
+        --calculator-blue: #2E7D32;
+        --spreadsheet-green: #107C41;
       }
 
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #37474f 0%, #263238 100%);
+        background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
         min-height: 100vh;
         display: flex;
         flex-direction: column;
@@ -127,7 +131,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 4px solid var(--safety-yellow);
+        border-bottom: 4px solid var(--estimating-gold);
         position: relative;
         z-index: 10;
       }
@@ -173,7 +177,7 @@
       .logo h1 {
         font-size: 2.2rem;
         font-weight: bold;
-        color: var(--safety-yellow);
+        color: var(--estimating-gold);
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         letter-spacing: 1px;
       }
@@ -1624,7 +1628,7 @@
         </div>
         <div>
           <h1>ASK FOREMAN AI</h1>
-          <p class="tagline">SAX Technology Advisors</p>
+          <p class="tagline">Construction Estimating Assistant</p>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 1rem;">
@@ -1842,6 +1846,84 @@
           >
             ➕ Create New Project
           </button>
+        </div>
+
+        <!-- Quick Tools Section -->
+        <div class="card" style="margin-top: 1rem;">
+          <h3 style="color: var(--concrete-gray); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">🛠️</span> Quick Estimating Tools
+          </h3>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="https://workflows.saxtechnology.com/webhook/ask-foreman/tools/cost-calculator" 
+               target="_blank" 
+               class="quick-tool-btn" 
+               style="
+                 display: flex;
+                 align-items: center;
+                 gap: 0.75rem;
+                 padding: 1rem;
+                 background: linear-gradient(135deg, var(--estimating-gold) 0%, #FFB300 100%);
+                 color: var(--dark-gray);
+                 text-decoration: none;
+                 border-radius: 8px;
+                 transition: all 0.3s ease;
+                 border: 2px solid transparent;
+               " 
+               onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(255, 215, 0, 0.3)';"
+               onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+              <span style="font-size: 1.5rem;">🧮</span>
+              <div>
+                <div style="font-weight: 600; font-size: 1rem;">Construction Cost Calculator</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">Quick material and labor estimates</div>
+              </div>
+            </a>
+            
+            <a href="https://workflows.saxtechnology.com/webhook/ask-foreman/tools/takeoff-helper" 
+               target="_blank" 
+               class="quick-tool-btn" 
+               style="
+                 display: flex;
+                 align-items: center;
+                 gap: 0.75rem;
+                 padding: 1rem;
+                 background: linear-gradient(135deg, var(--spreadsheet-green) 0%, #0E5C2F 100%);
+                 color: white;
+                 text-decoration: none;
+                 border-radius: 8px;
+                 transition: all 0.3s ease;
+                 border: 2px solid transparent;
+               "
+               onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(16, 124, 65, 0.3)';"
+               onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+              <span style="font-size: 1.5rem;">📐</span>
+              <div>
+                <div style="font-weight: 600; font-size: 1rem;">Digital Takeoff Assistant</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">Measure and quantify from plans</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Knowledge Graph Tips for Estimating -->
+        <div class="card" style="margin-top: 1rem; background: linear-gradient(135deg, #f0f8ff, #e8f4fd); border: 2px solid var(--blueprint-blue);">
+          <h3 style="color: var(--blueprint-blue); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">💡</span> Estimating Knowledge Graph
+          </h3>
+          <div style="font-size: 0.9rem; color: var(--concrete-gray); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+              <strong>Smart Estimate Creation:</strong> The Knowledge Graph helps you create accurate estimates by:
+            </p>
+            <ul style="margin-left: 1.5rem; margin-bottom: 0.75rem;">
+              <li style="margin-bottom: 0.5rem;">📊 Finding similar past estimates from completed projects</li>
+              <li style="margin-bottom: 0.5rem;">💰 Comparing material costs across different suppliers</li>
+              <li style="margin-bottom: 0.5rem;">⚡ Identifying cost-saving alternatives from other projects</li>
+              <li style="margin-bottom: 0.5rem;">📈 Tracking price trends and escalation factors</li>
+            </ul>
+            <p style="margin-bottom: 0.5rem;">
+              <strong>Try asking:</strong> <em>"What was the cost per square foot for similar painting projects?"</em> or 
+              <em>"Compare flooring material costs from our last three commercial projects"</em>
+            </p>
+          </div>
         </div>
 
         <!-- Index Status moved to admin.html -->
