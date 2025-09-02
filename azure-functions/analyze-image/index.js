@@ -7,7 +7,7 @@ module.exports = async function (context, req) {
     context.log('Image analysis function triggered');
 
     try {
-        // Get image from request - handle both Buffer and raw binary data
+        // Get image from request - handle both Buffer and raw binary/base64 data
         let imageBuffer;
         
         // Check if req.body is already a Buffer
@@ -16,12 +16,19 @@ module.exports = async function (context, req) {
         } else if (req.body && req.body.type === 'Buffer' && req.body.data) {
             // Handle JSON-serialized Buffer
             imageBuffer = Buffer.from(req.body.data);
+        } else if (req.body && typeof req.body === 'string') {
+            // Handle base64-encoded string (Azure Functions often converts binary to base64)
+            imageBuffer = Buffer.from(req.body, 'base64');
         } else if (req.body) {
             // Handle raw binary data or ArrayBuffer
             imageBuffer = Buffer.from(req.body);
         } else if (req.rawBody) {
             // Some Azure Functions provide rawBody
-            imageBuffer = req.rawBody;
+            if (typeof req.rawBody === 'string') {
+                imageBuffer = Buffer.from(req.rawBody, 'base64');
+            } else {
+                imageBuffer = req.rawBody;
+            }
         } else {
             throw new Error('No image data received in request');
         }
