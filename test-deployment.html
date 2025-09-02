@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Deployment Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h1>Deployment Test</h1>
+    <p>This file was created at: 2025-09-02 19:23:18 UTC</p>
+    <p>If you can see this, the deployment is working.</p>
+    <hr>
+    <h2>Files that should exist:</h2>
+    <ul>
+        <li><a href="/chat.html">/chat.html</a> - Minimal chat interface</li>
+        <li><a href="/m.html">/m.html</a> - Mobile interface v3.2</li>
+        <li><a href="/mobile.html">/mobile.html</a> - Mobile interface v3.1</li>
+        <li><a href="/index.html">/index.html</a> - Main desktop site</li>
+    </ul>
+    <hr>
+    <h2>Current URL:</h2>
+    <p id="currentUrl"></p>
+    <script>
+        document.getElementById('currentUrl').textContent = window.location.href;
+        console.log('Test deployment file loaded successfully at', new Date().toISOString());
+    </script>
+</body>
+</html>
