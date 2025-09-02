@@ -10,13 +10,41 @@ module.exports = async function (context, req) {
     context.log('Image analysis function triggered');
 
     try {
-        // Get image from request
-        const imageBuffer = req.body;
+        // Get image from request - handle both Buffer and raw binary data
+        let imageBuffer;
+        
+        // Check if req.body is already a Buffer
+        if (Buffer.isBuffer(req.body)) {
+            imageBuffer = req.body;
+        } else if (req.body && req.body.type === 'Buffer' && req.body.data) {
+            // Handle JSON-serialized Buffer
+            imageBuffer = Buffer.from(req.body.data);
+        } else if (req.body) {
+            // Handle raw binary data or ArrayBuffer
+            imageBuffer = Buffer.from(req.body);
+        } else if (req.rawBody) {
+            // Some Azure Functions provide rawBody
+            imageBuffer = req.rawBody;
+        } else {
+            throw new Error('No image data received in request');
+        }
+        
+        context.log(`Received image buffer of size: ${imageBuffer.length} bytes`);
         const analysisType = req.query.analysisType || 'construction';
 
         // Initialize Computer Vision client
         const computerVisionKey = process.env.COMPUTER_VISION_KEY;
         const computerVisionEndpoint = process.env.COMPUTER_VISION_ENDPOINT;
+        
+        // Validate credentials
+        if (!computerVisionKey || !computerVisionEndpoint) {
+            throw new Error(
+                `Missing Computer Vision credentials. Key: ${computerVisionKey ? 'Present' : 'Missing'}, ` +
+                `Endpoint: ${computerVisionEndpoint ? 'Present' : 'Missing'}`
+            );
+        }
+        
+        context.log(`Using Computer Vision endpoint: ${computerVisionEndpoint}`);
         
         const cognitiveServiceCredentials = new ApiKeyCredentials({
             inHeader: {
@@ -30,18 +58,32 @@ module.exports = async function (context, req) {
         );
 
         // Analyze image
-        const features = [
-            'Categories',
-            'Description',
-            'Objects',
-            'Tags',
-            'Read'  // OCR for text extraction
-        ];
+        let analysis;
+        try {
+            const features = [
+                'Categories',
+                'Description',
+                'Objects',
+                'Tags'
+                // 'Read'  // OCR for text extraction - removed as it might cause issues
+            ];
 
-        const analysis = await client.analyzeImageInStream(
-            imageBuffer,
-            { visualFeatures: features }
-        );
+            analysis = await client.analyzeImageInStream(
+                imageBuffer,
+                { visualFeatures: features }
+            );
+        } catch (visionError) {
+            context.log.error('Computer Vision API error:', visionError);
+            // Try simpler analysis without advanced features
+            try {
+                analysis = await client.analyzeImageInStream(
+                    imageBuffer,
+                    { visualFeatures: ['Description', 'Tags'] }
+                );
+            } catch (fallbackError) {
+                throw new Error(`Computer Vision API failed: ${fallbackError.message}`);
+            }
+        }
 
         // Process construction-specific analysis
         let constructionData = {
