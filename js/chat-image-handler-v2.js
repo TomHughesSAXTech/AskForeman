@@ -5,8 +5,8 @@
 class ChatImageHandler {
     constructor() {
         this.attachedImages = [];
-        this.azureFunctionUrl = 'https://saxtech-functionapps.azurewebsites.net/api/analyze-image';
-        this.azureFunctionKey = 'KRitpiKC4_teemeHVrLWt8-vJdIvpSkzBFW0co3J4Q3FAzFuYbOMng=='; // Master key
+        this.azureFunctionUrl = 'https://askforeman-functions.azurewebsites.net/api/analyze-image';
+        this.azureFunctionKey = ''; // Function key will be handled by function app settings
         this.maxImageSize = 20 * 1024 * 1024; // 20MB
         this.initializeHandlers();
     }
@@ -243,12 +243,11 @@ class ChatImageHandler {
                 analysisType: 'construction'
             };
             
-            // Call Azure Function with authentication
+            // Call Azure Function (authentication handled by CORS/function settings)
             const response = await fetch(this.azureFunctionUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'x-functions-key': this.azureFunctionKey
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestBody)
             });
