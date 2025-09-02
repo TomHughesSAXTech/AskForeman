@@ -1,0 +1,70 @@
+CONSTRUCTION ESTIMATE
+Project: Office Building Renovation
+Client: KnowledgeGraphTest
+Date: December 2, 2024
+
+SCOPE OF WORK:
+
+1. HVAC SYSTEM INSTALLATION
+   Contractor: ABC Construction Inc.
+   Contact: John Smith, Project Manager
+   Location: Room 101, Room 102, Room 103
+   
+   Materials:
+   - 10 units Steel Beams (Grade A36)
+   - 50 sheets Drywall (5/8" Type X)
+   - 25 units HVAC Ductwork (Galvanized)
+   
+   Cost Breakdown:
+   - Materials: $25,000
+   - Labor: $20,000
+   - Total: $45,000
+   
+   Timeline: Start January 15, 2025 - Complete February 28, 2025
+
+2. PLUMBING WORK
+   Contractor: XYZ Plumbing Services
+   Contact: Mike Johnson, Lead Plumber
+   Location: Bathrooms, Kitchen Area
+   
+   Materials:
+   - 100 ft Copper Piping (Type L)
+   - 15 units PVC Fittings
+   - 5 units Commercial Fixtures
+   
+   Cost Breakdown:
+   - Materials: $15,000
+   - Labor: $12,000
+   - Total: $27,000
+
+3. ELECTRICAL UPGRADES
+   Contractor: Lightning Electric Co.
+   Contact: Sarah Davis, Master Electrician
+   Location: Main Panel, All Floors
+   
+   Materials:
+   - 200 ft Electrical Wire (12 AWG)
+   - 1 unit Main Panel (200 AMP)
+   - 50 units LED Light Fixtures
+   
+   Cost Breakdown:
+   - Materials: $18,000
+   - Labor: $22,000
+   - Total: $40,000
+
+SUMMARY:
+Total Project Cost: $112,000
+Project Duration: 45 days
+General Contractor: BuildRight Construction Management
+Project Manager: Robert Williams
+
+SPECIFICATIONS:
+- All work per IBC 2021 standards
+- LEED Silver certification target
+- ADA compliance required
+- Fire rating: 2-hour for all assemblies
+
+PAYMENT SCHEDULE:
+- 30% upon contract signing
+- 40% at 50% completion
+- 30% upon final inspection

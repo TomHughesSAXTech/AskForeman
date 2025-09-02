@@ -228,12 +228,16 @@ class ChatImageHandler {
         const statusDiv = imageData.preview.querySelector('.analysis-status');
         if (!statusDiv) return;
         
+        console.log('[ChatImageHandler] Starting analysis for:', imageData.file.name);
+        console.log('[ChatImageHandler] Azure Function URL:', this.azureFunctionUrl);
+        
         statusDiv.textContent = '🔄 Analyzing...';
         statusDiv.style.background = 'rgba(21, 101, 192, 0.9)';
         
         try {
             // Convert file to base64
             const base64Data = await this.fileToBase64(imageData.file);
+            console.log('[ChatImageHandler] Base64 conversion complete, length:', base64Data.length);
             
             // Prepare request body
             const requestBody = {
@@ -242,8 +246,10 @@ class ChatImageHandler {
                 fileType: imageData.file.type,
                 analysisType: 'construction'
             };
+            console.log('[ChatImageHandler] Request body prepared, image data length:', requestBody.imageData.length);
             
             // Call Azure Function (authentication handled by CORS/function settings)
+            console.log('[ChatImageHandler] Sending request to Azure Function...');
             const response = await fetch(this.azureFunctionUrl, {
                 method: 'POST',
                 headers: {
@@ -252,13 +258,18 @@ class ChatImageHandler {
                 body: JSON.stringify(requestBody)
             });
             
+            console.log('[ChatImageHandler] Response received, status:', response.status);
+            console.log('[ChatImageHandler] Response headers:', [...response.headers.entries()]);
+            
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('Azure Function error response:', errorText);
+                console.error('[ChatImageHandler] Azure Function error response:', errorText);
+                console.error('[ChatImageHandler] Full response:', response);
                 throw new Error(`Analysis failed: ${response.statusText}`);
             }
             
             const result = await response.json();
+            console.log('[ChatImageHandler] Analysis result:', result);
             
             if (result.success && result.analysis) {
                 imageData.analysis = result.analysis;
@@ -271,17 +282,20 @@ class ChatImageHandler {
                 // Add analysis overlay
                 this.addAnalysisOverlay(imageData.preview, result.analysis);
                 
+                console.log('[ChatImageHandler] Analysis complete and overlay added');
                 return result.analysis;
             } else {
+                console.error('[ChatImageHandler] Result indicates failure:', result);
                 throw new Error(result.details || 'Analysis failed');
             }
         } catch (error) {
-            console.error('Image analysis error:', error);
+            console.error('[ChatImageHandler] Image analysis error:', error);
+            console.error('[ChatImageHandler] Error stack:', error.stack);
             statusDiv.textContent = '❌ Failed';
             statusDiv.style.background = 'rgba(244, 67, 54, 0.9)';
             
             // Don't show error for every image, just log it
-            console.log(`Analysis failed for ${imageData.file.name}: ${error.message}`);
+            console.log(`[ChatImageHandler] Analysis failed for ${imageData.file.name}: ${error.message}`);
         }
     }
 
