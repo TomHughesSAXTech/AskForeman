@@ -70,7 +70,9 @@ module.exports = async function (context, req) {
 
             // Convert buffer to stream for the API
             const { Readable } = require('stream');
-            const imageStream = Readable.from(imageBuffer);
+            const imageStream = new Readable();
+            imageStream.push(imageBuffer);
+            imageStream.push(null);
             
             analysis = await client.analyzeImageInStream(
                 imageStream,
@@ -81,7 +83,9 @@ module.exports = async function (context, req) {
             // Try simpler analysis without advanced features
             try {
                 const { Readable } = require('stream');
-                const imageStream = Readable.from(imageBuffer);
+                const imageStream = new Readable();
+                imageStream.push(imageBuffer);
+                imageStream.push(null);
                 
                 analysis = await client.analyzeImageInStream(
                     imageStream,
@@ -176,7 +180,9 @@ module.exports = async function (context, req) {
 async function extractTextFromImage(client, imageBuffer) {
     try {
         const { Readable } = require('stream');
-        const imageStream = Readable.from(imageBuffer);
+        const imageStream = new Readable();
+        imageStream.push(imageBuffer);
+        imageStream.push(null);
         const result = await client.readInStream(imageStream);
         const operation = result.operationLocation.split('/').slice(-1)[0];
         
