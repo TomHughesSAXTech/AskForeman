@@ -1,11 +1,6 @@
 {
   "routes": [
     {
-      "route": "/",
-      "rewrite": "/landing.html",
-      "allowedRoles": ["anonymous"]
-    },
-    {
       "route": "/api/webhook/ask-foreman/chat",
       "rewrite": "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
       "methods": ["GET", "POST", "OPTIONS"],
@@ -63,29 +58,21 @@
       "allowedRoles": ["anonymous"]
     },
     {
-      "route": "/index.html",
-      "allowedRoles": ["anonymous"]
-    },
-    {
       "route": "/general-chat.html",
       "allowedRoles": ["anonymous"]
     },
     {
       "route": "/project-management.html",
       "allowedRoles": ["anonymous"]
-    },
-    {
-      "route": "/landing.html",
-      "allowedRoles": ["anonymous"]
     }
   ],
   "navigationFallback": {
-    "rewrite": "/landing.html",
+    "rewrite": "/index.html",
     "exclude": ["/api/*", "/*.{css,js,json,png,jpg,jpeg,gif,ico,svg}"]
   },
   "responseOverrides": {
     "404": {
-      "rewrite": "/landing.html",
+      "rewrite": "/index.html",
       "statusCode": 200
     }
   },
