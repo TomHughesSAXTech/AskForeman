@@ -1,0 +1,400 @@
+{
+  "name": "Drawing Highlight Indexing & Search Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/drawing-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Drawing Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "drawing-upload-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process incoming drawing analysis data\nconst items = [];\nconst data = $input.all()[0].json;\n\n// Extract highlight metadata\nconst highlights = data.highlights || [];\nconst clientId = data.client;\nconst documentId = data.documentId;\nconst fileName = data.fileName;\n\n// Process each highlight\nfor (const highlight of highlights) {\n  const processedHighlight = {\n    id: highlight.id,\n    clientId: clientId,\n    documentId: documentId,\n    fileName: fileName,\n    timestamp: new Date().toISOString(),\n    \n    // Color and meaning\n    color: highlight.color,\n    colorMeaning: highlight.meaning,\n    purpose: highlight.purpose,\n    \n    // Spatial data\n    boundingBox: highlight.boundingBox,\n    areaPixels: highlight.area?.pixels || 0,\n    areaPercentage: highlight.area?.percentage || 0,\n    areaRealWorld: highlight.area?.realWorld || null,\n    \n    // Associated text\n    textAnnotations: highlight.text?.map(t => ({\n      content: t.content,\n      category: t.category,\n      isHandwritten: t.isHandwritten\n    })) || [],\n    \n    // Measurements\n    dimensions: highlight.dimensions || [],\n    quantities: highlight.quantities || [],\n    \n    // Searchable content\n    searchableText: [\n      highlight.color,\n      highlight.meaning,\n      highlight.purpose?.specific,\n      highlight.purpose?.action,\n      ...highlight.text?.map(t => t.content) || [],\n      ...highlight.dimensions?.map(d => d.text) || [],\n      ...highlight.quantities?.map(q => `${q.value} ${q.unit}`) || []\n    ].filter(Boolean).join(' | '),\n    \n    // Categorization\n    category: 'drawing_highlight',\n    drawingType: data.drawingType || 'unknown',\n    \n    // Metadata for search\n    metadata: {\n      hasRedMarkings: highlight.color?.includes('Red'),\n      hasYellowHighlights: highlight.color?.includes('Yellow'),\n      hasPurpleHighlights: highlight.color?.includes('Purple'),\n      hasDimensions: (highlight.dimensions?.length || 0) > 0,\n      hasQuantities: (highlight.quantities?.length || 0) > 0,\n      annotationCount: highlight.text?.length || 0,\n      primaryCategory: highlight.text?.[0]?.category || 'general'\n    }\n  };\n  \n  items.push({ json: processedHighlight });\n}\n\n// Add summary item\nif (data.summary) {\n  items.push({\n    json: {\n      type: 'summary',\n      clientId: clientId,\n      documentId: documentId,\n      fileName: fileName,\n      timestamp: new Date().toISOString(),\n      totalHighlights: data.summary.totalHighlightedRegions,\n      totalAnnotations: data.summary.totalAnnotations,\n      colors: data.summary.colors,\n      primaryPurpose: data.summary.primaryPurpose,\n      searchableContent: data.searchableContent,\n      category: 'drawing_analysis_summary'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "name": "Process Highlight Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "index",
+        "indexId": "={{ $json.clientId }}_drawings",
+        "documentId": "={{ $json.id || $json.documentId + '_' + $json.color }}",
+        "dataPropertyName": "data",
+        "options": {
+          "pipeline": "drawing_highlight_pipeline"
+        },
+        "additionalFields": {}
+      },
+      "name": "Index to Elasticsearch",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "1",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "database",
+        "operation": "create",
+        "databaseId": "client_drawings_db",
+        "data": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Store in Database",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "position": [650, 450],
+      "credentials": {
+        "notionApi": {
+          "id": "2",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create vector embeddings for semantic search\nconst items = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  \n  // Create embedding text\n  const embeddingText = [\n    `Color: ${data.color}`,\n    `Meaning: ${data.colorMeaning}`,\n    `Purpose: ${data.purpose?.specific || 'general'}`,\n    `Text: ${data.searchableText}`\n  ].join(' ');\n  \n  // Call OpenAI to create embedding\n  const embedding = await this.helpers.request({\n    method: 'POST',\n    url: 'https://api.openai.com/v1/embeddings',\n    headers: {\n      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,\n      'Content-Type': 'application/json'\n    },\n    body: {\n      model: 'text-embedding-ada-002',\n      input: embeddingText\n    },\n    json: true\n  });\n  \n  items.push({\n    json: {\n      ...data,\n      embedding: embedding.data[0].embedding,\n      embeddingModel: 'text-embedding-ada-002'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "name": "Create Embeddings",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "collection": "drawing_highlights",
+        "document": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Store in Vector DB",
+      "type": "n8n-nodes-base.pinecone",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "pineconeApi": {
+          "id": "3",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/search-highlights",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Search Highlights Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 600],
+      "webhookId": "search-highlights-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process search query for highlights\nconst query = $input.all()[0].json;\nconst searchQuery = query.query || '';\nconst clientId = query.clientId;\nconst filters = query.filters || {};\n\n// Build Elasticsearch query\nconst esQuery = {\n  bool: {\n    must: [],\n    filter: []\n  }\n};\n\n// Add client filter\nif (clientId) {\n  esQuery.bool.filter.push({ term: { clientId: clientId } });\n}\n\n// Add text search\nif (searchQuery) {\n  esQuery.bool.must.push({\n    multi_match: {\n      query: searchQuery,\n      fields: [\n        'searchableText^2',\n        'color',\n        'colorMeaning',\n        'purpose.specific',\n        'textAnnotations.content'\n      ]\n    }\n  });\n}\n\n// Add color filters\nif (filters.colors && filters.colors.length > 0) {\n  esQuery.bool.filter.push({\n    terms: { color: filters.colors }\n  });\n}\n\n// Add area filters\nif (filters.minArea) {\n  esQuery.bool.filter.push({\n    range: { areaPercentage: { gte: filters.minArea } }\n  });\n}\n\n// Add category filters\nif (filters.categories && filters.categories.length > 0) {\n  esQuery.bool.filter.push({\n    terms: { 'textAnnotations.category': filters.categories }\n  });\n}\n\n// Add dimension filter\nif (filters.hasDimensions) {\n  esQuery.bool.filter.push({\n    exists: { field: 'dimensions' }\n  });\n}\n\n// Add quantity filter\nif (filters.hasQuantities) {\n  esQuery.bool.filter.push({\n    exists: { field: 'quantities' }\n  });\n}\n\n// Add date range filter\nif (filters.dateFrom || filters.dateTo) {\n  const dateFilter = { range: { timestamp: {} } };\n  if (filters.dateFrom) dateFilter.range.timestamp.gte = filters.dateFrom;\n  if (filters.dateTo) dateFilter.range.timestamp.lte = filters.dateTo;\n  esQuery.bool.filter.push(dateFilter);\n}\n\nreturn [{\n  json: {\n    query: esQuery,\n    size: query.limit || 50,\n    from: query.offset || 0,\n    sort: [\n      { _score: { order: 'desc' } },\n      { timestamp: { order: 'desc' } }\n    ],\n    aggs: {\n      colors: {\n        terms: { field: 'color.keyword' }\n      },\n      categories: {\n        terms: { field: 'textAnnotations.category.keyword' }\n      },\n      drawings: {\n        terms: { field: 'fileName.keyword' }\n      }\n    }\n  }\n}];"
+      },
+      "name": "Build Search Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "indexId": "={{ $node['Search Highlights Webhook'].json.clientId }}_drawings",
+        "query": "={{ JSON.stringify($json.query) }}",
+        "options": {
+          "includeAggs": true
+        }
+      },
+      "name": "Search Elasticsearch",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [650, 600],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "1",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process and format search results\nconst searchResults = $input.all()[0].json;\nconst hits = searchResults.hits?.hits || [];\nconst aggregations = searchResults.aggregations || {};\n\n// Process hits\nconst results = hits.map(hit => {\n  const source = hit._source;\n  return {\n    id: hit._id,\n    score: hit._score,\n    \n    // Document info\n    fileName: source.fileName,\n    documentId: source.documentId,\n    clientId: source.clientId,\n    \n    // Highlight info\n    color: source.color,\n    colorMeaning: source.colorMeaning,\n    purpose: source.purpose,\n    \n    // Area info\n    area: {\n      pixels: source.areaPixels,\n      percentage: source.areaPercentage,\n      realWorld: source.areaRealWorld\n    },\n    \n    // Text annotations\n    annotations: source.textAnnotations || [],\n    \n    // Measurements\n    dimensions: source.dimensions || [],\n    quantities: source.quantities || [],\n    \n    // Metadata\n    timestamp: source.timestamp,\n    drawingType: source.drawingType\n  };\n});\n\n// Process aggregations\nconst facets = {\n  colors: (aggregations.colors?.buckets || []).map(b => ({\n    value: b.key,\n    count: b.doc_count\n  })),\n  categories: (aggregations.categories?.buckets || []).map(b => ({\n    value: b.key,\n    count: b.doc_count\n  })),\n  drawings: (aggregations.drawings?.buckets || []).map(b => ({\n    value: b.key,\n    count: b.doc_count\n  }))\n};\n\n// Generate summary\nconst summary = {\n  totalResults: searchResults.hits?.total?.value || 0,\n  returnedResults: results.length,\n  topColors: facets.colors.slice(0, 5),\n  topCategories: facets.categories.slice(0, 5),\n  drawingsWithHighlights: facets.drawings.length\n};\n\n// Create response\nconst response = {\n  success: true,\n  summary: summary,\n  results: results,\n  facets: facets,\n  query: {\n    original: $node['Search Highlights Webhook'].json.query,\n    processed: $node['Build Search Query'].json.query\n  }\n};\n\nreturn [{ json: response }];"
+      },
+      "name": "Format Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate AI insights from search results\nconst results = $input.all()[0].json;\n\nif (results.results.length === 0) {\n  return [{ json: results }];\n}\n\n// Prepare prompt for AI analysis\nconst prompt = `Analyze these construction drawing highlights and provide insights:\n\n${JSON.stringify(results.summary, null, 2)}\n\nTop highlights found:\n${results.results.slice(0, 5).map(r => \n  `- ${r.color} in ${r.fileName}: ${r.colorMeaning}`\n).join('\\n')}\n\nProvide:\n1. Pattern analysis of the highlights\n2. Potential issues or concerns indicated by red markings\n3. Areas requiring coordination based on purple highlights\n4. Quantity takeoff summary from dimensions and quantities\n5. Recommended next steps\n`;\n\n// Call OpenAI for insights\nconst aiResponse = await this.helpers.request({\n  method: 'POST',\n  url: 'https://api.openai.com/v1/chat/completions',\n  headers: {\n    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,\n    'Content-Type': 'application/json'\n  },\n  body: {\n    model: 'gpt-4',\n    messages: [\n      {\n        role: 'system',\n        content: 'You are an expert construction estimator analyzing drawing markups and highlights.'\n      },\n      {\n        role: 'user',\n        content: prompt\n      }\n    ],\n    temperature: 0.7,\n    max_tokens: 500\n  },\n  json: true\n});\n\n// Add AI insights to results\nresults.aiInsights = {\n  analysis: aiResponse.choices[0].message.content,\n  generatedAt: new Date().toISOString()\n};\n\nreturn [{ json: results }];"
+      },
+      "name": "Generate AI Insights",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Return Upload Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Return Search Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 600]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-foreman/aggregate-highlights",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Aggregate Highlights Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 900],
+      "webhookId": "aggregate-highlights-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Aggregate highlights by client and project\nconst request = $input.all()[0].json;\nconst clientId = request.clientId;\nconst projectId = request.projectId;\nconst groupBy = request.groupBy || 'color';\n\n// Build aggregation query\nconst aggQuery = {\n  size: 0,\n  query: {\n    bool: {\n      filter: []\n    }\n  },\n  aggs: {}\n};\n\n// Add filters\nif (clientId) {\n  aggQuery.query.bool.filter.push({ term: { clientId: clientId } });\n}\n\nif (projectId) {\n  aggQuery.query.bool.filter.push({ term: { projectId: projectId } });\n}\n\n// Add aggregations based on groupBy parameter\nswitch (groupBy) {\n  case 'color':\n    aggQuery.aggs = {\n      by_color: {\n        terms: { field: 'color.keyword', size: 20 },\n        aggs: {\n          total_area: { sum: { field: 'areaPixels' } },\n          avg_area: { avg: { field: 'areaPercentage' } },\n          annotation_count: { sum: { field: 'metadata.annotationCount' } },\n          drawings: {\n            cardinality: { field: 'fileName.keyword' }\n          }\n        }\n      }\n    };\n    break;\n    \n  case 'drawing':\n    aggQuery.aggs = {\n      by_drawing: {\n        terms: { field: 'fileName.keyword', size: 100 },\n        aggs: {\n          colors: {\n            terms: { field: 'color.keyword' }\n          },\n          total_highlights: { value_count: { field: 'id' } },\n          total_area: { sum: { field: 'areaPercentage' } }\n        }\n      }\n    };\n    break;\n    \n  case 'purpose':\n    aggQuery.aggs = {\n      by_purpose: {\n        terms: { field: 'purpose.specific.keyword', size: 50 },\n        aggs: {\n          colors: {\n            terms: { field: 'color.keyword' }\n          },\n          drawings: {\n            terms: { field: 'fileName.keyword', size: 10 }\n          }\n        }\n      }\n    };\n    break;\n    \n  case 'timeline':\n    aggQuery.aggs = {\n      timeline: {\n        date_histogram: {\n          field: 'timestamp',\n          calendar_interval: '1d'\n        },\n        aggs: {\n          colors: {\n            terms: { field: 'color.keyword' }\n          },\n          highlight_count: { value_count: { field: 'id' } }\n        }\n      }\n    };\n    break;\n}\n\n// Add statistics\naggQuery.aggs.statistics = {\n  stats: {\n    total_highlights: { value_count: { field: 'id' } },\n    unique_drawings: { cardinality: { field: 'fileName.keyword' } },\n    unique_colors: { cardinality: { field: 'color.keyword' } },\n    total_area_coverage: { sum: { field: 'areaPercentage' } },\n    avg_area_per_highlight: { avg: { field: 'areaPercentage' } }\n  }\n};\n\nreturn [{ json: aggQuery }];"
+      },
+      "name": "Build Aggregation Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 900]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "indexId": "={{ $node['Aggregate Highlights Webhook'].json.clientId }}_drawings",
+        "query": "={{ JSON.stringify($json) }}",
+        "options": {
+          "includeAggs": true
+        }
+      },
+      "name": "Execute Aggregation",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [650, 900],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "1",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format aggregation results for dashboard\nconst results = $input.all()[0].json;\nconst request = $node['Aggregate Highlights Webhook'].json;\nconst aggregations = results.aggregations || {};\n\n// Process main aggregation\nlet mainData = [];\nconst groupBy = request.groupBy || 'color';\n\nswitch (groupBy) {\n  case 'color':\n    mainData = (aggregations.by_color?.buckets || []).map(bucket => ({\n      color: bucket.key,\n      count: bucket.doc_count,\n      totalArea: bucket.total_area?.value || 0,\n      avgArea: bucket.avg_area?.value || 0,\n      annotationCount: bucket.annotation_count?.value || 0,\n      uniqueDrawings: bucket.drawings?.value || 0,\n      percentage: ((bucket.doc_count / results.hits?.total?.value) * 100).toFixed(2)\n    }));\n    break;\n    \n  case 'drawing':\n    mainData = (aggregations.by_drawing?.buckets || []).map(bucket => ({\n      drawing: bucket.key,\n      highlightCount: bucket.total_highlights?.value || 0,\n      totalAreaCoverage: bucket.total_area?.value || 0,\n      colors: bucket.colors?.buckets?.map(c => c.key) || []\n    }));\n    break;\n    \n  case 'purpose':\n    mainData = (aggregations.by_purpose?.buckets || []).map(bucket => ({\n      purpose: bucket.key,\n      count: bucket.doc_count,\n      colors: bucket.colors?.buckets?.map(c => ({\n        color: c.key,\n        count: c.doc_count\n      })) || [],\n      topDrawings: bucket.drawings?.buckets?.map(d => d.key) || []\n    }));\n    break;\n    \n  case 'timeline':\n    mainData = (aggregations.timeline?.buckets || []).map(bucket => ({\n      date: bucket.key_as_string,\n      timestamp: bucket.key,\n      highlightCount: bucket.highlight_count?.value || 0,\n      colors: bucket.colors?.buckets?.map(c => ({\n        color: c.key,\n        count: c.doc_count\n      })) || []\n    }));\n    break;\n}\n\n// Process statistics\nconst stats = aggregations.statistics?.stats || {};\nconst statistics = {\n  totalHighlights: stats.total_highlights?.value || 0,\n  uniqueDrawings: stats.unique_drawings?.value || 0,\n  uniqueColors: stats.unique_colors?.value || 0,\n  totalAreaCoverage: stats.total_area_coverage?.value || 0,\n  avgAreaPerHighlight: stats.avg_area_per_highlight?.value || 0\n};\n\n// Generate insights\nconst insights = [];\n\nif (statistics.totalHighlights > 100) {\n  insights.push({\n    type: 'info',\n    message: `High volume of highlights detected (${statistics.totalHighlights} total)`,\n    recommendation: 'Consider prioritizing red markings and critical areas'\n  });\n}\n\nif (statistics.avgAreaPerHighlight > 10) {\n  insights.push({\n    type: 'warning',\n    message: 'Large highlighted areas detected',\n    recommendation: 'Review for potential scope expansions or major changes'\n  });\n}\n\n// Find dominant color\nif (groupBy === 'color' && mainData.length > 0) {\n  const dominant = mainData[0];\n  insights.push({\n    type: 'analysis',\n    message: `${dominant.color} is the dominant highlight color (${dominant.percentage}%)`,\n    recommendation: `Focus on ${dominant.color.toLowerCase()} areas: ${this.getColorMeaning(dominant.color)}`\n  });\n}\n\n// Create response\nconst response = {\n  success: true,\n  groupBy: groupBy,\n  data: mainData,\n  statistics: statistics,\n  insights: insights,\n  metadata: {\n    clientId: request.clientId,\n    projectId: request.projectId,\n    generatedAt: new Date().toISOString(),\n    totalRecords: results.hits?.total?.value || 0\n  },\n  chartData: {\n    type: this.getChartType(groupBy),\n    labels: mainData.map(d => d[Object.keys(d)[0]]),\n    datasets: this.buildChartDatasets(mainData, groupBy)\n  }\n};\n\nreturn [{ json: response }];\n\n// Helper function for color meanings\nfunction getColorMeaning(color) {\n  const meanings = {\n    'Red Markup': 'Critical issues, demolition, or problems',\n    'Yellow Highlight': 'Important information or dimensions',\n    'Purple/Magenta Highlight': 'Special requirements or MEP coordination',\n    'Blue Markup': 'New work or additions',\n    'Green Highlight': 'Completed work or approved areas',\n    'Orange Markup': 'Caution areas or temporary work'\n  };\n  return meanings[color] || 'Review required';\n}\n\n// Helper function for chart type\nfunction getChartType(groupBy) {\n  const types = {\n    'color': 'bar',\n    'drawing': 'horizontal-bar',\n    'purpose': 'doughnut',\n    'timeline': 'line'\n  };\n  return types[groupBy] || 'bar';\n}\n\n// Helper function for chart datasets\nfunction buildChartDatasets(data, groupBy) {\n  switch (groupBy) {\n    case 'color':\n      return [{\n        label: 'Highlight Count',\n        data: data.map(d => d.count),\n        backgroundColor: data.map(d => this.getColorHex(d.color))\n      }];\n    case 'drawing':\n      return [{\n        label: 'Total Highlights',\n        data: data.map(d => d.highlightCount)\n      }];\n    case 'timeline':\n      return [{\n        label: 'Highlights Over Time',\n        data: data.map(d => ({ x: d.date, y: d.highlightCount }))\n      }];\n    default:\n      return [{\n        label: 'Count',\n        data: data.map(d => d.count || d.highlightCount || 0)\n      }];\n  }\n}\n\n// Helper function for color hex\nfunction getColorHex(colorName) {\n  const colors = {\n    'Red Markup': '#FF0000',\n    'Yellow Highlight': '#FFFF00',\n    'Purple/Magenta Highlight': '#FF00FF',\n    'Blue Markup': '#0000FF',\n    'Green Highlight': '#00FF00',\n    'Orange Markup': '#FFA500'\n  };\n  return colors[colorName] || '#999999';\n}"
+      },
+      "name": "Format Dashboard Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 900]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Return Aggregation Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 900]
+    }
+  ],
+  "connections": {
+    "Drawing Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Highlight Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Highlight Data": {
+      "main": [
+        [
+          {
+            "node": "Index to Elasticsearch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store in Database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Embeddings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Embeddings": {
+      "main": [
+        [
+          {
+            "node": "Store in Vector DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store in Vector DB": {
+      "main": [
+        [
+          {
+            "node": "Return Upload Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Highlights Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Query": {
+      "main": [
+        [
+          {
+            "node": "Search Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Elasticsearch": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Results": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Insights": {
+      "main": [
+        [
+          {
+            "node": "Return Search Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Highlights Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Aggregation Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Aggregation Query": {
+      "main": [
+        [
+          {
+            "node": "Execute Aggregation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Aggregation": {
+      "main": [
+        [
+          {
+            "node": "Format Dashboard Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Dashboard Data": {
+      "main": [
+        [
+          {
+            "node": "Return Aggregation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "drawing-highlight-workflow"
+  }
+}

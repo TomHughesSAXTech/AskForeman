@@ -1,0 +1,218 @@
+{
+  "name": "Drawing Highlight Analysis Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "drawing-highlight-upload",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Drawing Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "drawing-upload"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Process drawing highlight data\nconst items = [];\nconst data = $input.all()[0].json;\n\n// Extract highlight metadata\nconst highlights = data.highlights || [];\nconst clientId = data.client;\nconst documentId = data.documentId;\nconst fileName = data.fileName;\n\n// Process each highlight\nfor (const highlight of highlights) {\n  const processedHighlight = {\n    id: highlight.id,\n    clientId: clientId,\n    documentId: documentId,\n    fileName: fileName,\n    timestamp: new Date().toISOString(),\n    \n    // Color and meaning\n    color: highlight.color,\n    colorMeaning: highlight.meaning,\n    purpose: highlight.purpose,\n    \n    // Spatial data\n    boundingBox: highlight.boundingBox,\n    areaPixels: highlight.area?.pixels || 0,\n    areaPercentage: highlight.area?.percentage || 0,\n    areaRealWorld: highlight.area?.realWorld || null,\n    \n    // Associated text\n    textAnnotations: highlight.text?.map(t => ({\n      content: t.content,\n      category: t.category,\n      isHandwritten: t.isHandwritten\n    })) || [],\n    \n    // Measurements\n    dimensions: highlight.dimensions || [],\n    quantities: highlight.quantities || [],\n    \n    // Searchable content\n    searchableText: [\n      highlight.color,\n      highlight.meaning,\n      highlight.purpose?.specific,\n      highlight.purpose?.action,\n      ...highlight.text?.map(t => t.content) || [],\n      ...highlight.dimensions?.map(d => d.text) || [],\n      ...highlight.quantities?.map(q => `${q.value} ${q.unit}`) || []\n    ].filter(Boolean).join(' | '),\n    \n    // Categorization\n    category: 'drawing_highlight',\n    drawingType: data.drawingType || 'unknown',\n    \n    // Metadata for search\n    metadata: {\n      hasRedMarkings: highlight.color?.includes('Red'),\n      hasYellowHighlights: highlight.color?.includes('Yellow'),\n      hasPurpleHighlights: highlight.color?.includes('Purple'),\n      hasDimensions: (highlight.dimensions?.length || 0) > 0,\n      hasQuantities: (highlight.quantities?.length || 0) > 0,\n      annotationCount: highlight.text?.length || 0,\n      primaryCategory: highlight.text?.[0]?.category || 'general'\n    }\n  };\n  \n  items.push({ json: processedHighlight });\n}\n\n// Add summary item\nif (data.summary) {\n  items.push({\n    json: {\n      type: 'summary',\n      clientId: clientId,\n      documentId: documentId,\n      fileName: fileName,\n      timestamp: new Date().toISOString(),\n      totalHighlights: data.summary.totalHighlightedRegions,\n      totalAnnotations: data.summary.totalAnnotations,\n      colors: data.summary.colors,\n      primaryPurpose: data.summary.primaryPurpose,\n      searchableContent: data.searchableContent,\n      category: 'drawing_analysis_summary'\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "name": "Process Highlight Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "index",
+        "indexId": "={{ $json.clientId }}_drawings",
+        "documentId": "={{ $json.id || $json.documentId + '_' + $json.color }}",
+        "dataPropertyName": "data",
+        "options": {
+          "pipeline": "drawing_highlight_pipeline"
+        },
+        "additionalFields": {}
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "name": "Index to Elasticsearch",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "1",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search-drawing-highlights",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-456789012345",
+      "name": "Search Highlights Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 600],
+      "webhookId": "search-highlights"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build search query for highlights\nconst query = $input.all()[0].json;\nconst searchQuery = query.query || '';\nconst clientId = query.clientId;\nconst filters = query.filters || {};\n\n// Build Elasticsearch query\nconst esQuery = {\n  bool: {\n    must: [],\n    filter: []\n  }\n};\n\n// Add client filter\nif (clientId) {\n  esQuery.bool.filter.push({ term: { clientId: clientId } });\n}\n\n// Add text search\nif (searchQuery) {\n  esQuery.bool.must.push({\n    multi_match: {\n      query: searchQuery,\n      fields: [\n        'searchableText^2',\n        'color',\n        'colorMeaning',\n        'purpose.specific',\n        'textAnnotations.content'\n      ]\n    }\n  });\n}\n\n// Add color filters\nif (filters.colors && filters.colors.length > 0) {\n  esQuery.bool.filter.push({\n    terms: { color: filters.colors }\n  });\n}\n\n// Add area filters\nif (filters.minArea) {\n  esQuery.bool.filter.push({\n    range: { areaPercentage: { gte: filters.minArea } }\n  });\n}\n\nreturn [{\n  json: {\n    query: esQuery,\n    size: query.limit || 50,\n    from: query.offset || 0,\n    sort: [\n      { _score: { order: 'desc' } },\n      { timestamp: { order: 'desc' } }\n    ],\n    aggs: {\n      colors: {\n        terms: { field: 'color.keyword' }\n      },\n      drawings: {\n        terms: { field: 'fileName.keyword' }\n      }\n    }\n  }\n}];"
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-567890123456",
+      "name": "Build Search Query",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 600]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "indexId": "={{ $node['Search Highlights Webhook'].json.clientId }}_drawings",
+        "query": "={{ JSON.stringify($json.query) }}",
+        "options": {
+          "includeAggs": true
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-678901234567",
+      "name": "Search Elasticsearch",
+      "type": "n8n-nodes-base.elasticsearch",
+      "typeVersion": 1,
+      "position": [650, 600],
+      "credentials": {
+        "elasticsearchApi": {
+          "id": "1",
+          "name": "Elasticsearch account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format search results\nconst searchResults = $input.all()[0].json;\nconst hits = searchResults.hits?.hits || [];\nconst aggregations = searchResults.aggregations || {};\n\n// Process hits\nconst results = hits.map(hit => {\n  const source = hit._source;\n  return {\n    id: hit._id,\n    score: hit._score,\n    fileName: source.fileName,\n    documentId: source.documentId,\n    clientId: source.clientId,\n    color: source.color,\n    colorMeaning: source.colorMeaning,\n    purpose: source.purpose,\n    area: {\n      pixels: source.areaPixels,\n      percentage: source.areaPercentage,\n      realWorld: source.areaRealWorld\n    },\n    annotations: source.textAnnotations || [],\n    dimensions: source.dimensions || [],\n    quantities: source.quantities || [],\n    timestamp: source.timestamp,\n    drawingType: source.drawingType\n  };\n});\n\n// Process aggregations\nconst facets = {\n  colors: (aggregations.colors?.buckets || []).map(b => ({\n    value: b.key,\n    count: b.doc_count\n  })),\n  drawings: (aggregations.drawings?.buckets || []).map(b => ({\n    value: b.key,\n    count: b.doc_count\n  }))\n};\n\n// Generate summary\nconst summary = {\n  totalResults: searchResults.hits?.total?.value || 0,\n  returnedResults: results.length,\n  topColors: facets.colors.slice(0, 5),\n  drawingsWithHighlights: facets.drawings.length\n};\n\n// Create response\nconst response = {\n  success: true,\n  summary: summary,\n  results: results,\n  facets: facets,\n  query: {\n    original: $node['Search Highlights Webhook'].json.query,\n    processed: $node['Build Search Query'].json.query\n  }\n};\n\nreturn [{ json: response }];"
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-789012345678",
+      "name": "Format Results",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-890123456789",
+      "name": "Return Upload Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-901234567890",
+      "name": "Return Search Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1050, 600]
+    }
+  ],
+  "connections": {
+    "Drawing Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Highlight Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Highlight Data": {
+      "main": [
+        [
+          {
+            "node": "Index to Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Index to Elasticsearch": {
+      "main": [
+        [
+          {
+            "node": "Return Upload Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Highlights Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Search Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Search Query": {
+      "main": [
+        [
+          {
+            "node": "Search Elasticsearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Elasticsearch": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Results": {
+      "main": [
+        [
+          {
+            "node": "Return Search Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "drawing-highlight-analysis"
+  },
+  "tags": []
+}
