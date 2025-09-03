@@ -115,6 +115,13 @@
         height: 100%;
         object-fit: contain;
       }
+      
+      .page-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        margin-right: 1rem;
+      }
 
       .logo h1 {
         font-size: 2.2rem;
@@ -646,15 +653,18 @@
         <div class="logo-icon">
           <img src="ForemanAI.png" alt="Ask Foreman" />
         </div>
-        <div>
-          <h1>ASK FOREMAN AI</h1>
-          <p class="tagline">General Construction Knowledge</p>
+        <div style="display: flex; align-items: center;">
+          <img src="general.png" alt="General Chat" class="page-logo">
+          <div>
+            <h1>ASK FOREMAN AI</h1>
+            <p class="tagline">General Construction Knowledge</p>
+          </div>
         </div>
       </div>
       <div class="nav-buttons">
         <a href="landing.html" class="nav-btn">🏠 Home</a>
-        <a href="index.html" class="nav-btn">📊 Estimating</a>
-        <a href="project-management.html" class="nav-btn">📁 Projects</a>
+        <a href="estimator.html" class="nav-btn">📊 Estimating</a>
+        <a href="projects.html" class="nav-btn">📁 Projects</a>
       </div>
     </header>
 

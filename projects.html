@@ -161,6 +161,13 @@
         height: 100%;
         object-fit: contain;
       }
+      
+      .page-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        margin-right: 1rem;
+      }
 
       .logo h1 {
         font-size: 2.2rem;
@@ -1114,14 +1121,30 @@
           <img src="ForemanAI.png" alt="Ask Foreman" />
         </div>
         <div>
-          <h1>ASK FOREMAN AI</h1>
-          <p class="tagline">Project Management & Analytics</p>
+                <img src="pm.png" alt="Project Management" class="page-logo">
+                <h1>ASK FOREMAN AI</h1>
+                <p class="tagline">Project Management Assistant</p>
         </div>
       </div>
       
-      <!-- Navigation Buttons -->
-      <nav style="display: flex; gap: 0.5rem; align-items: center;">
-        <a href="index.html" style="
+            <!-- Navigation Buttons -->
+            <nav style="display: flex; gap: 0.5rem; align-items: center;">
+                <a href="landing.html" style="
+                    padding: 0.75rem 1.5rem;
+                    background: var(--pm-accent);
+                    color: var(--dark-gray);
+                    border: none;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(246, 174, 45, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    🏠 Home
+                </a>
+                <a href="estimator.html" style="
           padding: 0.75rem 1.5rem;
           background: var(--pm-accent);
           color: var(--dark-gray);

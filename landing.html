@@ -89,8 +89,8 @@
         }
 
         .logo-icon {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             background: var(--white);
             border-radius: 15px;
             display: flex;
@@ -121,21 +121,34 @@
             font-weight: 500;
         }
 
-        .industries {
+        .stats-display {
             display: flex;
-            gap: 1rem;
+            gap: 2rem;
             align-items: center;
         }
 
-        .industry-tag {
-            padding: 0.5rem 1rem;
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 1.5rem;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            color: var(--white);
-            font-size: 0.85rem;
-            font-weight: 600;
+            border-radius: 15px;
             backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--insulation-yellow);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--steel-silver);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Main Content */
@@ -204,14 +217,20 @@
         }
 
         .service-icon {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 20px;
-            font-size: 2.5rem;
+        }
+        
+        .service-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 20px;
         }
 
         .service-card.general .service-icon {
@@ -402,11 +421,15 @@
                     <div class="tagline">Professional Construction Intelligence</div>
                 </div>
             </div>
-            <div class="industries">
-                <span class="industry-tag">🎨 Commercial Painting</span>
-                <span class="industry-tag">🔥 Fireproofing</span>
-                <span class="industry-tag">🏗️ Insulation</span>
-                <span class="industry-tag">🏢 Resinous Flooring</span>
+            <div class="stats-display">
+                <div class="stat-item">
+                    <span class="stat-value" id="docCount">0</span>
+                    <span class="stat-label">Documents</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="projectCount">0</span>
+                    <span class="stat-label">Projects</span>
+                </div>
             </div>
         </div>
     </header>
@@ -417,7 +440,9 @@
             <!-- General Chat -->
             <a href="general-chat.html" class="service-card general">
                 <span class="service-badge badge-live">Live</span>
-                <div class="service-icon">💬</div>
+                <div class="service-icon">
+                    <img src="general.png" alt="General Chat">
+                </div>
                 <h2 class="service-title">General Chat</h2>
                 <p class="service-description">
                     Industry-standard guidance powered by AI for all your construction needs. Get instant answers about best practices, materials, and methods.
@@ -433,12 +458,14 @@
             </a>
 
             <!-- Estimating Assistant -->
-            <a href="index.html" class="service-card estimating">
-                <span class="service-badge badge-rag">RAG Enhanced</span>
-                <div class="service-icon">📊</div>
+            <a href="estimator.html" class="service-card estimating">
+                <span class="service-badge badge-rag">Takeoff Enhanced</span>
+                <div class="service-icon">
+                    <img src="estimator.png" alt="Estimating Assistant">
+                </div>
                 <h2 class="service-title">Estimating Assistant</h2>
                 <p class="service-description">
-                    Build accurate bid estimates from drawings, specifications, and project documents. AI-powered document analysis for precise cost estimation.
+                    Advanced digital takeoff and cost estimation. AI-powered drawing analysis, automatic quantity calculations, paint coverage, material costs, and professional estimate generation.
                 </p>
                 <ul class="service-features">
                     <li>Upload drawings & specifications</li>
@@ -451,9 +478,11 @@
             </a>
 
             <!-- Project Management -->
-            <a href="project-management.html" class="service-card project">
-                <span class="service-badge badge-beta">Beta</span>
-                <div class="service-icon">📁</div>
+            <a href="projects.html" class="service-card project">
+                <span class="service-badge badge-live">Live</span>
+                <div class="service-icon">
+                    <img src="pm.png" alt="Project Management">
+                </div>
                 <h2 class="service-title">Project Management</h2>
                 <p class="service-description">
                     Comprehensive project document management. Access proposals, submittals, contracts, and estimates with intelligent search and insights.
@@ -485,5 +514,56 @@
             </div>
         </div>
     </footer>
+    <script>
+        // Fetch document and project counts
+        async function updateStats() {
+            try {
+                // Get index statistics for document count
+                const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats');
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    const stats = Array.isArray(statsData) ? statsData[0] : statsData;
+                    const docCount = stats.documentCount || stats.docCount || 0;
+                    document.getElementById('docCount').textContent = docCount.toLocaleString();
+                }
+                
+                // Get project count from Azure Blob Storage
+                const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
+                
+                const response = await fetch(listUrl);
+                if (response.ok) {
+                    const xmlText = await response.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                    const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+                    
+                    let projectCount = 0;
+                    for (let i = 0; i < prefixes.length; i++) {
+                        const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+                        if (nameElement) {
+                            const fullPath = nameElement.textContent;
+                            const pathParts = fullPath.split('/');
+                            if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                                const clientName = pathParts[1];
+                                if (clientName && !clientName.startsWith('.') && clientName.length > 0) {
+                                    projectCount++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    document.getElementById('projectCount').textContent = projectCount.toLocaleString();
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+                // Set default values on error
+                document.getElementById('docCount').textContent = '0';
+                document.getElementById('projectCount').textContent = '0';
+            }
+        }
+        
+        // Update stats on page load
+        window.addEventListener('load', updateStats);
+    </script>
 </body>
 </html>
