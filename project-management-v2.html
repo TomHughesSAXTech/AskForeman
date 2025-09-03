@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management - ForemanAI Intelligence</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Project Management Theme Colors */
+            --pm-primary: #2E86AB;
+            --pm-secondary: #26C485;
+            --pm-accent: #F6AE2D;
+            --milestone-purple: #7B68EE;
+            --schedule-orange: #FF8C42;
+            --resource-teal: #20B2AA;
+            --risk-red: #DC3545;
+            --budget-green: #28A745;
+            
+            /* Standard Colors */
+            --white: #FFFFFF;
+            --light-gray: #F8F9FA;
+            --medium-gray: #E0E0E0;
+            --dark-gray: #212529;
+            --concrete-gray: #6C757D;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f3443 0%, #34e89e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--dark-gray) 0%, #0f3443 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 4px solid var(--pm-secondary);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header::before {
+            content: "";
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--pm-accent) 0px,
+                var(--pm-accent) 20px,
+                var(--dark-gray) 20px,
+                var(--dark-gray) 40px
+            );
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo h1 {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--pm-secondary);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .logo .tagline {
+            font-size: 1rem;
+            color: var(--medium-gray);
+            font-weight: 500;
+            margin-top: -0.25rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(38, 196, 133, 0.1);
+            border: 2px solid var(--pm-secondary);
+            border-radius: 20px;
+            position: relative;
+            cursor: help;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(38, 196, 133, 0.3);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--pm-secondary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--pm-secondary);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.2);
+            }
+        }
+
+        .search-stats {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .search-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .search-stat:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: -0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 60%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .search-stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--pm-accent);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-stat-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.25rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, var(--risk-red), #b71c1c);
+            color: white;
+            border: 2px solid var(--risk-red);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+        }
+
+        /* Main Container - 3 Column Layout */
+        .container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 400px 1fr 400px;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar, .rightbar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 2px solid var(--medium-gray);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--pm-primary);
+        }
+
+        /* Project Selector */
+        .project-selector {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
+            border-radius: 8px;
+            border: 2px solid var(--pm-primary);
+        }
+
+        .project-selector label {
+            display: block;
+            font-weight: 600;
+            color: var(--concrete-gray);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .project-selector select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 5px;
+            font-size: 1rem;
+            background: white;
+            color: var(--concrete-gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .project-selector select:hover {
+            border-color: var(--pm-primary);
+        }
+
+        .project-selector select:focus {
+            outline: none;
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+
+        /* Project Status Overview */
+        .project-status {
+            margin-top: 1rem;
+        }
+
+        .project-status h3 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .project-status h3::before {
+            content: "📊";
+            font-size: 1.5rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .status-item {
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
+            border-radius: 8px;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            color: var(--concrete-gray);
+            margin-bottom: 0.25rem;
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--dark-gray);
+        }
+
+        .status-value.on-track {
+            color: var(--budget-green);
+        }
+
+        .status-value.at-risk {
+            color: var(--schedule-orange);
+        }
+
+        .status-value.delayed {
+            color: var(--risk-red);
+        }
+
+        /* Document Categories */
+        .document-categories {
+            margin-top: 1rem;
+        }
+
+        .document-categories h3 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .document-categories h3::before {
+            content: "📁";
+            font-size: 1.5rem;
+        }
+
+        .category-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .category-item {
+            background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
+            border: 2px solid var(--medium-gray);
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .category-item:hover {
+            border-color: var(--pm-primary);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(46, 134, 171, 0.2);
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .category-header input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--pm-accent);
+        }
+
+        .category-header label {
+            flex: 1;
+            font-weight: 600;
+            color: var(--concrete-gray);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .category-files {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding-left: 2rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            display: none;
+        }
+
+        .choose-files-btn {
+            background: linear-gradient(135deg, var(--pm-accent) 0%, #f57f17 100%);
+            color: var(--dark-gray);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .choose-files-btn:hover {
+            background: linear-gradient(135deg, #f57f17 0%, var(--pm-accent) 100%);
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(246, 174, 45, 0.4);
+        }
+
+        .file-count {
+            font-size: 0.85rem;
+            color: var(--concrete-gray);
+            font-weight: 500;
+        }
+
+        .file-list {
+            margin-top: 1.5rem;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--medium-gray);
+            background: white;
+            border-radius: 4px;
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--concrete-gray);
+            background: var(--light-gray);
+            border-radius: 8px;
+            margin: 0.5rem 0;
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, var(--risk-red), #b71c1c);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: var(--medium-gray);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 1rem;
+            display: none;
+            border: 2px solid var(--concrete-gray);
+        }
+
+        .progress-bar.active {
+            display: block;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--pm-primary), var(--pm-secondary));
+            border-radius: 13px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .process-button {
+            width: 100%;
+            background: linear-gradient(135deg, var(--pm-secondary) 0%, #20B2AA 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 8px rgba(38, 196, 133, 0.3);
+        }
+
+        .process-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(38, 196, 133, 0.4);
+        }
+
+        .process-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--medium-gray);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 150px);
+            position: relative;
+        }
+
+        .chat-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--pm-primary);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--pm-primary) 0%, var(--pm-secondary) 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 4px solid var(--pm-accent);
+        }
+
+        .chat-header h2 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chat-header h2::before {
+            content: "💼";
+            font-size: 1.8rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant .message-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--pm-primary) 0%, var(--pm-secondary) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            font-size: 20px;
+            color: var(--white);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--pm-primary) 0%, var(--pm-secondary) 100%);
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: var(--concrete-gray);
+            border-bottom-left-radius: 3px;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #95a5a6;
+            margin-top: 0.5rem;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+            width: fit-content;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-left: 3.5rem;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--pm-primary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* Chat Input Container */
+        .chat-input-container {
+            padding: 1.5rem;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            border-top: 2px solid var(--medium-gray);
+        }
+
+        .chat-context-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: var(--light-gray);
+            border-radius: 8px;
+            border: 1px solid var(--medium-gray);
+        }
+
+        .chat-context-selector label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--concrete-gray);
+            white-space: nowrap;
+        }
+
+        .chat-context-selector select {
+            padding: 0.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: 5px;
+            font-size: 0.9rem;
+            background: white;
+            color: var(--concrete-gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            width: 100%;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--medium-gray);
+            border-radius: 25px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(46, 134, 171, 0.1);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--pm-primary) 0%, var(--pm-secondary) 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(46, 134, 171, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--medium-gray);
+        }
+
+        /* Right Sidebar - Project Management Tools */
+        .quick-tools h3 {
+            color: var(--concrete-gray);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .quick-tools h3::before {
+            content: "🔧";
+            font-size: 1.5rem;
+        }
+
+        .tool-button {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            margin-bottom: 0.75rem;
+        }
+
+        .tool-button:hover {
+            transform: translateX(5px);
+        }
+
+        .tool-gantt {
+            background: linear-gradient(135deg, var(--milestone-purple) 0%, #6B46C1 100%);
+            color: white;
+        }
+
+        .tool-gantt:hover {
+            box-shadow: 0 4px 12px rgba(123, 104, 238, 0.3);
+        }
+
+        .tool-resource {
+            background: linear-gradient(135deg, var(--resource-teal) 0%, #17A2B8 100%);
+            color: white;
+        }
+
+        .tool-resource:hover {
+            box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3);
+        }
+
+        .tool-risk {
+            background: linear-gradient(135deg, var(--schedule-orange) 0%, #FF6B35 100%);
+            color: white;
+        }
+
+        .tool-risk:hover {
+            box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+        }
+
+        .tool-icon {
+            font-size: 1.5rem;
+        }
+
+        .tool-text {
+            flex: 1;
+        }
+
+        .tool-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .tool-desc {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* Knowledge Graph Tips */
+        .knowledge-tips {
+            background: linear-gradient(135deg, #f0f8ff, #e8f4fd);
+            border: 2px solid var(--pm-primary);
+        }
+
+        .knowledge-tips h3 {
+            color: var(--pm-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .knowledge-tips h3::before {
+            content: "💡";
+            font-size: 1.5rem;
+        }
+
+        .knowledge-tips-content {
+            font-size: 0.9rem;
+            color: var(--concrete-gray);
+            line-height: 1.6;
+        }
+
+        .knowledge-tips-content ul {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .knowledge-tips-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* AI Disclaimer */
+        .ai-disclaimer {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--dark-gray);
+        }
+
+        .disclaimer-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .disclaimer-text strong {
+            color: #d68910;
+            font-weight: 600;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 350px 1fr;
+            }
+
+            .rightbar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .sidebar {
+                order: 2;
+            }
+
+            .chat-container {
+                height: 500px;
+                order: 1;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <img src="ForemanAI.png" alt="ForemanAI">
+            </div>
+            <div>
+                <h1>ASK FOREMAN AI</h1>
+                <p class="tagline">Project Management & Analytics</p>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="search-stats">
+                <div class="search-stat">
+                    <span class="search-stat-value" id="activeProjectsCount">0</span>
+                    <span class="search-stat-label">Active Projects</span>
+                </div>
+                <div class="search-stat">
+                    <span class="search-stat-value" id="totalTasksCount">0</span>
+                    <span class="search-stat-label">Total Tasks</span>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span id="statusText">System Online</span>
+            </div>
+            <a href="admin.html" class="nav-btn">
+                🛠️ Maintenance
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="card">
+                <div class="project-selector">
+                    <label for="projectSelect">🏢 Select Project:</label>
+                    <select id="projectSelect">
+                        <option value="">-- Choose a Project --</option>
+                    </select>
+                </div>
+
+                <div class="document-categories">
+                    <h3>Document Upload Center</h3>
+                    <div class="category-group">
+                        <div class="category-item">
+                            <div class="category-header">
+                                <input type="checkbox" id="drawings" value="drawings" />
+                                <label for="drawings">📐 Drawings & Plans</label>
+                            </div>
+                            <div class="category-files">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="drawingsFiles" multiple accept=".pdf,.docx,.xlsx,.xls" data-category="drawings" />
+                                    <button class="choose-files-btn" onclick="document.getElementById('drawingsFiles').click()">
+                                        Choose Files
+                                    </button>
+                                </div>
+                                <span class="file-count" id="drawingsCount">0 files</span>
+                            </div>
+                        </div>
+
+                        <div class="category-item">
+                            <div class="category-header">
+                                <input type="checkbox" id="estimates" value="estimates" />
+                                <label for="estimates">💰 Estimates</label>
+                            </div>
+                            <div class="category-files">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="estimatesFiles" multiple accept=".pdf,.docx,.xlsx,.xls" data-category="estimates" />
+                                    <button class="choose-files-btn" onclick="document.getElementById('estimatesFiles').click()">
+                                        Choose Files
+                                    </button>
+                                </div>
+                                <span class="file-count" id="estimatesCount">0 files</span>
+                            </div>
+                        </div>
+
+                        <div class="category-item">
+                            <div class="category-header">
+                                <input type="checkbox" id="proposals" value="proposals" />
+                                <label for="proposals">📊 Proposals</label>
+                            </div>
+                            <div class="category-files">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="proposalsFiles" multiple accept=".pdf,.docx,.xlsx,.xls" data-category="proposals" />
+                                    <button class="choose-files-btn" onclick="document.getElementById('proposalsFiles').click()">
+                                        Choose Files
+                                    </button>
+                                </div>
+                                <span class="file-count" id="proposalsCount">0 files</span>
+                            </div>
+                        </div>
+
+                        <div class="category-item">
+                            <div class="category-header">
+                                <input type="checkbox" id="specs" value="specs" />
+                                <label for="specs">📋 Specs</label>
+                            </div>
+                            <div class="category-files">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="specsFiles" multiple accept=".pdf,.docx,.xlsx,.xls" data-category="specs" />
+                                    <button class="choose-files-btn" onclick="document.getElementById('specsFiles').click()">
+                                        Choose Files
+                                    </button>
+                                </div>
+                                <span class="file-count" id="specsCount">0 files</span>
+                            </div>
+                        </div>
+
+                        <div class="category-item">
+                            <div class="category-header">
+                                <input type="checkbox" id="signed-contracts" value="signed-contracts" />
+                                <label for="signed-contracts">📝 Signed Contracts</label>
+                            </div>
+                            <div class="category-files">
+                                <div class="file-input-wrapper">
+                                    <input type="file" id="signed-contractsFiles" multiple accept=".pdf,.docx,.xlsx,.xls" data-category="signed-contracts" />
+                                    <button class="choose-files-btn" onclick="document.getElementById('signed-contractsFiles').click()">
+                                        Choose Files
+                                    </button>
+                                </div>
+                                <span class="file-count" id="signed-contractsCount">0 files</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="file-list" id="fileList">
+                    <div class="loading-indicator" id="filesLoadingIndicator">
+                        Loading existing files...
+                    </div>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+
+                <button class="process-button" id="processButton" disabled>
+                    🚧 Process Documents
+                </button>
+
+                <button class="process-button" id="createProjectButton" style="
+                    background: linear-gradient(135deg, var(--pm-accent), #f57f17);
+                    color: var(--dark-gray);
+                    margin-top: 0.5rem;
+                ">
+                    ➕ Create New Project
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Container -->
+        <main class="card chat-container">
+            <div class="chat-header">
+                <h2>Project Management Assistant</h2>
+                <span style="font-size: 0.9rem; opacity: 0.8">AI-Powered Project Insights</span>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-avatar">📊</div>
+                    <div class="message-content">
+                        <div class="formatted-content">
+                            <p><strong>Welcome to Project Management Assistant!</strong></p>
+                            <p>I help with project planning, scheduling, resource management, and risk analysis.</p>
+                            <p><strong>💡 Pro tip:</strong> Use the "Focus on" dropdown below to search specific project documents and get targeted insights.</p>
+                        </div>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-context-selector">
+                    <label for="chatContextSelect">🎯 Focus on:</label>
+                    <select id="chatContextSelect">
+                        <option value="general">General Project Management</option>
+                        <option value="schedule">Schedule & Timeline</option>
+                        <option value="budget">Budget & Cost Control</option>
+                        <option value="resources">Resource Management</option>
+                        <option value="risks">Risk Analysis</option>
+                    </select>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" class="chat-input" id="chatInput" 
+                           placeholder="Ask about schedules, budgets, resources, risks, or any project management questions...">
+                    <button class="send-button" id="sendButton">
+                        <span>Send</span>
+                        <span>→</span>
+                    </button>
+                </div>
+
+                <!-- AI Disclaimer -->
+                <div class="ai-disclaimer">
+                    <span class="disclaimer-icon">⚠️</span>
+                    <span class="disclaimer-text">
+                        Ask Foreman AI <strong>can make mistakes</strong> and you should verify important information.
+                    </span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="rightbar">
+            <!-- Quick Tools Section -->
+            <div class="card">
+                <h3 style="color: var(--concrete-gray); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.5rem;">🛠️</span> Quick Tools
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="https://workflows.saxtechnology.com/webhook/ask-foreman/tools/cost-calculator" 
+                       target="_blank" 
+                       class="quick-tool-btn" 
+                       style="
+                         display: flex;
+                         align-items: center;
+                         gap: 0.75rem;
+                         padding: 1rem;
+                         background: linear-gradient(135deg, var(--pm-accent) 0%, #FFB300 100%);
+                         color: var(--dark-gray);
+                         text-decoration: none;
+                         border-radius: 8px;
+                         transition: all 0.3s ease;
+                         border: 2px solid transparent;
+                       " 
+                       onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(255, 215, 0, 0.3)';"
+                       onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+                        <span style="font-size: 1.5rem;">🧮</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 1rem;">Construction Cost Calculator</div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Quick material and labor estimates</div>
+                        </div>
+                    </a>
+                    
+                    <a href="https://www.google.com" 
+                       target="_blank" 
+                       class="quick-tool-btn" 
+                       style="
+                         display: flex;
+                         align-items: center;
+                         gap: 0.75rem;
+                         padding: 1rem;
+                         background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+                         color: white;
+                         text-decoration: none;
+                         border-radius: 8px;
+                         transition: all 0.3s ease;
+                         border: 2px solid transparent;
+                       "
+                       onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(66, 133, 244, 0.3)';"
+                       onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+                        <span style="font-size: 1.5rem;">🔍</span>
+                        <div>
+                            <div style="font-weight: 600; font-size: 1rem;">Google Search</div>
+                            <div style="font-size: 0.85rem; opacity: 0.9;">Research construction topics</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- PM Knowledge Graph Tips -->
+            <div class="card knowledge-tips" style="margin-top: 1rem;">
+                <h3>Project Management Knowledge Graph</h3>
+                <div class="knowledge-tips-content">
+                    <p style="margin-bottom: 0.75rem;">
+                        <strong>Smart Project Insights:</strong> The Knowledge Graph helps you manage projects by:
+                    </p>
+                    <ul>
+                        <li>📈 Tracking performance across similar projects</li>
+                        <li>⏰ Identifying schedule optimization opportunities</li>
+                        <li>💡 Learning from past project successes and challenges</li>
+                        <li>🔄 Finding resource allocation patterns</li>
+                        <li>📊 Comparing project KPIs and metrics</li>
+                    </ul>
+                    <p style="margin-bottom: 0.5rem;">
+                        <strong>Try asking:</strong> <em>"What caused delays in similar projects?"</em> or 
+                        <em>"Compare resource utilization across our last three projects"</em>
+                    </p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Basic functionality - you can expand this with your existing chat logic
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize project counts
+            document.getElementById('activeProjectsCount').textContent = '12';
+            document.getElementById('totalTasksCount').textContent = '248';
+            
+            // Add hover effects to document categories
+            document.querySelectorAll('.doc-category').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.background = 'linear-gradient(135deg, #e8f4fd, #f0f8ff)';
+                    this.style.borderColor = 'var(--pm-primary)';
+                    this.style.transform = 'translateX(5px)';
+                });
+                btn.addEventListener('mouseleave', function() {
+                    this.style.background = 'var(--light-gray)';
+                    this.style.borderColor = 'var(--medium-gray)';
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+            
+            // Simple chat functionality
+            const chatInput = document.getElementById('chatInput');
+            const sendButton = document.getElementById('sendButton');
+            const chatMessages = document.getElementById('chatMessages');
+            const typingIndicator = document.getElementById('typingIndicator');
+            
+            function sendMessage() {
+                const message = chatInput.value.trim();
+                if (!message) return;
+                
+                // Add user message
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'message user';
+                userMessageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="formatted-content">${message}</div>
+                        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                    </div>
+                `;
+                chatMessages.insertBefore(userMessageDiv, typingIndicator);
+                
+                // Clear input
+                chatInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.classList.add('active');
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Simulate response
+                setTimeout(() => {
+                    typingIndicator.classList.remove('active');
+                    
+                    const assistantMessageDiv = document.createElement('div');
+                    assistantMessageDiv.className = 'message assistant';
+                    assistantMessageDiv.innerHTML = `
+                        <div class="message-avatar">📊</div>
+                        <div class="message-content">
+                            <div class="formatted-content">I'll help you with project management insights. This feature will be connected to your project data soon.</div>
+                            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</div>
+                        </div>
+                    `;
+                    chatMessages.insertBefore(assistantMessageDiv, typingIndicator);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }, 1500);
+            }
+            
+            sendButton.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
