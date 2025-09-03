@@ -2038,9 +2038,8 @@
             <span style="font-size: 1.5rem;">🛠️</span> Quick Estimating Tools
           </h3>
           <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            <a href="https://workflows.saxtechnology.com/webhook/ask-foreman/tools/cost-calculator" 
-               target="_blank" 
-               class="quick-tool-btn" 
+            <button onclick="openCostCalculator()" 
+               class="quick-tool-btn"
                style="
                  display: flex;
                  align-items: center;
@@ -2054,13 +2053,18 @@
                  border: 2px solid transparent;
                " 
                onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(255, 215, 0, 0.3)';"
-               onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+               onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';"
+               style="
+                 width: 100%;
+                 cursor: pointer;
+                 font-family: inherit;
+               ">
               <span style="font-size: 1.5rem;">🧮</span>
-              <div>
+              <div style="text-align: left;">
                 <div style="font-weight: 600; font-size: 1rem;">Construction Cost Calculator</div>
                 <div style="font-size: 0.85rem; opacity: 0.9;">Quick material and labor estimates</div>
               </div>
-            </a>
+            </button>
             
             <button onclick="openEstimatorForm()" 
                class="quick-tool-btn" 
@@ -2156,14 +2160,20 @@
       // Configuration - Production webhook URLs
       const API_CONFIG = {
         chatWebhookUrl:
-          "https://workflows.saxtechnology.com/webhook/ask-foreman/chat",
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/estimator", // Estimator-specific webhook
         uploadWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
         createClientWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/create",
         listClientsWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
-        indexName: "construction-docs-index",
+        indexName: "fcs-construction-docs-index-v2", // Updated index name
+        knowledgeGraphWebhook:
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/knowledge-graph",
+        calculatorWebhook:
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/tools/cost-calculator",
+        googleSearchWebhook:
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/tools/google-search",
       };
       
       // Azure AI Services Configuration
@@ -6935,6 +6945,31 @@
         
         // Store results for export
         window.currentTakeoffResults = results;
+      }
+      
+      // Open Cost Calculator
+      window.openCostCalculator = function() {
+        // Send a message to the chat to invoke the cost calculator
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        
+        if (chatInput && sendButton) {
+          // Set the message to trigger the calculator
+          chatInput.value = "Open the construction cost calculator";
+          
+          // Send the message
+          sendMessage();
+          
+          // Clear the input after a short delay
+          setTimeout(() => {
+            chatInput.value = '';
+          }, 100);
+          
+          // Provide feedback
+          addSystemMessage('🧮 Requesting Construction Cost Calculator from the AI assistant...');
+        } else {
+          alert('Chat system is not available. Please refresh the page.');
+        }
       }
       
       // Export results to Excel
