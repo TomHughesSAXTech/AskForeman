@@ -1736,7 +1736,7 @@
                       type="file"
                       id="drawingsFiles"
                       multiple
-                      accept=".pdf,.docx,.xlsx,.xls"
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
                       data-category="drawings"
                     />
                     <button
@@ -1765,7 +1765,7 @@
                       type="file"
                       id="estimatesFiles"
                       multiple
-                      accept=".pdf,.docx,.xlsx,.xls"
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
                       data-category="estimates"
                     />
                     <button
@@ -1794,7 +1794,7 @@
                       type="file"
                       id="proposalsFiles"
                       multiple
-                      accept=".pdf,.docx,.xlsx,.xls"
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
                       data-category="proposals"
                     />
                     <button
@@ -1819,7 +1819,7 @@
                       type="file"
                       id="specsFiles"
                       multiple
-                      accept=".pdf,.docx,.xlsx,.xls"
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
                       data-category="specs"
                     />
                     <button
@@ -1844,7 +1844,7 @@
                       type="file"
                       id="signed-contractsFiles"
                       multiple
-                      accept=".pdf,.docx,.xlsx,.xls"
+                      accept=".pdf,.doc,.docx,.xlsx,.xls"
                       data-category="signed-contracts"
                     />
                     <button
@@ -2062,8 +2062,35 @@
               </div>
             </a>
             
-            <a href="https://workflows.saxtechnology.com/webhook/ask-foreman/tools/takeoff-helper" 
-               target="_blank" 
+            <button onclick="openEstimatorForm()" 
+               class="quick-tool-btn" 
+               style="
+                 display: flex;
+                 align-items: center;
+                 gap: 0.75rem;
+                 padding: 1rem;
+                 background: linear-gradient(135deg, #FFB300 0%, #FF6F00 100%);
+                 color: white;
+                 text-decoration: none;
+                 border-radius: 8px;
+                 transition: all 0.3s ease;
+                 border: 2px solid transparent;
+                 width: 100%;
+                 border: none;
+                 cursor: pointer;
+                 font-family: inherit;
+                 margin-bottom: 0.75rem;
+               "
+               onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(255, 111, 0, 0.3)';"
+               onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+              <span style="font-size: 1.5rem;">📊</span>
+              <div style="text-align: left;">
+                <div style="font-weight: 600; font-size: 1rem;">Professional Estimator</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">Complete estimate builder</div>
+              </div>
+            </button>
+            
+            <button onclick="openDigitalTakeoffAssistant()"
                class="quick-tool-btn" 
                style="
                  display: flex;
@@ -2076,15 +2103,19 @@
                  border-radius: 8px;
                  transition: all 0.3s ease;
                  border: 2px solid transparent;
+                 width: 100%;
+                 border: none;
+                 cursor: pointer;
+                 font-family: inherit;
                "
                onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(16, 124, 65, 0.3)';"
                onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
               <span style="font-size: 1.5rem;">📐</span>
-              <div>
+              <div style="text-align: left;">
                 <div style="font-weight: 600; font-size: 1rem;">Digital Takeoff Assistant</div>
-                <div style="font-size: 0.85rem; opacity: 0.9;">Measure and quantify from plans</div>
+                <div style="font-size: 0.85rem; opacity: 0.9;">AI-powered drawing analysis</div>
               </div>
-            </a>
+            </button>
           </div>
         </div>
 
@@ -2133,6 +2164,29 @@
         listClientsWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list",
         indexName: "construction-docs-index",
+      };
+      
+      // Azure AI Services Configuration
+      const AZURE_AI_CONFIG = {
+        // Document Intelligence (Form Recognizer) for layout extraction
+        documentIntelligence: {
+          endpoint: "https://saxtechfcs-docintell.cognitiveservices.azure.com/",
+          apiKey: "YOUR_DOCUMENT_INTELLIGENCE_KEY", // Replace with your key
+          apiVersion: "2023-07-31"
+        },
+        // Computer Vision for image analysis and OCR
+        computerVision: {
+          endpoint: "https://saxtechfcs-vision.cognitiveservices.azure.com/",
+          apiKey: "YOUR_COMPUTER_VISION_KEY", // Replace with your key
+          apiVersion: "2023-02-01-preview"
+        },
+        // Custom Vision for symbol detection (if trained)
+        customVision: {
+          predictionEndpoint: "https://saxtechfcs-customvision.cognitiveservices.azure.com/",
+          predictionKey: "YOUR_CUSTOM_VISION_KEY", // Replace with your key
+          projectId: "YOUR_PROJECT_ID", // Replace with your project ID
+          iterationName: "YOUR_ITERATION_NAME" // Replace with your iteration
+        }
       };
 
       // Azure Blob Storage Configuration
@@ -2403,7 +2457,7 @@
           );
           chatInput.placeholder =
             "Ask about construction estimating, specifications, or any project questions...";
-        } else if (chatContext === "all-clients") {
+        } else if (chatContext === "combined-projects") {
           addSystemMessage(
             "🔍 Knowledge Graph mode activated! I can now search and correlate information across ALL client projects. This allows me to:\n" +
             "• Find similar solutions from other projects\n" +
@@ -2513,7 +2567,7 @@
       }
 
       function isValidFile(file) {
-        const validTypes = [".pdf", ".docx", ".xlsx", ".xls"];
+        const validTypes = [".pdf", ".doc", ".docx", ".xlsx", ".xls"];
         const extension = file.name
           .toLowerCase()
           .substring(file.name.lastIndexOf("."));
@@ -3100,9 +3154,10 @@
       }
 
       function updateMetadata() {
-        // This function is now handled by updateSearchStatistics()
-        // Kept for backward compatibility but delegates to the new function
-        updateSearchStatistics();
+        // Only update statistics if the UI elements exist on this page
+        if (document.getElementById('totalDocsCount')) {
+          updateSearchStatistics();
+        }
       }
 
       // Create Client Modal functionality
@@ -3655,8 +3710,8 @@
         
         // Add All Clients option for knowledge graph
         const allClientsOption = document.createElement('option');
-        allClientsOption.value = 'all-clients';
-        allClientsOption.textContent = '🌐 All Clients (Knowledge Graph)';
+        allClientsOption.value = 'combined-projects';
+        allClientsOption.textContent = '🌐 Combined Projects';
         allClientsOption.style.fontWeight = '600';
         allClientsOption.style.color = 'var(--blueprint-blue)';
         chatClientSelect.appendChild(allClientsOption);
@@ -3845,8 +3900,7 @@
           
           updateFileCounts();
           updateMetadata();
-          updateSearchStatistics();
-          updateDetailedStatus();
+          if (document.getElementById('chatStatus')) { updateDetailedStatus(); }
 
           // Initialize file list with default message
           initializeFileList();
@@ -4472,7 +4526,7 @@
                 background: #f8f9fa;
                 margin-bottom: 1rem;
               ">
-                <input type="file" id="editedFileInput" style="display: none;" accept=".pdf,.docx,.xlsx,.xls" />
+                <input type="file" id="editedFileInput" style="display: none;" accept=".pdf,.doc,.docx,.xlsx,.xls" />
                 <div id="fileSelectionArea">
                   <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
                   <button onclick="document.getElementById('editedFileInput').click()" style="
@@ -5328,6 +5382,1627 @@
       // Make loadClientFiles available globally for the refresh button
       window.loadClientFiles = loadClientFiles;
       window.deleteClientFile = deleteClientFile;
+      
+      // Professional Estimator Form
+      function openEstimatorForm() {
+        // Create the estimator form modal
+        const modal = document.createElement('div');
+        modal.id = 'estimatorFormModal';
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.8);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 10000;
+          overflow: auto;
+          padding: 1rem;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+          background: white;
+          border-radius: 12px;
+          width: 95%;
+          max-width: 1400px;
+          height: 95vh;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        `;
+        
+        modalContent.innerHTML = `
+          <!-- Header -->
+          <div style="
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #FFB300 0%, #FF6F00 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          ">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.5rem;">📊</span>
+              Professional Construction Estimator
+              <span style="
+                background: rgba(255,255,255,0.2);
+                padding: 0.25rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: normal;
+              ">Excel Compatible</span>
+            </h2>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <button onclick="downloadEstimateXLSX()" style="
+                background: rgba(255,255,255,0.9);
+                color: #FF6F00;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.3s;
+              " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                <span>📥</span> Download XLSX
+              </button>
+              <button onclick="closeEstimatorForm()" style="
+                background: transparent;
+                border: none;
+                color: white;
+                font-size: 2rem;
+                cursor: pointer;
+                padding: 0;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.3s;
+              " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='transparent'">×</button>
+            </div>
+          </div>
+          
+          <!-- Project Info Bar -->
+          <div style="
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #f8f9fa, #e8f4fd);
+            border-bottom: 2px solid #e0e0e0;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+          ">
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: #666; margin-bottom: 0.25rem;">Project Name</label>
+              <input type="text" id="projectName" placeholder="Enter project name" style="
+                width: 100%;
+                padding: 0.5rem;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-weight: 600;
+              " />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: #666; margin-bottom: 0.25rem;">Client</label>
+              <input type="text" id="clientName" placeholder="Client name" style="
+                width: 100%;
+                padding: 0.5rem;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+              " />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: #666; margin-bottom: 0.25rem;">Estimate Date</label>
+              <input type="date" id="estimateDate" style="
+                width: 100%;
+                padding: 0.5rem;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+              " value="${new Date().toISOString().split('T')[0]}" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; color: #666; margin-bottom: 0.25rem;">Estimator</label>
+              <input type="text" id="estimatorName" placeholder="Your name" style="
+                width: 100%;
+                padding: 0.5rem;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+              " />
+            </div>
+          </div>
+          
+          <!-- Main Content Area -->
+          <div style="
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #fafafa;
+          ">
+            <!-- Line Items Table -->
+            <div style="
+              background: white;
+              border-radius: 8px;
+              padding: 1rem;
+              margin-bottom: 1.5rem;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+              ">
+                <h3 style="margin: 0; color: var(--concrete-gray);">Line Items</h3>
+                <button onclick="addLineItem()" style="
+                  background: var(--blueprint-blue);
+                  color: white;
+                  border: none;
+                  padding: 0.5rem 1rem;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                ">
+                  <span>➕</span> Add Item
+                </button>
+              </div>
+              
+              <div style="overflow-x: auto;">
+                <table id="lineItemsTable" style="
+                  width: 100%;
+                  border-collapse: collapse;
+                  font-size: 0.9rem;
+                ">
+                  <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                      <th style="padding: 0.75rem; text-align: left; width: 5%;">Item</th>
+                      <th style="padding: 0.75rem; text-align: left; width: 25%;">Description</th>
+                      <th style="padding: 0.75rem; text-align: left; width: 15%;">Category</th>
+                      <th style="padding: 0.75rem; text-align: right; width: 10%;">Quantity</th>
+                      <th style="padding: 0.75rem; text-align: left; width: 8%;">Unit</th>
+                      <th style="padding: 0.75rem; text-align: right; width: 10%;">Material Cost</th>
+                      <th style="padding: 0.75rem; text-align: right; width: 10%;">Labor Cost</th>
+                      <th style="padding: 0.75rem; text-align: right; width: 12%;">Total</th>
+                      <th style="padding: 0.75rem; text-align: center; width: 5%;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lineItemsBody">
+                    <!-- Line items will be added here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Summary Section -->
+            <div style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 1.5rem;
+            ">
+              <!-- Cost Breakdown -->
+              <div style="
+                background: white;
+                border-radius: 8px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              ">
+                <h3 style="margin: 0 0 1rem 0; color: var(--concrete-gray);">Cost Breakdown</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>Material Subtotal:</span>
+                    <strong id="materialSubtotal">$0.00</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>Labor Subtotal:</span>
+                    <strong id="laborSubtotal">$0.00</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                    <span>Equipment/Other:</span>
+                    <input type="number" id="equipmentCost" value="0" onchange="updateTotals()" style="
+                      width: 120px;
+                      text-align: right;
+                      padding: 0.25rem;
+                      border: 1px solid #ddd;
+                      border-radius: 3px;
+                    " />
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-weight: 600; font-size: 1.1rem; border-top: 2px solid #333;">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">$0.00</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Markups & Final Total -->
+              <div style="
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+                border: 2px solid #ffc107;
+                border-radius: 8px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              ">
+                <h3 style="margin: 0 0 1rem 0; color: #856404;">Markups & Total</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Overhead (%):</span>
+                    <input type="number" id="overheadPercent" value="10" min="0" max="100" onchange="updateTotals()" style="
+                      width: 80px;
+                      text-align: right;
+                      padding: 0.25rem;
+                      border: 1px solid #ffc107;
+                      border-radius: 3px;
+                    " />
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Profit Margin (%):</span>
+                    <input type="number" id="profitPercent" value="15" min="0" max="100" onchange="updateTotals()" style="
+                      width: 80px;
+                      text-align: right;
+                      padding: 0.25rem;
+                      border: 1px solid #ffc107;
+                      border-radius: 3px;
+                    " />
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Contingency (%):</span>
+                    <input type="number" id="contingencyPercent" value="5" min="0" max="100" onchange="updateTotals()" style="
+                      width: 80px;
+                      text-align: right;
+                      padding: 0.25rem;
+                      border: 1px solid #ffc107;
+                      border-radius: 3px;
+                    " />
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Tax Rate (%):</span>
+                    <input type="number" id="taxPercent" value="8.25" min="0" max="100" step="0.25" onchange="updateTotals()" style="
+                      width: 80px;
+                      text-align: right;
+                      padding: 0.25rem;
+                      border: 1px solid #ffc107;
+                      border-radius: 3px;
+                    " />
+                  </div>
+                  <div style="
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0.75rem;
+                    margin-top: 0.5rem;
+                    background: var(--safety-yellow);
+                    border-radius: 5px;
+                    font-weight: bold;
+                    font-size: 1.3rem;
+                    color: var(--dark-gray);
+                  ">
+                    <span>TOTAL:</span>
+                    <span id="grandTotal">$0.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Notes Section -->
+            <div style="
+              background: white;
+              border-radius: 8px;
+              padding: 1.5rem;
+              margin-top: 1.5rem;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">
+              <h3 style="margin: 0 0 1rem 0; color: var(--concrete-gray);">Notes & Exclusions</h3>
+              <textarea id="estimateNotes" style="
+                width: 100%;
+                min-height: 100px;
+                padding: 0.75rem;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                font-family: inherit;
+                resize: vertical;
+              " placeholder="Add any notes, assumptions, or exclusions for this estimate..."></textarea>
+            </div>
+          </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Initialize with sample data if takeoff results exist
+        if (window.currentTakeoffResults) {
+          populateFromTakeoff();
+        } else {
+          // Add sample line items
+          addSampleLineItems();
+        }
+        
+        updateTotals();
+      }
+      
+      // Close estimator form
+      window.closeEstimatorForm = function() {
+        const modal = document.getElementById('estimatorFormModal');
+        if (modal) modal.remove();
+      }
+      
+      // Add line item to table
+      window.addLineItem = function(data = {}) {
+        const tbody = document.getElementById('lineItemsBody');
+        if (!tbody) return;
+        
+        const rowCount = tbody.rows.length + 1;
+        const row = tbody.insertRow();
+        
+        row.innerHTML = `
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="text" value="${data.item || rowCount}" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="text" value="${data.description || ''}" placeholder="Enter description" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <select style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px;">
+              <option value="materials" ${data.category === 'materials' ? 'selected' : ''}>Materials</option>
+              <option value="labor" ${data.category === 'labor' ? 'selected' : ''}>Labor</option>
+              <option value="equipment" ${data.category === 'equipment' ? 'selected' : ''}>Equipment</option>
+              <option value="subcontractor" ${data.category === 'subcontractor' ? 'selected' : ''}>Subcontractor</option>
+              <option value="other" ${data.category === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="number" value="${data.quantity || 0}" min="0" step="0.01" onchange="updateLineTotal(this)" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px; text-align: right;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="text" value="${data.unit || 'EA'}" placeholder="EA" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="number" value="${data.materialCost || 0}" min="0" step="0.01" onchange="updateLineTotal(this)" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px; text-align: right;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0;">
+            <input type="number" value="${data.laborCost || 0}" min="0" step="0.01" onchange="updateLineTotal(this)" style="width: 100%; border: 1px solid #ddd; padding: 0.25rem; border-radius: 3px; text-align: right;" />
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0; text-align: right; font-weight: 600;">
+            <span class="line-total">$0.00</span>
+          </td>
+          <td style="padding: 0.5rem; border-bottom: 1px solid #f0f0f0; text-align: center;">
+            <button onclick="removeLineItem(this)" style="
+              background: #dc3545;
+              color: white;
+              border: none;
+              padding: 0.25rem 0.5rem;
+              border-radius: 3px;
+              cursor: pointer;
+              font-size: 0.8rem;
+            ">✕</button>
+          </td>
+        `;
+        
+        updateLineTotal(row.querySelector('input[type="number"]'));
+      }
+      
+      // Update line item total
+      window.updateLineTotal = function(input) {
+        const row = input.closest('tr');
+        const quantity = parseFloat(row.cells[3].querySelector('input').value) || 0;
+        const materialCost = parseFloat(row.cells[5].querySelector('input').value) || 0;
+        const laborCost = parseFloat(row.cells[6].querySelector('input').value) || 0;
+        
+        const total = quantity * (materialCost + laborCost);
+        row.cells[7].querySelector('.line-total').textContent = '$' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        updateTotals();
+      }
+      
+      // Remove line item
+      window.removeLineItem = function(button) {
+        const row = button.closest('tr');
+        row.remove();
+        updateTotals();
+      }
+      
+      // Update all totals
+      window.updateTotals = function() {
+        const tbody = document.getElementById('lineItemsBody');
+        if (!tbody) return;
+        
+        let materialTotal = 0;
+        let laborTotal = 0;
+        
+        for (let row of tbody.rows) {
+          const quantity = parseFloat(row.cells[3].querySelector('input').value) || 0;
+          const materialCost = parseFloat(row.cells[5].querySelector('input').value) || 0;
+          const laborCost = parseFloat(row.cells[6].querySelector('input').value) || 0;
+          
+          materialTotal += quantity * materialCost;
+          laborTotal += quantity * laborCost;
+        }
+        
+        const equipmentCost = parseFloat(document.getElementById('equipmentCost').value) || 0;
+        const subtotal = materialTotal + laborTotal + equipmentCost;
+        
+        const overheadPercent = parseFloat(document.getElementById('overheadPercent').value) || 0;
+        const profitPercent = parseFloat(document.getElementById('profitPercent').value) || 0;
+        const contingencyPercent = parseFloat(document.getElementById('contingencyPercent').value) || 0;
+        const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
+        
+        const overhead = subtotal * (overheadPercent / 100);
+        const profit = subtotal * (profitPercent / 100);
+        const contingency = subtotal * (contingencyPercent / 100);
+        const beforeTax = subtotal + overhead + profit + contingency;
+        const tax = beforeTax * (taxPercent / 100);
+        const grandTotal = beforeTax + tax;
+        
+        // Update display
+        document.getElementById('materialSubtotal').textContent = '$' + materialTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        document.getElementById('laborSubtotal').textContent = '$' + laborTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        document.getElementById('subtotal').textContent = '$' + subtotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        document.getElementById('grandTotal').textContent = '$' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      
+      // Populate from takeoff results
+      function populateFromTakeoff() {
+        const results = window.currentTakeoffResults;
+        if (!results) return;
+        
+        // Set project info
+        document.getElementById('projectName').value = results.summary.building + ' - ' + results.summary.floor;
+        
+        // Add line items based on measurements
+        if (results.measurements.walls) {
+          addLineItem({
+            description: 'Wall Painting - ' + (results.paintRequirements?.wallFinish || 'Standard'),
+            category: 'materials',
+            quantity: results.measurements.walls.total,
+            unit: 'LF',
+            materialCost: 2.50,
+            laborCost: 3.75
+          });
+        }
+        
+        if (results.measurements.floors) {
+          addLineItem({
+            description: 'Floor Coating/Finishing',
+            category: 'materials',
+            quantity: results.measurements.floors.total,
+            unit: 'SF',
+            materialCost: 1.25,
+            laborCost: 1.50
+          });
+        }
+        
+        if (results.measurements.doors) {
+          addLineItem({
+            description: 'Door Installation',
+            category: 'labor',
+            quantity: results.measurements.doors.total,
+            unit: 'EA',
+            materialCost: 0,
+            laborCost: 125
+          });
+        }
+        
+        if (results.paintRequirements) {
+          addLineItem({
+            description: 'Paint Materials - ' + results.paintRequirements.gallonsRequired + ' gallons',
+            category: 'materials',
+            quantity: results.paintRequirements.gallonsRequired,
+            unit: 'GAL',
+            materialCost: 35,
+            laborCost: 0
+          });
+        }
+      }
+      
+      // Add sample line items
+      function addSampleLineItems() {
+        addLineItem({
+          description: 'Drywall Installation',
+          category: 'materials',
+          quantity: 1000,
+          unit: 'SF',
+          materialCost: 0.65,
+          laborCost: 0.85
+        });
+        
+        addLineItem({
+          description: 'Interior Painting',
+          category: 'materials',
+          quantity: 2500,
+          unit: 'SF',
+          materialCost: 0.35,
+          laborCost: 0.75
+        });
+        
+        addLineItem({
+          description: 'Flooring - Vinyl Plank',
+          category: 'materials',
+          quantity: 800,
+          unit: 'SF',
+          materialCost: 2.50,
+          laborCost: 1.50
+        });
+      }
+      
+      // Download estimate as XLSX
+      window.downloadEstimateXLSX = function() {
+        // Gather all data
+        const projectData = {
+          projectName: document.getElementById('projectName').value || 'Untitled Project',
+          clientName: document.getElementById('clientName').value || '',
+          estimateDate: document.getElementById('estimateDate').value || new Date().toISOString().split('T')[0],
+          estimatorName: document.getElementById('estimatorName').value || '',
+          notes: document.getElementById('estimateNotes').value || ''
+        };
+        
+        // Collect line items
+        const lineItems = [];
+        const tbody = document.getElementById('lineItemsBody');
+        if (tbody) {
+          for (let row of tbody.rows) {
+            lineItems.push({
+              item: row.cells[0].querySelector('input').value,
+              description: row.cells[1].querySelector('input').value,
+              category: row.cells[2].querySelector('select').value,
+              quantity: parseFloat(row.cells[3].querySelector('input').value) || 0,
+              unit: row.cells[4].querySelector('input').value,
+              materialCost: parseFloat(row.cells[5].querySelector('input').value) || 0,
+              laborCost: parseFloat(row.cells[6].querySelector('input').value) || 0
+            });
+          }
+        }
+        
+        // Get totals
+        const totals = {
+          materialSubtotal: document.getElementById('materialSubtotal').textContent,
+          laborSubtotal: document.getElementById('laborSubtotal').textContent,
+          equipmentCost: parseFloat(document.getElementById('equipmentCost').value) || 0,
+          overheadPercent: parseFloat(document.getElementById('overheadPercent').value) || 0,
+          profitPercent: parseFloat(document.getElementById('profitPercent').value) || 0,
+          contingencyPercent: parseFloat(document.getElementById('contingencyPercent').value) || 0,
+          taxPercent: parseFloat(document.getElementById('taxPercent').value) || 0,
+          grandTotal: document.getElementById('grandTotal').textContent
+        };
+        
+        // Create workbook using SheetJS (we'll use CSV for now as a fallback)
+        let csv = '';
+        
+        // Header section
+        csv += 'CONSTRUCTION ESTIMATE\n';
+        csv += '\n';
+        csv += 'Project Information\n';
+        csv += 'Project Name,' + projectData.projectName + '\n';
+        csv += 'Client,' + projectData.clientName + '\n';
+        csv += 'Estimate Date,' + projectData.estimateDate + '\n';
+        csv += 'Estimator,' + projectData.estimatorName + '\n';
+        csv += '\n';
+        
+        // Line items
+        csv += 'Line Items\n';
+        csv += 'Item,Description,Category,Quantity,Unit,Material Cost,Labor Cost,Line Total\n';
+        
+        lineItems.forEach(item => {
+          const lineTotal = item.quantity * (item.materialCost + item.laborCost);
+          csv += `${item.item},"${item.description}",${item.category},${item.quantity},${item.unit},${item.materialCost},${item.laborCost},${lineTotal.toFixed(2)}\n`;
+        });
+        
+        csv += '\n';
+        csv += 'Cost Summary\n';
+        csv += 'Material Subtotal,' + totals.materialSubtotal + '\n';
+        csv += 'Labor Subtotal,' + totals.laborSubtotal + '\n';
+        csv += 'Equipment/Other,$' + totals.equipmentCost.toFixed(2) + '\n';
+        csv += 'Overhead (' + totals.overheadPercent + '%)\n';
+        csv += 'Profit Margin (' + totals.profitPercent + '%)\n';
+        csv += 'Contingency (' + totals.contingencyPercent + '%)\n';
+        csv += 'Tax Rate (' + totals.taxPercent + '%)\n';
+        csv += 'GRAND TOTAL,' + totals.grandTotal + '\n';
+        
+        if (projectData.notes) {
+          csv += '\n';
+          csv += 'Notes & Exclusions\n';
+          csv += '"' + projectData.notes.replace(/"/g, '""') + '"\n';
+        }
+        
+        // Create and download file
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Estimate_${projectData.projectName.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        addSystemMessage('✅ Estimate exported successfully! Open in Excel to continue editing.');
+      }
+      
+      // Digital Takeoff Assistant
+      function openDigitalTakeoffAssistant() {
+        // Create the takeoff assistant modal
+        const modal = document.createElement('div');
+        modal.id = 'takeoffModal';
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.8);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 10000;
+          overflow: auto;
+          padding: 2rem;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+          background: white;
+          border-radius: 12px;
+          width: 95%;
+          max-width: 1600px;
+          height: 90vh;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        `;
+        
+        modalContent.innerHTML = `
+          <!-- Header -->
+          <div style="
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, var(--spreadsheet-green) 0%, #0E5C2F 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          ">
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.5rem;">📐</span>
+              Digital Takeoff Assistant
+              <span style="
+                background: rgba(255,255,255,0.2);
+                padding: 0.25rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: normal;
+              ">AI-Powered Drawing Analysis</span>
+            </h2>
+            <button onclick="closeTakeoffModal()" style="
+              background: transparent;
+              border: none;
+              color: white;
+              font-size: 2rem;
+              cursor: pointer;
+              padding: 0;
+              width: 40px;
+              height: 40px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 50%;
+              transition: all 0.3s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='transparent'">×</button>
+          </div>
+          
+          <!-- Main Content Area -->
+          <div style="
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 0;
+            overflow: hidden;
+          ">
+            <!-- Left Panel - Drawing Area -->
+            <div style="
+              display: flex;
+              flex-direction: column;
+              border-right: 1px solid #e0e0e0;
+              overflow: hidden;
+            ">
+              <!-- Toolbar -->
+              <div style="
+                padding: 1rem;
+                background: #f8f9fa;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                gap: 1rem;
+                align-items: center;
+                flex-wrap: wrap;
+              ">
+                <!-- File Selection -->
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="file" id="takeoffFileInput" accept=".pdf,.tiff,.tif,.png,.jpg,.jpeg" style="display: none;" multiple />
+                  <button onclick="document.getElementById('takeoffFileInput').click()" style="
+                    padding: 0.5rem 1rem;
+                    background: var(--blueprint-blue);
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-weight: 600;
+                  ">
+                    <span>📄</span> Upload Drawing
+                  </button>
+                  <select id="existingDrawingSelect" style="
+                    padding: 0.5rem;
+                    border: 1px solid #ccc;
+                    border-radius: 5px;
+                    cursor: pointer;
+                  ">
+                    <option value="">Or select existing...</option>
+                  </select>
+                </div>
+                
+                <!-- Drawing Type -->
+                <select id="drawingTypeSelect" style="
+                  padding: 0.5rem;
+                  border: 1px solid #ccc;
+                  border-radius: 5px;
+                ">
+                  <option value="floor-plan">Floor Plan</option>
+                  <option value="elevation">Elevation</option>
+                  <option value="section">Section</option>
+                  <option value="detail">Detail</option>
+                  <option value="site-plan">Site Plan</option>
+                  <option value="reflected-ceiling">Reflected Ceiling</option>
+                  <option value="electrical">Electrical</option>
+                  <option value="plumbing">Plumbing</option>
+                  <option value="hvac">HVAC</option>
+                  <option value="structural">Structural</option>
+                </select>
+                
+                <!-- Scale -->
+                <input type="text" id="drawingScale" placeholder="Scale (e.g., 1/4\" = 1')" style="
+                  padding: 0.5rem;
+                  border: 1px solid #ccc;
+                  border-radius: 5px;
+                  width: 150px;
+                " />
+                
+                <!-- AI Analysis Button -->
+                <button id="analyzeDrawingBtn" disabled style="
+                  padding: 0.5rem 1rem;
+                  background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
+                  color: var(--dark-gray);
+                  border: none;
+                  border-radius: 5px;
+                  cursor: not-allowed;
+                  opacity: 0.5;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                  font-weight: 600;
+                  margin-left: auto;
+                ">
+                  <span>🤖</span> Analyze with AI
+                </button>
+              </div>
+              
+              <!-- Drawing Preview Area -->
+              <div id="drawingPreview" style="
+                flex: 1;
+                background: #f5f5f5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: auto;
+                position: relative;
+              ">
+                <div style="
+                  text-align: center;
+                  color: #999;
+                  padding: 2rem;
+                ">
+                  <div style="font-size: 4rem; margin-bottom: 1rem;">📐</div>
+                  <h3 style="margin: 0 0 0.5rem 0;">No Drawing Loaded</h3>
+                  <p style="margin: 0;">Upload a PDF, TIFF, or CAD export to begin</p>
+                </div>
+              </div>
+              
+              <!-- Analysis Progress -->
+              <div id="analysisProgress" style="
+                display: none;
+                padding: 1rem;
+                background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+                border-top: 2px solid var(--blueprint-blue);
+              ">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div class="spinner" style="
+                    width: 24px;
+                    height: 24px;
+                    border: 3px solid #f3f3f3;
+                    border-top: 3px solid var(--blueprint-blue);
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                  "></div>
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--blueprint-blue); margin-bottom: 0.25rem;">Analyzing Drawing...</div>
+                    <div id="analysisStatus" style="font-size: 0.9rem; color: #666;">Extracting text and layout...</div>
+                  </div>
+                </div>
+                <div style="
+                  margin-top: 0.75rem;
+                  height: 6px;
+                  background: #e0e0e0;
+                  border-radius: 3px;
+                  overflow: hidden;
+                ">
+                  <div id="analysisProgressBar" style="
+                    height: 100%;
+                    width: 0%;
+                    background: var(--blueprint-blue);
+                    transition: width 0.3s;
+                  "></div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Panel - Takeoff Parameters & Results -->
+            <div style="
+              display: flex;
+              flex-direction: column;
+              background: #fafafa;
+              overflow: hidden;
+            ">
+              <!-- Tabs -->
+              <div style="
+                display: flex;
+                background: white;
+                border-bottom: 2px solid #e0e0e0;
+              ">
+                <button class="takeoff-tab active" onclick="switchTakeoffTab('parameters')" style="
+                  flex: 1;
+                  padding: 0.75rem;
+                  background: transparent;
+                  border: none;
+                  cursor: pointer;
+                  font-weight: 600;
+                  color: var(--blueprint-blue);
+                  border-bottom: 3px solid var(--blueprint-blue);
+                ">Parameters</button>
+                <button class="takeoff-tab" onclick="switchTakeoffTab('results')" style="
+                  flex: 1;
+                  padding: 0.75rem;
+                  background: transparent;
+                  border: none;
+                  cursor: pointer;
+                  font-weight: 600;
+                  color: #666;
+                  border-bottom: 3px solid transparent;
+                ">Results</button>
+              </div>
+              
+              <!-- Parameters Tab -->
+              <div id="parametersTab" style="
+                flex: 1;
+                overflow-y: auto;
+                padding: 1.5rem;
+                display: block;
+              ">
+                <h3 style="margin: 0 0 1rem 0; color: var(--concrete-gray);">Takeoff Parameters</h3>
+                
+                <!-- Building/Location Info -->
+                <div style="margin-bottom: 1.5rem;">
+                  <h4 style="margin: 0 0 0.75rem 0; color: #666; font-size: 0.95rem;">Building & Location</h4>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <input type="text" id="buildingName" placeholder="Building Name" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    " />
+                    <input type="text" id="floorLevel" placeholder="Floor/Level" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    " />
+                    <input type="text" id="roomNumbers" placeholder="Room Numbers (comma separated)" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    " />
+                  </div>
+                </div>
+                
+                <!-- Measurement Focus -->
+                <div style="margin-bottom: 1.5rem;">
+                  <h4 style="margin: 0 0 0.75rem 0; color: #666; font-size: 0.95rem;">Measurement Focus</h4>
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureWalls" checked />
+                      <span>Walls (Linear Feet)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureFloors" checked />
+                      <span>Floor Area (Square Feet)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureCeilings" checked />
+                      <span>Ceiling Area (Square Feet)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureDoors" checked />
+                      <span>Doors (Count & Sizes)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureWindows" checked />
+                      <span>Windows (Count & Sizes)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                      <input type="checkbox" id="measureFixtures" />
+                      <span>Fixtures (HVAC, Electrical)</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <!-- Paint/Coating Specs -->
+                <div style="margin-bottom: 1.5rem;">
+                  <h4 style="margin: 0 0 0.75rem 0; color: #666; font-size: 0.95rem;">Paint & Coating Specifications</h4>
+                  <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <select id="wallFinish" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    ">
+                      <option value="">Wall Finish Type</option>
+                      <option value="flat-paint">Flat Paint</option>
+                      <option value="eggshell">Eggshell</option>
+                      <option value="satin">Satin</option>
+                      <option value="semi-gloss">Semi-Gloss</option>
+                      <option value="gloss">Gloss</option>
+                      <option value="primer-only">Primer Only</option>
+                      <option value="texture-coating">Texture Coating</option>
+                      <option value="wallpaper">Wallpaper</option>
+                    </select>
+                    <select id="ceilingFinish" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    ">
+                      <option value="">Ceiling Finish Type</option>
+                      <option value="flat-white">Flat White</option>
+                      <option value="acoustic-tile">Acoustic Tile</option>
+                      <option value="exposed-structure">Exposed Structure</option>
+                      <option value="textured">Textured</option>
+                    </select>
+                    <select id="floorFinish" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    ">
+                      <option value="">Floor Finish Type</option>
+                      <option value="epoxy">Epoxy Coating</option>
+                      <option value="polished-concrete">Polished Concrete</option>
+                      <option value="vinyl">Vinyl/LVT</option>
+                      <option value="carpet">Carpet</option>
+                      <option value="hardwood">Hardwood</option>
+                      <option value="tile">Tile</option>
+                      <option value="sealed-concrete">Sealed Concrete</option>
+                    </select>
+                    <input type="number" id="coatsRequired" placeholder="Number of Coats" min="1" max="5" style="
+                      padding: 0.5rem;
+                      border: 1px solid #ddd;
+                      border-radius: 5px;
+                    " />
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Results Tab -->
+              <div id="resultsTab" style="
+                flex: 1;
+                overflow-y: auto;
+                padding: 1.5rem;
+                display: none;
+              ">
+                <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 1rem;
+                ">
+                  <h3 style="margin: 0; color: var(--concrete-gray);">Analysis Results</h3>
+                  <button onclick="exportToExcel()" style="
+                    padding: 0.5rem 1rem;
+                    background: var(--spreadsheet-green);
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-weight: 600;
+                  ">
+                    <span>📊</span> Export to Excel
+                  </button>
+                </div>
+                
+                <div id="takeoffResults" style="
+                  background: white;
+                  border: 1px solid #ddd;
+                  border-radius: 8px;
+                  padding: 1rem;
+                  min-height: 300px;
+                ">
+                  <div style="
+                    text-align: center;
+                    color: #999;
+                    padding: 2rem;
+                  ">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📋</div>
+                    <p>Analysis results will appear here</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add animation styles
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          
+          .takeoff-tab:hover {
+            background: #f5f5f5 !important;
+          }
+          
+          .takeoff-tab.active {
+            color: var(--blueprint-blue) !important;
+            border-bottom-color: var(--blueprint-blue) !important;
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Load existing drawings if client is selected
+        loadExistingDrawings();
+        
+        // Set up file input handler
+        document.getElementById('takeoffFileInput').addEventListener('change', handleTakeoffFileSelect);
+        
+        // Set up analyze button
+        document.getElementById('analyzeDrawingBtn').addEventListener('click', analyzeDrawing);
+      }
+      
+      // Close takeoff modal
+      window.closeTakeoffModal = function() {
+        const modal = document.getElementById('takeoffModal');
+        if (modal) modal.remove();
+      }
+      
+      // Switch tabs
+      window.switchTakeoffTab = function(tab) {
+        const tabs = document.querySelectorAll('.takeoff-tab');
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.color = '#666';
+          t.style.borderBottomColor = 'transparent';
+        });
+        
+        if (tab === 'parameters') {
+          document.getElementById('parametersTab').style.display = 'block';
+          document.getElementById('resultsTab').style.display = 'none';
+          tabs[0].classList.add('active');
+          tabs[0].style.color = 'var(--blueprint-blue)';
+          tabs[0].style.borderBottomColor = 'var(--blueprint-blue)';
+        } else {
+          document.getElementById('parametersTab').style.display = 'none';
+          document.getElementById('resultsTab').style.display = 'block';
+          tabs[1].classList.add('active');
+          tabs[1].style.color = 'var(--blueprint-blue)';
+          tabs[1].style.borderBottomColor = 'var(--blueprint-blue)';
+        }
+      }
+      
+      // Load existing drawings from current client
+      async function loadExistingDrawings() {
+        const select = document.getElementById('existingDrawingSelect');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">Or select existing...</option>';
+        
+        if (!selectedClient) return;
+        
+        try {
+          // List drawings from Azure Blob Storage
+          const prefix = `FCS-OriginalClients/${selectedClient}/drawings/`;
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
+          
+          const response = await fetch(listUrl);
+          if (!response.ok) return;
+          
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          for (let i = 0; i < blobs.length; i++) {
+            const nameElement = blobs[i].getElementsByTagName("Name")[0];
+            if (nameElement) {
+              const fullPath = nameElement.textContent;
+              const fileName = fullPath.split('/').pop();
+              
+              if (fileName && (fileName.endsWith('.pdf') || fileName.endsWith('.tiff') || fileName.endsWith('.tif'))) {
+                const option = document.createElement('option');
+                option.value = fullPath;
+                option.textContent = fileName;
+                select.appendChild(option);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading existing drawings:', error);
+        }
+        
+        // Handle selection
+        select.addEventListener('change', async (e) => {
+          if (e.target.value) {
+            const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${e.target.value}${AZURE_STORAGE.sasToken}`;
+            await loadDrawingFromUrl(blobUrl, e.target.value.split('/').pop());
+          }
+        });
+      }
+      
+      // Handle file selection
+      async function handleTakeoffFileSelect(event) {
+        const files = event.target.files;
+        if (files.length === 0) return;
+        
+        const file = files[0];
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
+          const arrayBuffer = e.target.result;
+          await displayDrawing(arrayBuffer, file.name, file.type);
+          
+          // Enable analyze button
+          const analyzeBtn = document.getElementById('analyzeDrawingBtn');
+          analyzeBtn.disabled = false;
+          analyzeBtn.style.cursor = 'pointer';
+          analyzeBtn.style.opacity = '1';
+        };
+        
+        reader.readAsArrayBuffer(file);
+      }
+      
+      // Load drawing from URL
+      async function loadDrawingFromUrl(url, fileName) {
+        try {
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          const type = fileName.endsWith('.pdf') ? 'application/pdf' : 'image/tiff';
+          await displayDrawing(arrayBuffer, fileName, type);
+          
+          // Enable analyze button
+          const analyzeBtn = document.getElementById('analyzeDrawingBtn');
+          analyzeBtn.disabled = false;
+          analyzeBtn.style.cursor = 'pointer';
+          analyzeBtn.style.opacity = '1';
+        } catch (error) {
+          console.error('Error loading drawing:', error);
+          alert('Failed to load drawing from storage');
+        }
+      }
+      
+      // Display drawing in preview area
+      async function displayDrawing(arrayBuffer, fileName, fileType) {
+        const preview = document.getElementById('drawingPreview');
+        if (!preview) return;
+        
+        window.currentDrawing = {
+          data: arrayBuffer,
+          name: fileName,
+          type: fileType
+        };
+        
+        if (fileType === 'application/pdf') {
+          // For PDF, create an object element to display it
+          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          
+          preview.innerHTML = `
+            <object data="${url}" type="application/pdf" style="width: 100%; height: 100%;">
+              <p>PDF preview not available. The file has been loaded for analysis.</p>
+            </object>
+          `;
+        } else {
+          // For images
+          const blob = new Blob([arrayBuffer], { type: fileType });
+          const url = URL.createObjectURL(blob);
+          
+          preview.innerHTML = `
+            <img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+          `;
+        }
+      }
+      
+      // Analyze drawing with AI
+      async function analyzeDrawing() {
+        if (!window.currentDrawing) {
+          alert('Please upload a drawing first');
+          return;
+        }
+        
+        // Show progress
+        const progressDiv = document.getElementById('analysisProgress');
+        const progressBar = document.getElementById('analysisProgressBar');
+        const statusText = document.getElementById('analysisStatus');
+        
+        progressDiv.style.display = 'block';
+        progressBar.style.width = '0%';
+        
+        // Get parameters
+        const params = {
+          drawingType: document.getElementById('drawingTypeSelect').value,
+          scale: document.getElementById('drawingScale').value,
+          building: document.getElementById('buildingName').value,
+          floor: document.getElementById('floorLevel').value,
+          rooms: document.getElementById('roomNumbers').value,
+          measureWalls: document.getElementById('measureWalls').checked,
+          measureFloors: document.getElementById('measureFloors').checked,
+          measureCeilings: document.getElementById('measureCeilings').checked,
+          measureDoors: document.getElementById('measureDoors').checked,
+          measureWindows: document.getElementById('measureWindows').checked,
+          measureFixtures: document.getElementById('measureFixtures').checked,
+          wallFinish: document.getElementById('wallFinish').value,
+          ceilingFinish: document.getElementById('ceilingFinish').value,
+          floorFinish: document.getElementById('floorFinish').value,
+          coatsRequired: document.getElementById('coatsRequired').value
+        };
+        
+        try {
+          // Simulate analysis steps
+          const steps = [
+            { text: 'Extracting text and labels...', progress: 20 },
+            { text: 'Detecting layout and boundaries...', progress: 40 },
+            { text: 'Identifying doors and windows...', progress: 60 },
+            { text: 'Calculating measurements...', progress: 80 },
+            { text: 'Generating takeoff report...', progress: 100 }
+          ];
+          
+          for (const step of steps) {
+            statusText.textContent = step.text;
+            progressBar.style.width = step.progress + '%';
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+          
+          // Generate mock results (in production, this would call Azure Computer Vision API)
+          const results = generateMockTakeoffResults(params);
+          
+          // Display results
+          displayTakeoffResults(results);
+          
+          // Switch to results tab
+          switchTakeoffTab('results');
+          
+          // Hide progress
+          setTimeout(() => {
+            progressDiv.style.display = 'none';
+          }, 500);
+          
+        } catch (error) {
+          console.error('Error analyzing drawing:', error);
+          alert('Failed to analyze drawing: ' + error.message);
+          progressDiv.style.display = 'none';
+        }
+      }
+      
+      // Generate mock takeoff results (replace with actual AI analysis)
+      function generateMockTakeoffResults(params) {
+        const results = {
+          summary: {
+            building: params.building || 'Building A',
+            floor: params.floor || 'Level 1',
+            drawingType: params.drawingType,
+            scale: params.scale || '1/4" = 1\'',
+            analyzedAt: new Date().toISOString()
+          },
+          measurements: {},
+          details: []
+        };
+        
+        if (params.measureWalls) {
+          results.measurements.walls = {
+            total: Math.floor(Math.random() * 500 + 200),
+            unit: 'linear feet',
+            breakdown: [
+              { room: 'Room 101', value: 85 },
+              { room: 'Room 102', value: 92 },
+              { room: 'Corridor', value: 145 },
+              { room: 'Room 103', value: 78 }
+            ]
+          };
+        }
+        
+        if (params.measureFloors) {
+          results.measurements.floors = {
+            total: Math.floor(Math.random() * 3000 + 1500),
+            unit: 'square feet',
+            breakdown: [
+              { room: 'Room 101', value: 450 },
+              { room: 'Room 102', value: 520 },
+              { room: 'Corridor', value: 380 },
+              { room: 'Room 103', value: 410 }
+            ]
+          };
+        }
+        
+        if (params.measureCeilings) {
+          results.measurements.ceilings = results.measurements.floors; // Same as floor area
+        }
+        
+        if (params.measureDoors) {
+          results.measurements.doors = {
+            total: Math.floor(Math.random() * 15 + 8),
+            unit: 'count',
+            types: [
+              { type: 'Single 3\'-0" x 7\'-0"', count: 8 },
+              { type: 'Double 6\'-0" x 7\'-0"', count: 2 },
+              { type: 'Single 2\'-8" x 6\'-8"', count: 4 }
+            ]
+          };
+        }
+        
+        if (params.measureWindows) {
+          results.measurements.windows = {
+            total: Math.floor(Math.random() * 20 + 10),
+            unit: 'count',
+            types: [
+              { type: '4\'-0" x 5\'-0"', count: 12 },
+              { type: '3\'-0" x 4\'-0"', count: 6 },
+              { type: '6\'-0" x 4\'-0"', count: 4 }
+            ]
+          };
+        }
+        
+        // Calculate paint requirements
+        if (params.wallFinish && results.measurements.walls) {
+          const wallArea = results.measurements.walls.total * 10; // Assume 10' height
+          const coats = parseInt(params.coatsRequired) || 2;
+          const coverage = 350; // sq ft per gallon
+          const gallons = Math.ceil((wallArea * coats) / coverage);
+          
+          results.paintRequirements = {
+            wallFinish: params.wallFinish,
+            wallArea: wallArea,
+            coats: coats,
+            gallonsRequired: gallons,
+            estimatedCost: gallons * 35 // $35 per gallon average
+          };
+        }
+        
+        return results;
+      }
+      
+      // Display takeoff results
+      function displayTakeoffResults(results) {
+        const resultsDiv = document.getElementById('takeoffResults');
+        if (!resultsDiv) return;
+        
+        let html = `
+          <div style="padding: 1rem;">
+            <!-- Summary -->
+            <div style="
+              background: linear-gradient(135deg, #e8f4fd, #bbdefb);
+              padding: 1rem;
+              border-radius: 8px;
+              margin-bottom: 1.5rem;
+            ">
+              <h4 style="margin: 0 0 0.75rem 0; color: var(--blueprint-blue);">Summary</h4>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.9rem;">
+                <div><strong>Building:</strong> ${results.summary.building}</div>
+                <div><strong>Floor:</strong> ${results.summary.floor}</div>
+                <div><strong>Drawing Type:</strong> ${results.summary.drawingType}</div>
+                <div><strong>Scale:</strong> ${results.summary.scale}</div>
+              </div>
+            </div>
+            
+            <!-- Measurements -->
+            <h4 style="margin: 0 0 1rem 0; color: var(--concrete-gray);">Measurements</h4>
+        `;
+        
+        // Add each measurement category
+        for (const [key, data] of Object.entries(results.measurements)) {
+          html += `
+            <div style="
+              background: white;
+              border: 1px solid #e0e0e0;
+              border-radius: 6px;
+              padding: 1rem;
+              margin-bottom: 1rem;
+            ">
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.75rem;
+              ">
+                <h5 style="margin: 0; text-transform: capitalize; color: #666;">${key}</h5>
+                <span style="
+                  font-size: 1.2rem;
+                  font-weight: bold;
+                  color: var(--spreadsheet-green);
+                ">${data.total} ${data.unit}</span>
+              </div>
+          `;
+          
+          if (data.breakdown) {
+            html += '<div style="font-size: 0.85rem; color: #666;">';
+            data.breakdown.forEach(item => {
+              html += `
+                <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.25rem 0;
+                  border-bottom: 1px solid #f0f0f0;
+                ">
+                  <span>${item.room}</span>
+                  <span>${item.value} ${data.unit.includes('feet') ? 'ft' : data.unit}</span>
+                </div>
+              `;
+            });
+            html += '</div>';
+          }
+          
+          if (data.types) {
+            html += '<div style="font-size: 0.85rem; color: #666;">';
+            data.types.forEach(type => {
+              html += `
+                <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.25rem 0;
+                  border-bottom: 1px solid #f0f0f0;
+                ">
+                  <span>${type.type}</span>
+                  <span>${type.count}</span>
+                </div>
+              `;
+            });
+            html += '</div>';
+          }
+          
+          html += '</div>';
+        }
+        
+        // Add paint requirements if calculated
+        if (results.paintRequirements) {
+          html += `
+            <div style="
+              background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+              border: 1px solid #ffc107;
+              border-radius: 6px;
+              padding: 1rem;
+              margin-top: 1.5rem;
+            ">
+              <h5 style="margin: 0 0 0.75rem 0; color: #856404;">Paint Requirements</h5>
+              <div style="font-size: 0.9rem; color: #856404;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                  <span>Wall Finish:</span>
+                  <strong>${results.paintRequirements.wallFinish}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                  <span>Wall Area:</span>
+                  <strong>${results.paintRequirements.wallArea} sq ft</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                  <span>Coats Required:</span>
+                  <strong>${results.paintRequirements.coats}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                  <span>Gallons Required:</span>
+                  <strong>${results.paintRequirements.gallonsRequired}</strong>
+                </div>
+                <div style="
+                  display: flex;
+                  justify-content: space-between;
+                  margin-top: 0.5rem;
+                  padding-top: 0.5rem;
+                  border-top: 1px solid #ffc107;
+                  font-weight: bold;
+                ">
+                  <span>Estimated Cost:</span>
+                  <span>$${results.paintRequirements.estimatedCost.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        
+        html += '</div>';
+        resultsDiv.innerHTML = html;
+        
+        // Store results for export
+        window.currentTakeoffResults = results;
+      }
+      
+      // Export results to Excel
+      window.exportToExcel = function() {
+        if (!window.currentTakeoffResults) {
+          alert('No results to export');
+          return;
+        }
+        
+        const results = window.currentTakeoffResults;
+        
+        // Create CSV content
+        let csv = 'Digital Takeoff Report\n';
+        csv += `Building,${results.summary.building}\n`;
+        csv += `Floor,${results.summary.floor}\n`;
+        csv += `Drawing Type,${results.summary.drawingType}\n`;
+        csv += `Scale,${results.summary.scale}\n`;
+        csv += `Analyzed At,${new Date(results.summary.analyzedAt).toLocaleString()}\n`;
+        csv += '\n';
+        
+        // Add measurements
+        csv += 'Measurement Type,Total,Unit\n';
+        for (const [key, data] of Object.entries(results.measurements)) {
+          csv += `${key},${data.total},${data.unit}\n`;
+        }
+        csv += '\n';
+        
+        // Add detailed breakdowns
+        for (const [key, data] of Object.entries(results.measurements)) {
+          if (data.breakdown) {
+            csv += `\n${key} Breakdown\n`;
+            csv += 'Location,Value\n';
+            data.breakdown.forEach(item => {
+              csv += `${item.room},${item.value}\n`;
+            });
+          }
+          if (data.types) {
+            csv += `\n${key} Types\n`;
+            csv += 'Type,Count\n';
+            data.types.forEach(type => {
+              csv += `${type.type},${type.count}\n`;
+            });
+          }
+        }
+        
+        // Add paint requirements
+        if (results.paintRequirements) {
+          csv += '\nPaint Requirements\n';
+          csv += `Wall Finish,${results.paintRequirements.wallFinish}\n`;
+          csv += `Wall Area,${results.paintRequirements.wallArea} sq ft\n`;
+          csv += `Coats Required,${results.paintRequirements.coats}\n`;
+          csv += `Gallons Required,${results.paintRequirements.gallonsRequired}\n`;
+          csv += `Estimated Cost,$${results.paintRequirements.estimatedCost}\n`;
+        }
+        
+        // Create and download file
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `takeoff_${results.summary.building}_${results.summary.floor}_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        addSystemMessage('✅ Takeoff results exported to Excel successfully!');
+      }
     </script>
   </body>
 </html>

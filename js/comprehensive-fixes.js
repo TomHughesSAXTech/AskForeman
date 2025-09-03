@@ -8,6 +8,320 @@
     'use strict';
 
     // ========================================
+    // RESPONSE STREAMING & PERFORMANCE OPTIMIZATION
+    // ========================================
+    
+    /**
+     * Enhanced fetch with streaming support
+     * Replaces regular fetch calls with streaming-enabled version
+     */
+    window.streamingFetch = async function(url, options = {}) {
+        const controller = new AbortController();
+        const signal = controller.signal;
+        
+        // Store abort controller for potential cancellation
+        window.currentStreamController = controller;
+        
+        // Merge signals if one already exists
+        if (options.signal) {
+            options.signal.addEventListener('abort', () => controller.abort());
+        }
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal,
+                headers: {
+                    ...options.headers,
+                    'Accept': 'text/event-stream, application/json',
+                    'X-Stream-Response': 'true'
+                }
+            });
+            
+            // Check if response supports streaming
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/event-stream')) {
+                return handleStreamingResponse(response);
+            }
+            
+            // Fallback to regular JSON response
+            return response;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Request was cancelled');
+            }
+            throw error;
+        }
+    };
+    
+    /**
+     * Handle streaming response with real-time updates
+     */
+    async function handleStreamingResponse(response) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let messageContainer = null;
+        let currentMessageDiv = null;
+        
+        // Find the active chat messages container
+        const chatMessages = document.getElementById('chatMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+        
+        // Create message container for streaming content
+        if (chatMessages && typingIndicator) {
+            typingIndicator.classList.remove('active');
+            
+            currentMessageDiv = document.createElement('div');
+            currentMessageDiv.className = 'message assistant';
+            currentMessageDiv.innerHTML = `
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <div class="formatted-content streaming-content"></div>
+                    <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+            `;
+            
+            chatMessages.insertBefore(currentMessageDiv, typingIndicator);
+            messageContainer = currentMessageDiv.querySelector('.streaming-content');
+        }
+        
+        let fullResponse = '';
+        
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                
+                // Process SSE events
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        
+                        try {
+                            const parsed = JSON.parse(data);
+                            
+                            if (parsed.delta) {
+                                // Append delta to response
+                                fullResponse += parsed.delta;
+                                
+                                // Update UI with formatted content
+                                if (messageContainer) {
+                                    messageContainer.innerHTML = formatStreamingContent(fullResponse);
+                                    
+                                    // Auto-scroll to bottom
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            } else if (parsed.content) {
+                                // Full content update
+                                fullResponse = parsed.content;
+                                
+                                if (messageContainer) {
+                                    messageContainer.innerHTML = formatStreamingContent(fullResponse);
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            }
+                            
+                            // Handle completion
+                            if (parsed.done || parsed.finished) {
+                                break;
+                            }
+                        } catch (e) {
+                            // Not JSON, might be plain text
+                            if (data.trim()) {
+                                fullResponse += data;
+                                if (messageContainer) {
+                                    messageContainer.innerHTML = formatStreamingContent(fullResponse);
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+            
+            // Remove streaming class when done
+            if (messageContainer) {
+                messageContainer.classList.remove('streaming-content');
+            }
+        }
+        
+        // Return a mock response object with the full content
+        return {
+            ok: true,
+            status: 200,
+            json: async () => ({ response: fullResponse }),
+            text: async () => fullResponse
+        };
+    }
+    
+    /**
+     * Format streaming content with proper markdown/HTML
+     */
+    function formatStreamingContent(content) {
+        if (!content) return '';
+        
+        // Basic markdown to HTML conversion
+        let html = content;
+        
+        // Code blocks
+        html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow-x: auto;"><code>$1</code></pre>');
+        
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code style="background: #f6f8fa; padding: 0.2rem 0.4rem; border-radius: 3px;">$1</code>');
+        
+        // Bold
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Lists
+        html = html.replace(/^\* (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>\s*)+/g, '<ul style="margin: 0.5rem 0;">$&</ul>');
+        
+        // Line breaks
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = '<p>' + html + '</p>';
+        
+        return html;
+    }
+    
+    /**
+     * Override existing chat send functions to use streaming
+     */
+    function enhanceChatFunctions() {
+        // Find all send message functions and enhance them
+        const originalSendMessage = window.sendMessage;
+        
+        if (originalSendMessage) {
+            window.sendMessage = async function() {
+                const chatInput = document.getElementById('chatInput');
+                const sendButton = document.getElementById('sendButton');
+                const stopButton = document.getElementById('stopButton');
+                const typingIndicator = document.getElementById('typingIndicator');
+                const chatMessages = document.getElementById('chatMessages');
+                
+                const message = chatInput.value.trim();
+                if (!message) return;
+                
+                // Disable send button, show stop button
+                if (sendButton) {
+                    sendButton.disabled = true;
+                    sendButton.classList.add('sending');
+                }
+                
+                if (stopButton) {
+                    stopButton.style.display = 'inline-flex';
+                }
+                
+                // Add user message
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'message user';
+                userMessageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="formatted-content">${escapeHtml(message)}</div>
+                        <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+                `;
+                
+                if (chatMessages && typingIndicator) {
+                    chatMessages.insertBefore(userMessageDiv, typingIndicator);
+                }
+                
+                // Clear input
+                chatInput.value = '';
+                
+                // Show typing indicator briefly
+                if (typingIndicator) {
+                    typingIndicator.classList.add('active');
+                }
+                
+                try {
+                    // Use streaming fetch
+                    const webhookUrl = window.API_CONFIG?.chatWebhookUrl || 
+                                      'https://workflows.saxtechnology.com/webhook/ask-foreman/chat';
+                    
+                    const response = await streamingFetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            stream: true,
+                            context: window.chatContext || 'general',
+                            sessionId: window.selectedClient || window.selectedProject || 'general'
+                        })
+                    });
+                    
+                    // Response is already handled by streaming function
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    
+                    // Hide typing indicator
+                    if (typingIndicator) {
+                        typingIndicator.classList.remove('active');
+                    }
+                    
+                    // Add error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'message assistant';
+                    errorDiv.innerHTML = `
+                        <div class="message-avatar">⚠️</div>
+                        <div class="message-content" style="background: #fee;">
+                            <div class="formatted-content">Sorry, I encountered an error. Please try again.</div>
+                            <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                    `;
+                    
+                    if (chatMessages && typingIndicator) {
+                        chatMessages.insertBefore(errorDiv, typingIndicator);
+                    }
+                } finally {
+                    // Re-enable send button
+                    if (sendButton) {
+                        sendButton.disabled = false;
+                        sendButton.classList.remove('sending');
+                    }
+                    
+                    // Hide stop button
+                    if (stopButton) {
+                        stopButton.style.display = 'none';
+                    }
+                    
+                    // Hide typing indicator
+                    if (typingIndicator) {
+                        typingIndicator.classList.remove('active');
+                    }
+                    
+                    // Scroll to bottom
+                    if (chatMessages) {
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                }
+            };
+        }
+    }
+    
+    /**
+     * Helper function to escape HTML
+     */
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ========================================
     // 1. ADMIN.HTML FIXES
     // ========================================
     
@@ -818,6 +1132,13 @@ Please be more specific about what you'd like to compare or analyze across proje
             return;
         }
 
+        // Apply enhanced chat functions immediately
+        enhanceChatFunctions();
+        enhanceStopButton();
+        enhanceImagePaste();
+        enhanceSendButtonStates();
+        fixViewCapabilities();
+        
         // Apply fixes based on current page
         fixAdminPage();
         fixIndexPage();
@@ -828,6 +1149,7 @@ Please be more specific about what you'd like to compare or analyze across proje
         const observer = new MutationObserver(() => {
             fixDocumentCounts();
             fixFileUploadRestrictions();
+            enhanceSendButtonStates();
         });
 
         observer.observe(document.body, {
@@ -836,6 +1158,338 @@ Please be more specific about what you'd like to compare or analyze across proje
         });
 
         console.log('✅ Comprehensive fixes applied successfully');
+    }
+    
+    /**
+     * Enhanced stop button functionality for all chat pages
+     */
+    function enhanceStopButton() {
+        // Create or enhance stop button
+        const sendButton = document.getElementById('sendButton');
+        if (!sendButton) return;
+        
+        let stopButton = document.getElementById('stopButton');
+        if (!stopButton) {
+            stopButton = document.createElement('button');
+            stopButton.id = 'stopButton';
+            stopButton.className = 'stop-button';
+            stopButton.innerHTML = `
+                <span>Stop</span>
+                <span>⏹</span>
+            `;
+            stopButton.style.cssText = `
+                display: none;
+                padding: 0.75rem 1.5rem;
+                background: linear-gradient(135deg, #f44336, #d32f2f);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            `;
+            
+            // Insert after send button
+            sendButton.parentElement.insertBefore(stopButton, sendButton.nextSibling);
+        }
+        
+        // Add hover effects
+        stopButton.onmouseover = () => {
+            stopButton.style.transform = 'scale(1.05)';
+            stopButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+        };
+        
+        stopButton.onmouseout = () => {
+            stopButton.style.transform = 'scale(1)';
+            stopButton.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        };
+        
+        // Stop functionality
+        stopButton.onclick = () => {
+            // Abort current stream
+            if (window.currentStreamController) {
+                window.currentStreamController.abort();
+            }
+            
+            // Abort any other controllers
+            if (window.abortController) {
+                window.abortController.abort();
+            }
+            
+            // Reset UI
+            stopButton.style.display = 'none';
+            sendButton.style.display = 'inline-flex';
+            sendButton.disabled = false;
+            
+            // Hide typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.classList.remove('active');
+            }
+            
+            // Add system message
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                const stopMsg = document.createElement('div');
+                stopMsg.className = 'message system';
+                stopMsg.innerHTML = `
+                    <div class="message-content" style="background: #fff3cd; color: #856404; padding: 0.5rem 1rem; border-radius: 8px;">
+                        ⏹ Response generation stopped by user
+                    </div>
+                `;
+                chatMessages.appendChild(stopMsg);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        };
+    }
+    
+    /**
+     * Enhanced image paste functionality with inline display
+     */
+    function enhanceImagePaste() {
+        document.addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            
+            for (const item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const blob = item.getAsFile();
+                    
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64 = reader.result;
+                        displayInlineImage(base64);
+                        
+                        // Store for sending with message
+                        window.pastedImage = base64;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            }
+        });
+    }
+    
+    /**
+     * Display pasted image inline in chat input area
+     */
+    function displayInlineImage(base64) {
+        // Find or create image preview area
+        let previewArea = document.getElementById('imagePreviewArea');
+        const chatInput = document.getElementById('chatInput');
+        
+        if (!previewArea && chatInput) {
+            previewArea = document.createElement('div');
+            previewArea.id = 'imagePreviewArea';
+            previewArea.style.cssText = `
+                display: none;
+                padding: 0.5rem;
+                background: #f0f0f0;
+                border-radius: 8px;
+                margin-bottom: 0.5rem;
+                position: relative;
+            `;
+            
+            chatInput.parentElement.insertBefore(previewArea, chatInput);
+        }
+        
+        if (previewArea) {
+            previewArea.innerHTML = `
+                <div style="position: relative; display: inline-block;">
+                    <img src="${base64}" style="
+                        max-width: 200px;
+                        max-height: 150px;
+                        border-radius: 4px;
+                        border: 2px solid #ddd;
+                    ">
+                    <button onclick="this.parentElement.parentElement.style.display='none'; window.pastedImage=null;" style="
+                        position: absolute;
+                        top: -8px;
+                        right: -8px;
+                        background: #f44336;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 24px;
+                        height: 24px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">×</button>
+                    <div style="
+                        margin-top: 0.25rem;
+                        font-size: 0.85rem;
+                        color: #666;
+                    ">Image ready to send</div>
+                </div>
+            `;
+            previewArea.style.display = 'block';
+        }
+    }
+    
+    /**
+     * Enhanced send button states
+     */
+    function enhanceSendButtonStates() {
+        const sendButton = document.getElementById('sendButton');
+        const chatInput = document.getElementById('chatInput');
+        
+        if (!sendButton || !chatInput) return;
+        
+        // Add visual states
+        const updateButtonState = () => {
+            const hasContent = chatInput.value.trim().length > 0 || window.pastedImage;
+            const isGenerating = window.isGenerating || false;
+            
+            if (isGenerating) {
+                sendButton.disabled = true;
+                sendButton.style.opacity = '0.5';
+                sendButton.style.cursor = 'not-allowed';
+                sendButton.style.background = '#ccc';
+            } else if (hasContent) {
+                sendButton.disabled = false;
+                sendButton.style.opacity = '1';
+                sendButton.style.cursor = 'pointer';
+                sendButton.style.background = 'linear-gradient(135deg, var(--primary-green, #26C485), #1fa774)';
+                sendButton.style.transform = 'scale(1.05)';
+            } else {
+                sendButton.disabled = true;
+                sendButton.style.opacity = '0.6';
+                sendButton.style.cursor = 'not-allowed';
+                sendButton.style.background = 'linear-gradient(135deg, #ccc, #999)';
+                sendButton.style.transform = 'scale(1)';
+            }
+        };
+        
+        // Update on input
+        chatInput.addEventListener('input', updateButtonState);
+        chatInput.addEventListener('keyup', updateButtonState);
+        
+        // Initial state
+        updateButtonState();
+        
+        // Watch for generation state changes
+        const originalSend = window.sendMessage;
+        if (originalSend && !window._enhancedSend) {
+            window._enhancedSend = true;
+            window.sendMessage = async function(...args) {
+                window.isGenerating = true;
+                updateButtonState();
+                
+                // Show stop button
+                const stopButton = document.getElementById('stopButton');
+                if (stopButton) {
+                    stopButton.style.display = 'inline-flex';
+                    sendButton.style.display = 'none';
+                }
+                
+                try {
+                    const result = await originalSend.apply(this, args);
+                    return result;
+                } finally {
+                    window.isGenerating = false;
+                    updateButtonState();
+                    
+                    // Hide stop button
+                    if (stopButton) {
+                        stopButton.style.display = 'none';
+                        sendButton.style.display = 'inline-flex';
+                    }
+                    
+                    // Clear pasted image
+                    window.pastedImage = null;
+                    const previewArea = document.getElementById('imagePreviewArea');
+                    if (previewArea) {
+                        previewArea.style.display = 'none';
+                    }
+                }
+            };
+        }
+    }
+    
+    /**
+     * Fix View Capabilities bubble visibility
+     */
+    function fixViewCapabilities() {
+        // Add CSS for capabilities dropdown
+        const style = document.createElement('style');
+        style.textContent = `
+            .capabilities-dropdown {
+                display: none;
+                position: absolute;
+                top: 100%;
+                right: 0;
+                margin-top: 0.5rem;
+                background: white;
+                border: 2px solid var(--primary-blue, #2E86AB);
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+                z-index: 10000;
+                min-width: 350px;
+                max-width: 450px;
+            }
+            
+            .capabilities-btn {
+                position: relative;
+                cursor: pointer;
+            }
+            
+            .capabilities-btn:hover .capabilities-dropdown,
+            .capabilities-dropdown:hover {
+                display: block !important;
+            }
+            
+            .capabilities-dropdown h3 {
+                color: var(--primary-blue, #2E86AB);
+                margin-bottom: 1rem;
+                font-size: 1.2rem;
+            }
+            
+            .capabilities-dropdown ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .capabilities-dropdown li {
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #eee;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+            
+            .capabilities-dropdown li:last-child {
+                border-bottom: none;
+            }
+            
+            .capabilities-dropdown li::before {
+                content: "✓";
+                color: var(--primary-green, #26C485);
+                font-weight: bold;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Ensure capabilities button works
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.capabilities-btn, .capabilities-btn *')) {
+                e.stopPropagation();
+                const dropdown = e.target.closest('.capabilities-btn')?.querySelector('.capabilities-dropdown');
+                if (dropdown) {
+                    const isVisible = dropdown.style.display === 'block';
+                    dropdown.style.display = isVisible ? 'none' : 'block';
+                }
+            } else {
+                // Close all dropdowns when clicking outside
+                document.querySelectorAll('.capabilities-dropdown').forEach(dd => {
+                    dd.style.display = 'none';
+                });
+            }
+        });
     }
 
     // Start initialization
