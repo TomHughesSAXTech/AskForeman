@@ -2114,5 +2114,20 @@
             }
         }
     </script>
+<!-- Module Integration -->
+<script type="module">
+import ForemanAI from './js/modules/app-integrator.js';
+
+// Initialize ForemanAI for admin page
+document.addEventListener('DOMContentLoaded', async () => {
+    await ForemanAI.initialize('admin');
+    
+    // Make ForemanAI available globally for legacy code
+    window.app = ForemanAI;
+    
+    console.log('✅ ForemanAI Admin Module Loaded');
+});
+</script>
+
 </body>
 </html>

@@ -1016,5 +1016,20 @@
         chatInput.focus();
       });
     </script>
-  </body>
+<!-- Module Integration -->
+<script type="module">
+import ForemanAI from './js/modules/app-integrator.js';
+
+// Initialize ForemanAI for general chat page
+document.addEventListener('DOMContentLoaded', async () => {
+    await ForemanAI.initialize('general-chat');
+    
+    // Make ForemanAI available globally for legacy code
+    window.app = ForemanAI;
+    
+    console.log('✅ ForemanAI General Chat Module Loaded');
+});
+</script>
+
+</body>
 </html>

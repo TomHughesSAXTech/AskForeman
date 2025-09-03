@@ -7004,6 +7004,21 @@
         addSystemMessage('✅ Takeoff results exported to Excel successfully!');
       }
     </script>
-  </body>
+<!-- Module Integration -->
+<script type="module">
+import ForemanAI from './js/modules/app-integrator.js';
+
+// Initialize ForemanAI for estimator page
+document.addEventListener('DOMContentLoaded', async () => {
+    await ForemanAI.initialize('estimator');
+    
+    // Make ForemanAI available globally for legacy code
+    window.app = ForemanAI;
+    
+    console.log('✅ ForemanAI Estimator Module Loaded');
+});
+</script>
+
+</body>
 </html>
         

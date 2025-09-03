@@ -2202,5 +2202,20 @@
         });
       });
     </script>
-  </body>
+<!-- Module Integration -->
+<script type="module">
+import ForemanAI from './js/modules/app-integrator.js';
+
+// Initialize ForemanAI for projects page
+document.addEventListener('DOMContentLoaded', async () => {
+    await ForemanAI.initialize('projects');
+    
+    // Make ForemanAI available globally for legacy code
+    window.app = ForemanAI;
+    
+    console.log('✅ ForemanAI Projects Module Loaded');
+});
+</script>
+
+</body>
 </html>
