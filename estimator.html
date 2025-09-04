@@ -198,6 +198,39 @@
         font-weight: 500;
         margin-top: -0.25rem;
       }
+      
+      .page-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+        margin-right: 1rem;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .nav-btn {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+        color: var(--dark-gray);
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .nav-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+      }
 
       .status-indicator {
         display: flex;
@@ -1637,83 +1670,20 @@
     <header class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img
-            src="ForemanAI.png"
-            alt="Ask Foreman"
-          />
+          <img src="ForemanAI.png" alt="Ask Foreman" />
         </div>
-        <div>
-          <h1>ASK FOREMAN AI</h1>
-          <p class="tagline">Construction Estimating Assistant</p>
+        <div style="display: flex; align-items: center;">
+          <img src="estimator.png" alt="Estimating" class="page-logo">
+          <div>
+            <h1>ASK FOREMAN AI</h1>
+            <p class="tagline">Construction Estimating Assistant</p>
+          </div>
         </div>
       </div>
-      <!-- Navigation Buttons -->
-      <nav style="display: flex; gap: 0.5rem; align-items: center;">
-        <a href="index.html" style="
-          padding: 0.75rem 1.5rem;
-          background: var(--safety-yellow);
-          color: var(--dark-gray);
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(246, 174, 45, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-        </a>
-        <a href="estimator.html" style="
-          padding: 0.75rem 1.5rem;
-          background: var(--hi-vis-green);
-          color: white;
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-        ">
-          📊 Estimating
-        </a>
-        <a href="projects.html" style="
-          padding: 0.75rem 1.5rem;
-          background: var(--safety-yellow);
-          color: var(--dark-gray);
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(246, 174, 45, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-          📁 Projects
-        </a>
-        <a href="admin.html" style="
-          padding: 0.75rem 1.5rem;
-          background: linear-gradient(135deg, var(--warning-red), #b71c1c);
-          color: white;
-          border: none;
-          border-radius: 25px;
-          font-weight: 600;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s ease;
-        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(220, 53, 69, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-          🔧 Admin
-        </a>
-      </nav>
-      
-      <!-- System Status -->
-      <div class="status-indicator">
-        <span class="status-dot"></span>
-        <span id="statusText">System Online</span>
+      <div class="nav-buttons">
+        <a href="index.html" class="nav-btn">🏠 Home</a>
+        <a href="general-chat.html" class="nav-btn">💬 General</a>
+        <a href="projects.html" class="nav-btn">📁 Projects</a>
       </div>
     </header>
 
@@ -2156,6 +2126,9 @@
       </aside>
     </div>
 
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
     <!-- Enhanced Image Handler Script with Azure Computer Vision -->
     <script src="js/chat-image-handler-v2.js"></script>
     
@@ -2174,7 +2147,7 @@
       // Configuration - Production webhook URLs
       const API_CONFIG = {
         chatWebhookUrl:
-          "https://workflows.saxtechnology.com/webhook/ask-foreman/estimator", // Estimator-specific webhook
+          "https://workflows.saxtechnology.com/webhook/ask-foreman/EstimatorChat", // Estimator-specific webhook
         uploadWebhookUrl:
           "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
         createClientWebhookUrl:

@@ -515,18 +515,9 @@
         </div>
     </footer>
     <script>
-        // Fetch document and project counts
-        async function updateStats() {
+        // Fetch project count only - document count handled by fix-document-count.js
+        async function updateProjectCount() {
             try {
-                // Get index statistics for document count
-                const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats');
-                if (statsResponse.ok) {
-                    const statsData = await statsResponse.json();
-                    const stats = Array.isArray(statsData) ? statsData[0] : statsData;
-                    const docCount = stats.documentCount || stats.docCount || 0;
-                    document.getElementById('docCount').textContent = docCount.toLocaleString();
-                }
-                
                 // Get project count from Azure Blob Storage
                 const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
                 
@@ -555,15 +546,13 @@
                     document.getElementById('projectCount').textContent = projectCount.toLocaleString();
                 }
             } catch (error) {
-                console.error('Error fetching stats:', error);
-                // Set default values on error
-                document.getElementById('docCount').textContent = '0';
+                console.error('Error fetching project count:', error);
                 document.getElementById('projectCount').textContent = '0';
             }
         }
         
-        // Update stats on page load
-        window.addEventListener('load', updateStats);
+        // Update project count on page load
+        window.addEventListener('load', updateProjectCount);
     </script>
-    <script src="js/fix-document-count.js"></script></body>
+    <script src="js/fix-document-count.js"></script>
 </html>
