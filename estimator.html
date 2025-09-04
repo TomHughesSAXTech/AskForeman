@@ -1662,7 +1662,6 @@
           gap: 0.5rem;
           transition: all 0.3s ease;
         " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(246, 174, 45, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-          🏠 Home
         </a>
         <a href="estimator.html" style="
           padding: 0.75rem 1.5rem;
@@ -2166,9 +2165,10 @@
     <!-- Comprehensive Fixes for UI/UX and Performance -->
     <script src="js/comprehensive-fixes.js"></script>
     
-    <!-- Enhanced Takeoff System -->
+    <!-- Enhanced Takeoff System with Azure AI -->
     <script src="js/drawing-highlight-analyzer.js"></script>
     <script src="js/enhanced-takeoff-module.js"></script>
+    <script type="module" src="js/drawing-analyzer-ai.js"></script>
     
     <script>
       // Configuration - Production webhook URLs
@@ -3178,10 +3178,7 @@
       }
 
       function updateMetadata() {
-        // Only update statistics if the UI elements exist on this page
-        if (document.getElementById('totalDocsCount')) {
-          updateSearchStatistics();
-        }
+        // Removed index statistics update - not needed on estimator page
       }
 
       // Create Client Modal functionality
@@ -3631,10 +3628,9 @@
           // Count total documents across all clients (async operation)
           countAllDocuments().then(count => {
             totalDocumentCount = count;
-            updateSearchStatistics();
+            console.log(`Total documents across all clients: ${totalDocumentCount}`);
           }).catch(err => {
             console.warn('Could not count documents:', err);
-            updateSearchStatistics(); // Update with available data anyway
           });
           
         } catch (error) {
@@ -3769,86 +3765,7 @@
         }
       }
 
-      // Function to update search statistics
-      async function updateSearchStatistics() {
-        const docsCountElement = document.getElementById('totalDocsCount');
-        const clientsCountElement = document.getElementById('totalClientsCount');
-        const docCountElement = document.getElementById('docCount');
-        const indexSizeElement = document.getElementById('indexSize');
-        const lastUpdatedElement = document.getElementById('lastUpdated');
-        const indexStatusElement = document.getElementById('indexStatus');
-        
-        try {
-          // Use n8n webhook to get index statistics (avoids CORS issues)
-          const statsResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/index/stats', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json();
-            const stats = Array.isArray(statsData) ? statsData[0] : statsData;
-            
-            // Update document counts
-            const docCount = stats.documentCount || stats.docCount || 0;
-            docsCountElement.textContent = docCount.toLocaleString();
-            docCountElement.textContent = docCount.toLocaleString();
-            
-            // Update storage size
-            if (stats.storageSize) {
-              const sizeInMB = (stats.storageSize / (1024 * 1024)).toFixed(2);
-              indexSizeElement.textContent = `${sizeInMB} MB`;
-            } else {
-              indexSizeElement.textContent = '0 MB';
-            }
-            
-            // Update status based on document count
-            if (docCount > 0) {
-              indexStatusElement.textContent = 'Active';
-              indexStatusElement.className = 'metadata-value status-active';
-              indexStatusElement.style.color = ''; // Reset to default
-            } else {
-              indexStatusElement.textContent = 'Empty';
-              indexStatusElement.className = 'metadata-value';
-              indexStatusElement.style.color = '#ff9800';
-            }
-            
-            // Update last updated time
-            lastUpdatedElement.textContent = new Date().toLocaleTimeString();
-            
-          } else {
-            // Webhook not accessible, show offline status
-            console.warn('Index stats webhook returned status:', statsResponse.status);
-            docsCountElement.textContent = '0';
-            docCountElement.textContent = '0';
-            indexSizeElement.textContent = '0 MB';
-            indexStatusElement.textContent = 'Offline';
-            indexStatusElement.className = 'metadata-value';
-            indexStatusElement.style.color = '#f44336';
-            lastUpdatedElement.textContent = 'Stats unavailable';
-          }
-        } catch (error) {
-          console.warn('Could not fetch index statistics:', error);
-          // Fall back to showing minimal state
-          docsCountElement.textContent = '0';
-          docCountElement.textContent = '0';
-          indexSizeElement.textContent = '0 MB';
-          indexStatusElement.textContent = 'Unknown';
-          indexStatusElement.className = 'metadata-value';
-          indexStatusElement.style.color = '#9e9e9e';
-          lastUpdatedElement.textContent = 'Unable to fetch';
-        }
-        
-        // Always update client count from loaded data
-        if (window.availableClients && window.availableClients.length > 0) {
-          clientsCountElement.textContent = window.availableClients.length;
-        } else {
-          // Count from actual Azure blob storage folders if clients not loaded
-          clientsCountElement.textContent = '0';
-        }
-      }
+      // Removed updateSearchStatistics function - not needed on estimator page
       
       // Update detailed status indicators
       function updateDetailedStatus() {
@@ -3940,8 +3857,7 @@
             updateDetailedStatus();
           }, 300000);
           
-          // Update search statistics periodically (every 30 seconds for better freshness)
-          setInterval(updateSearchStatistics, 30000); // Every 30 seconds
+          // Removed periodic search statistics update - not needed on estimator page
           
         } catch (error) {
           console.error("Initialization error:", error);
@@ -5877,51 +5793,122 @@
         if (!results) return;
         
         // Set project info
-        document.getElementById('projectName').value = results.summary.building + ' - ' + results.summary.floor;
+        const projectName = results.summary?.building || results.summary?.parameters?.building || 'Project';
+        const floor = results.summary?.floor || results.summary?.parameters?.floor || '';
+        document.getElementById('projectName').value = projectName + (floor ? ' - ' + floor : '');
         
-        // Add line items based on measurements
-        if (results.measurements.walls) {
-          addLineItem({
-            description: 'Wall Painting - ' + (results.paintRequirements?.wallFinish || 'Standard'),
-            category: 'materials',
-            quantity: results.measurements.walls.total,
-            unit: 'LF',
-            materialCost: 2.50,
-            laborCost: 3.75
-          });
+        // If AI analysis is available, use calculated values
+        if (results.rawAnalysis?.results?.calculations) {
+          const calc = results.rawAnalysis.results.calculations;
+          
+          // Add wall painting if paintable area calculated
+          if (calc.paintableArea > 0) {
+            addLineItem({
+              description: 'Wall Painting - ' + (calc.paintableArea.toFixed(0) + ' SF'),
+              category: 'materials',
+              quantity: calc.paintableArea,
+              unit: 'SF',
+              materialCost: 0.35, // Per SF for material
+              laborCost: 0.65 // Per SF for labor
+            });
+          }
+          
+          // Add floor finishing if area calculated
+          if (calc.totalFloorArea > 0) {
+            addLineItem({
+              description: 'Floor Finishing - ' + (results.summary?.parameters?.floorFinish || 'Standard'),
+              category: 'materials',
+              quantity: calc.totalFloorArea,
+              unit: 'SF',
+              materialCost: 2.50,
+              laborCost: 1.50
+            });
+          }
+          
+          // Add doors if counted
+          if (calc.doors?.count > 0) {
+            addLineItem({
+              description: 'Door Hardware & Installation',
+              category: 'labor',
+              quantity: calc.doors.count,
+              unit: 'EA',
+              materialCost: 85,
+              laborCost: 125
+            });
+          }
+          
+          // Add windows if counted
+          if (calc.windows?.count > 0) {
+            addLineItem({
+              description: 'Window Treatment/Finishing',
+              category: 'materials',
+              quantity: calc.windows.count,
+              unit: 'EA',
+              materialCost: 45,
+              laborCost: 35
+            });
+          }
+          
+          // Add materials from calculations
+          if (calc.materials && calc.materials.length > 0) {
+            calc.materials.forEach(material => {
+              addLineItem({
+                description: material.type,
+                category: 'materials',
+                quantity: material.quantity,
+                unit: material.unit,
+                materialCost: material.estimatedCost / material.quantity, // Unit cost
+                laborCost: 0
+              });
+            });
+          }
+          
+        } else {
+          // Fallback to simple measurements if no AI analysis
+          if (results.measurements?.walls) {
+            addLineItem({
+              description: 'Wall Painting - ' + (results.paintRequirements?.wallFinish || 'Standard'),
+              category: 'materials',
+              quantity: results.measurements.walls.total || 0,
+              unit: 'LF',
+              materialCost: 2.50,
+              laborCost: 3.75
+            });
+          }
+          
+          if (results.measurements?.floors) {
+            addLineItem({
+              description: 'Floor Coating/Finishing',
+              category: 'materials',
+              quantity: results.measurements.floors.total || 0,
+              unit: 'SF',
+              materialCost: 1.25,
+              laborCost: 1.50
+            });
+          }
+          
+          if (results.paintRequirements) {
+            addLineItem({
+              description: 'Paint Materials - ' + results.paintRequirements.gallonsRequired + ' gallons',
+              category: 'materials',
+              quantity: results.paintRequirements.gallonsRequired,
+              unit: 'GAL',
+              materialCost: 35,
+              laborCost: 0
+            });
+          }
         }
         
-        if (results.measurements.floors) {
-          addLineItem({
-            description: 'Floor Coating/Finishing',
-            category: 'materials',
-            quantity: results.measurements.floors.total,
-            unit: 'SF',
-            materialCost: 1.25,
-            laborCost: 1.50
-          });
-        }
-        
-        if (results.measurements.doors) {
-          addLineItem({
-            description: 'Door Installation',
-            category: 'labor',
-            quantity: results.measurements.doors.total,
-            unit: 'EA',
-            materialCost: 0,
-            laborCost: 125
-          });
-        }
-        
-        if (results.paintRequirements) {
-          addLineItem({
-            description: 'Paint Materials - ' + results.paintRequirements.gallonsRequired + ' gallons',
-            category: 'materials',
-            quantity: results.paintRequirements.gallonsRequired,
-            unit: 'GAL',
-            materialCost: 35,
-            laborCost: 0
-          });
+        // Add notes from recommendations if available
+        if (results.recommendations && results.recommendations.length > 0) {
+          const notes = results.recommendations.map(rec => 
+            `${rec.type.toUpperCase()}: ${rec.message}`
+          ).join('\n\n');
+          
+          const notesField = document.getElementById('estimateNotes');
+          if (notesField) {
+            notesField.value = 'AI Analysis Notes:\n' + notes;
+          }
         }
       }
       
@@ -6499,8 +6486,16 @@
         `;
         document.head.appendChild(style);
         
-        // Load existing drawings if client is selected
+        // Initialize drawing selector and load existing drawings
+        initializeDrawingSelector();
         loadExistingDrawings();
+        
+        // Reload drawings when client changes
+        clientSelect.addEventListener('change', () => {
+          if (document.getElementById('takeoffModal')) {
+            loadExistingDrawings();
+          }
+        });
         
         // Set up file input handler
         document.getElementById('takeoffFileInput').addEventListener('change', handleTakeoffFileSelect);
@@ -6546,20 +6541,43 @@
         
         select.innerHTML = '<option value="">Or select existing...</option>';
         
-        if (!selectedClient) return;
+        if (!selectedClient) {
+          // Add option to prompt client selection
+          select.innerHTML = '<option value="">Select a client first</option>';
+          select.disabled = true;
+          return;
+        }
+        
+        select.disabled = false;
         
         try {
+          // Add loading indicator
+          select.innerHTML = '<option value="">Loading drawings...</option>';
+          
           // List drawings from Azure Blob Storage
           const prefix = `FCS-OriginalClients/${selectedClient}/drawings/`;
           const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=${encodeURIComponent(prefix)}`;
           
           const response = await fetch(listUrl);
-          if (!response.ok) return;
+          if (!response.ok) {
+            select.innerHTML = '<option value="">No drawings found</option>';
+            return;
+          }
           
           const xmlText = await response.text();
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlText, "text/xml");
           const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          select.innerHTML = '<option value="">Or select existing...</option>';
+          
+          // Group drawings by type
+          const drawingsByType = {
+            pdf: [],
+            tiff: [],
+            cad: [],
+            images: []
+          };
           
           for (let i = 0; i < blobs.length; i++) {
             const nameElement = blobs[i].getElementsByTagName("Name")[0];
@@ -6567,21 +6585,108 @@
               const fullPath = nameElement.textContent;
               const fileName = fullPath.split('/').pop();
               
-              if (fileName && (fileName.endsWith('.pdf') || fileName.endsWith('.tiff') || fileName.endsWith('.tif'))) {
-                const option = document.createElement('option');
-                option.value = fullPath;
-                option.textContent = fileName;
-                select.appendChild(option);
+              // Skip placeholder files
+              if (fileName && !fileName.startsWith('.')) {
+                const ext = fileName.split('.').pop().toLowerCase();
+                const drawingInfo = {
+                  path: fullPath,
+                  name: fileName,
+                  ext: ext
+                };
+                
+                if (ext === 'pdf') {
+                  drawingsByType.pdf.push(drawingInfo);
+                } else if (ext === 'tiff' || ext === 'tif') {
+                  drawingsByType.tiff.push(drawingInfo);
+                } else if (ext === 'dwg' || ext === 'dxf' || ext === 'dgn') {
+                  drawingsByType.cad.push(drawingInfo);
+                } else if (['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(ext)) {
+                  drawingsByType.images.push(drawingInfo);
+                }
               }
             }
           }
+          
+          // Add grouped options
+          if (drawingsByType.pdf.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = '📄 PDF Drawings';
+            drawingsByType.pdf.forEach(drawing => {
+              const option = document.createElement('option');
+              option.value = drawing.path;
+              option.textContent = drawing.name;
+              optgroup.appendChild(option);
+            });
+            select.appendChild(optgroup);
+          }
+          
+          if (drawingsByType.tiff.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = '🖼️ TIFF Drawings';
+            drawingsByType.tiff.forEach(drawing => {
+              const option = document.createElement('option');
+              option.value = drawing.path;
+              option.textContent = drawing.name;
+              optgroup.appendChild(option);
+            });
+            select.appendChild(optgroup);
+          }
+          
+          if (drawingsByType.cad.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = '📐 CAD Files';
+            drawingsByType.cad.forEach(drawing => {
+              const option = document.createElement('option');
+              option.value = drawing.path;
+              option.textContent = drawing.name;
+              option.setAttribute('data-cad', 'true');
+              optgroup.appendChild(option);
+            });
+            select.appendChild(optgroup);
+          }
+          
+          if (drawingsByType.images.length > 0) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = '🎨 Image Files';
+            drawingsByType.images.forEach(drawing => {
+              const option = document.createElement('option');
+              option.value = drawing.path;
+              option.textContent = drawing.name;
+              optgroup.appendChild(option);
+            });
+            select.appendChild(optgroup);
+          }
+          
+          // If no drawings found
+          const totalDrawings = drawingsByType.pdf.length + drawingsByType.tiff.length + 
+                              drawingsByType.cad.length + drawingsByType.images.length;
+          if (totalDrawings === 0) {
+            select.innerHTML = '<option value="">No drawings found for this client</option>';
+          }
+          
         } catch (error) {
           console.error('Error loading existing drawings:', error);
+          select.innerHTML = '<option value="">Error loading drawings</option>';
         }
+      }
+      
+      // Initialize drawing selector
+      function initializeDrawingSelector() {
+        const select = document.getElementById('existingDrawingSelect');
+        if (!select) return;
         
-        // Handle selection
+        // Handle selection change only once
         select.addEventListener('change', async (e) => {
           if (e.target.value) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const isCadFile = selectedOption.getAttribute('data-cad') === 'true';
+            
+            if (isCadFile) {
+              alert('CAD files require conversion to PDF or image format for analysis. Please export from your CAD software first.');
+              e.target.value = '';
+              return;
+            }
+            
             const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${e.target.value}${AZURE_STORAGE.sasToken}`;
             await loadDrawingFromUrl(blobUrl, e.target.value.split('/').pop());
           }
@@ -6692,30 +6797,92 @@
           wallFinish: document.getElementById('wallFinish').value,
           ceilingFinish: document.getElementById('ceilingFinish').value,
           floorFinish: document.getElementById('floorFinish').value,
-          coatsRequired: document.getElementById('coatsRequired').value
+          coatsRequired: document.getElementById('coatsRequired').value,
+          ceilingHeight: 10, // Default ceiling height
+          doorCount: 0,
+          windowCount: 0
         };
         
         try {
-          // Simulate analysis steps
-          const steps = [
-            { text: 'Extracting text and labels...', progress: 20 },
-            { text: 'Detecting layout and boundaries...', progress: 40 },
-            { text: 'Identifying doors and windows...', progress: 60 },
-            { text: 'Calculating measurements...', progress: 80 },
-            { text: 'Generating takeoff report...', progress: 100 }
-          ];
-          
-          for (const step of steps) {
-            statusText.textContent = step.text;
-            progressBar.style.width = step.progress + '%';
-            await new Promise(resolve => setTimeout(resolve, 1500));
+          // Check if DrawingAnalyzerAI is available
+          if (window.DrawingAnalyzerAI) {
+            console.log('Using Azure AI for drawing analysis...');
+            
+            // Initialize the AI analyzer with Azure config
+            const analyzer = new window.DrawingAnalyzerAI(AZURE_AI_CONFIG);
+            
+            // Update progress indicators
+            statusText.textContent = 'Connecting to Azure AI services...';
+            progressBar.style.width = '10%';
+            
+            // Perform actual AI analysis
+            const aiAnalysis = await analyzer.analyzeDrawing(
+              window.currentDrawing.data,
+              window.currentDrawing.name,
+              params
+            );
+            
+            // Convert AI results to display format
+            const results = {
+              summary: aiAnalysis.summary,
+              measurements: aiAnalysis.results.calculations || {},
+              rooms: aiAnalysis.results.rooms || [],
+              confidence: aiAnalysis.summary.confidence || 0,
+              recommendations: aiAnalysis.summary.recommendations || [],
+              rawAnalysis: aiAnalysis // Store full analysis for reference
+            };
+            
+            // Update with paint requirements if calculated
+            if (aiAnalysis.results.calculations?.materials) {
+              const paintMaterial = aiAnalysis.results.calculations.materials.find(m => m.type.includes('Paint'));
+              if (paintMaterial) {
+                results.paintRequirements = {
+                  wallFinish: params.wallFinish,
+                  wallArea: paintMaterial.coverage,
+                  coats: params.coatsRequired || 2,
+                  gallonsRequired: paintMaterial.quantity,
+                  estimatedCost: paintMaterial.estimatedCost
+                };
+              }
+            }
+            
+            // Display AI-powered results
+            displayTakeoffResults(results);
+            
+            // Store for estimate integration
+            window.currentTakeoffResults = results;
+            
+            // Show confidence indicator
+            if (results.confidence < 50) {
+              addSystemMessage(`⚠️ Analysis confidence: ${results.confidence}%. Please verify measurements manually.`);
+            } else {
+              addSystemMessage(`✅ AI analysis complete with ${results.confidence}% confidence.`);
+            }
+            
+          } else {
+            console.log('AI analyzer not available, using simulation...');
+            
+            // Fallback to simulation if AI not available
+            const steps = [
+              { text: 'Simulating text extraction...', progress: 20 },
+              { text: 'Simulating layout detection...', progress: 40 },
+              { text: 'Simulating door/window identification...', progress: 60 },
+              { text: 'Calculating simulated measurements...', progress: 80 },
+              { text: 'Generating simulated report...', progress: 100 }
+            ];
+            
+            for (const step of steps) {
+              statusText.textContent = step.text;
+              progressBar.style.width = step.progress + '%';
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            // Generate mock results as fallback
+            const results = generateMockTakeoffResults(params);
+            displayTakeoffResults(results);
+            
+            addSystemMessage('ℹ️ Using simulated analysis. For actual AI-powered analysis, ensure Azure services are configured.');
           }
-          
-          // Generate mock results (in production, this would call Azure Computer Vision API)
-          const results = generateMockTakeoffResults(params);
-          
-          // Display results
-          displayTakeoffResults(results);
           
           // Switch to results tab
           switchTakeoffTab('results');
@@ -6727,7 +6894,18 @@
           
         } catch (error) {
           console.error('Error analyzing drawing:', error);
-          alert('Failed to analyze drawing: ' + error.message);
+          
+          // Provide helpful error message based on error type
+          let errorMessage = 'Failed to analyze drawing: ';
+          if (error.message.includes('401') || error.message.includes('403')) {
+            errorMessage += 'Azure API authentication failed. Please check API keys.';
+          } else if (error.message.includes('network')) {
+            errorMessage += 'Network error. Please check your connection.';
+          } else {
+            errorMessage += error.message;
+          }
+          
+          alert(errorMessage);
           progressDiv.style.display = 'none';
         }
       }
@@ -7070,4 +7248,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 </body>
 </html>
-        
