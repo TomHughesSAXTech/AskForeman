@@ -165,8 +165,7 @@ export class ChatManager {
             const response = await fetch(this.config.webhookUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-Request-ID': requestId
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(payload),
                 signal: this.abortController?.signal

@@ -183,13 +183,6 @@
         font-weight: 500;
         margin-top: -0.25rem;
       }
-      
-      .page-logo {
-        width: 60px;
-        height: 60px;
-        object-fit: contain;
-        margin-right: 1rem;
-      }
 
       .nav-buttons {
         display: flex;
@@ -1151,14 +1144,11 @@
     <header class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img src="ForemanAI.png" alt="Ask Foreman" />
+          <img src="pm.png" alt="Project Management" />
         </div>
-        <div style="display: flex; align-items: center;">
-          <img src="pm.png" alt="Project Management" class="page-logo">
-          <div>
-            <h1>ASK FOREMAN AI</h1>
-            <p class="tagline">Project Management Assistant</p>
-          </div>
+        <div>
+          <h1>ASK FOREMAN AI</h1>
+          <p class="tagline">Project Management Assistant</p>
         </div>
       </div>
       <div class="nav-buttons">
@@ -1624,7 +1614,7 @@
       // Azure Storage Configuration (for project documents)
       const AZURE_STORAGE = {
         account: "saxtechfcs",
-        container: "fcs-projects",
+        container: "fcs-clients",  // Using same container as estimator
         sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
       };
 
@@ -1644,8 +1634,92 @@
       const typingIndicator = document.getElementById("typingIndicator");
       const createProjectButton = document.getElementById("createProjectButton");
 
+      // Load projects from Azure Blob Storage
+      async function loadProjects() {
+        try {
+          projectSelect.innerHTML = '<option value="">Loading projects...</option>';
+          
+          const projects = [];
+          
+          // Check FCS-OriginalClients folder structure
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
+          
+          const response = await fetch(listUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/xml'
+            }
+          });
+          
+          if (response.ok) {
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+            
+            for (let i = 0; i < prefixes.length; i++) {
+              const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const fullPath = nameElement.textContent.replace(/\/$/, '');
+                const pathParts = fullPath.split('/');
+                
+                if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                  const projectName = pathParts[1];
+                  if (projectName && !projectName.startsWith('.') && projectName.length > 0) {
+                    projects.push({
+                      id: projectName,
+                      name: formatProjectName(projectName)
+                    });
+                  }
+                }
+              }
+            }
+          }
+          
+          // Sort projects alphabetically
+          projects.sort((a, b) => a.name.localeCompare(b.name));
+          
+          // Update dropdown
+          projectSelect.innerHTML = '<option value="">-- Choose a Project --</option>';
+          projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+          });
+          
+          console.log(`Loaded ${projects.length} projects from Azure Blob Storage`);
+          
+        } catch (error) {
+          console.error('Error loading projects:', error);
+          projectSelect.innerHTML = '<option value="">-- Error loading projects --</option>';
+          addSystemMessage('Failed to load projects. Please refresh the page.');
+        }
+      }
+      
+      // Format project name for display
+      function formatProjectName(name) {
+        return name
+          .split(/[-_]/)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+      }
+      
+      // Handle project selection
+      projectSelect.addEventListener('change', (e) => {
+        selectedProject = e.target.value;
+        if (selectedProject) {
+          addSystemMessage(`Project "${projectSelect.options[projectSelect.selectedIndex].text}" selected.`);
+          // Update project context for chat
+          projectContext = selectedProject;
+        }
+      });
+      
       // Initialize capabilities dropdown
       document.addEventListener('DOMContentLoaded', function() {
+        // Load projects when page loads
+        loadProjects();
+        
         const capabilitiesBtn = document.querySelector('.capabilities-btn');
         const capabilitiesDropdown = document.querySelector('.capabilities-dropdown');
         
@@ -1760,7 +1834,11 @@
           `;
         }
 
-        chatMessages.insertBefore(messageDiv, typingIndicator);
+        if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+          chatMessages.insertBefore(messageDiv, typingIndicator);
+        } else {
+          chatMessages.appendChild(messageDiv);
+        }
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
@@ -1789,7 +1867,11 @@
           </div>
         `;
 
-        chatMessages.insertBefore(messageDiv, typingIndicator);
+        if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+          chatMessages.insertBefore(messageDiv, typingIndicator);
+        } else {
+          chatMessages.appendChild(messageDiv);
+        }
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 

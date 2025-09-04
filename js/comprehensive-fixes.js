@@ -82,7 +82,11 @@
                 </div>
             `;
             
-            chatMessages.insertBefore(currentMessageDiv, typingIndicator);
+            if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+                chatMessages.insertBefore(currentMessageDiv, typingIndicator);
+            } else {
+                chatMessages.appendChild(currentMessageDiv);
+            }
             messageContainer = currentMessageDiv.querySelector('.streaming-content');
         }
         
@@ -229,8 +233,12 @@
                     </div>
                 `;
                 
-                if (chatMessages && typingIndicator) {
-                    chatMessages.insertBefore(userMessageDiv, typingIndicator);
+                if (chatMessages) {
+                    if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+                        chatMessages.insertBefore(userMessageDiv, typingIndicator);
+                    } else {
+                        chatMessages.appendChild(userMessageDiv);
+                    }
                 }
                 
                 // Clear input
@@ -283,8 +291,12 @@
                         </div>
                     `;
                     
-                    if (chatMessages && typingIndicator) {
-                        chatMessages.insertBefore(errorDiv, typingIndicator);
+                    if (chatMessages) {
+                        if (typingIndicator && typingIndicator.parentNode === chatMessages) {
+                            chatMessages.insertBefore(errorDiv, typingIndicator);
+                        } else {
+                            chatMessages.appendChild(errorDiv);
+                        }
                     }
                 } finally {
                     // Re-enable send button

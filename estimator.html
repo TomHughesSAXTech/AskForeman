@@ -198,13 +198,6 @@
         font-weight: 500;
         margin-top: -0.25rem;
       }
-      
-      .page-logo {
-        width: 60px;
-        height: 60px;
-        object-fit: contain;
-        margin-right: 1rem;
-      }
 
       .nav-buttons {
         display: flex;
@@ -1670,14 +1663,11 @@
     <header class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img src="ForemanAI.png" alt="Ask Foreman" />
+          <img src="estimator.png" alt="Estimating Assistant" />
         </div>
-        <div style="display: flex; align-items: center;">
-          <img src="estimator.png" alt="Estimating" class="page-logo">
-          <div>
-            <h1>ASK FOREMAN AI</h1>
-            <p class="tagline">Construction Estimating Assistant</p>
-          </div>
+        <div>
+          <h1>ASK FOREMAN AI</h1>
+          <p class="tagline">Construction Estimating Assistant</p>
         </div>
       </div>
       <div class="nav-buttons">
@@ -2659,7 +2649,11 @@
       // Simple network connectivity check (doesn't trigger n8n executions)
       async function checkSystemStatus() {
         const statusIndicator = document.querySelector('.status-indicator');
-        const statusDot = document.querySelector('.status-dot');
+        if (!statusIndicator) {
+          console.log('Status indicator not found, skipping status check');
+          return;
+        }
+        const statusDot = statusIndicator.querySelector('.status-dot');
         const statusText = statusIndicator.querySelector('span:last-child');
         
         try {
@@ -2676,22 +2670,30 @@
           ]);
           
           if (isConnected) {
-            statusText.textContent = 'System Online';
-            statusDot.style.background = 'var(--hi-vis-green)';
-            statusDot.style.boxShadow = '0 0 10px var(--hi-vis-green)';
-            statusIndicator.style.borderColor = 'var(--hi-vis-green)';
-            statusIndicator.style.background = 'rgba(118, 255, 3, 0.1)';
+            if (statusText) statusText.textContent = 'System Online';
+            if (statusDot) {
+              statusDot.style.background = 'var(--hi-vis-green)';
+              statusDot.style.boxShadow = '0 0 10px var(--hi-vis-green)';
+            }
+            if (statusIndicator) {
+              statusIndicator.style.borderColor = 'var(--hi-vis-green)';
+              statusIndicator.style.background = 'rgba(118, 255, 3, 0.1)';
+            }
             
             // Assume all services are online if network is reachable
             systemStatus.chat = true;
             systemStatus.clients = true;
             systemStatus.upload = true;
           } else {
-            statusText.textContent = 'Network Offline';
-            statusDot.style.background = 'var(--warning-red)';
-            statusDot.style.boxShadow = '0 0 10px var(--warning-red)';
-            statusIndicator.style.borderColor = 'var(--warning-red)';
-            statusIndicator.style.background = 'rgba(211, 47, 47, 0.1)';
+            if (statusText) statusText.textContent = 'Network Offline';
+            if (statusDot) {
+              statusDot.style.background = 'var(--warning-red)';
+              statusDot.style.boxShadow = '0 0 10px var(--warning-red)';
+            }
+            if (statusIndicator) {
+              statusIndicator.style.borderColor = 'var(--warning-red)';
+              statusIndicator.style.background = 'rgba(211, 47, 47, 0.1)';
+            }
             
             systemStatus.chat = false;
             systemStatus.clients = false;
