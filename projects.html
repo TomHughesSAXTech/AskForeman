@@ -2195,26 +2195,62 @@
         }
       }
 
-      // Load projects
+      // Load projects from Azure Blob Storage
       async function loadProjects() {
         try {
-          // Simulate loading projects - replace with actual API call
-          const projects = [
-            { id: 'downtown-office', name: 'Downtown Office Complex' },
-            { id: 'riverside-apartments', name: 'Riverside Apartments' },
-            { id: 'industrial-warehouse', name: 'Industrial Warehouse' },
-            { id: 'medical-center', name: 'Medical Center Expansion' },
-            { id: 'school-renovation', name: 'School Renovation' }
-          ];
+          // Load from Azure Blob Storage - matching general-chat.html implementation
+          const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
           
-          // Update project dropdown
-          projectSelect.innerHTML = '<option value="">-- Choose a Project --</option>';
-          projects.forEach(project => {
-            const option = document.createElement('option');
-            option.value = project.id;
-            option.textContent = project.name;
-            projectSelect.appendChild(option);
-          });
+          const response = await fetch(listUrl);
+          if (response.ok) {
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+            
+            projectSelect.innerHTML = '<option value="">-- Choose a Project --</option>';
+            
+            for (let i = 0; i < prefixes.length; i++) {
+              const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const fullPath = nameElement.textContent;
+                const pathParts = fullPath.split('/');
+                
+                // Extract client name from path
+                if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                  const clientName = pathParts[1];
+                  
+                  // Filter out system folders and temp files
+                  if (clientName && !clientName.startsWith('.') && !clientName.includes('$') && clientName.length > 0) {
+                    const option = document.createElement('option');
+                    option.value = clientName;
+                    option.textContent = clientName;
+                    projectSelect.appendChild(option);
+                  }
+                }
+              }
+            }
+            
+            // Update project count in status
+            const projectCount = projectSelect.options.length - 1; // Excluding the default option
+            console.log(`Loaded ${projectCount} projects from Azure`);
+            
+          } else {
+            console.error('Failed to fetch project list:', response.status);
+            // Fallback to some default projects if needed
+            const fallbackProjects = [
+              'Construction Project 1',
+              'Construction Project 2'
+            ];
+            
+            projectSelect.innerHTML = '<option value="">-- Choose a Project --</option>';
+            fallbackProjects.forEach(project => {
+              const option = document.createElement('option');
+              option.value = project;
+              option.textContent = project;
+              projectSelect.appendChild(option);
+            });
+          }
           
         } catch (error) {
           console.error('Error loading projects:', error);

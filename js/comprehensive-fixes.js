@@ -33,8 +33,7 @@
                 signal,
                 headers: {
                     ...options.headers,
-                    'Accept': 'text/event-stream, application/json',
-                    'X-Stream-Response': 'true'
+                    'Accept': 'text/event-stream, application/json'
                 }
             });
             

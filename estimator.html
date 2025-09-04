@@ -6012,9 +6012,13 @@
       
       // Digital Takeoff Assistant
       function openDigitalTakeoffAssistant() {
-        // Create the takeoff assistant modal
-        const modal = document.createElement('div');
-        modal.id = 'takeoffModal';
+        // Use the new complete implementation
+        if (window.initializeDigitalTakeoff) {
+          window.initializeDigitalTakeoff();
+        } else {
+          // Fallback to old implementation
+          const modal = document.createElement('div');
+          modal.id = 'takeoffModal';
         modal.style.cssText = `
           position: fixed;
           top: 0;
@@ -7206,6 +7210,10 @@
         addSystemMessage('✅ Takeoff results exported to Excel successfully!');
       }
     </script>
+    
+    <!-- Digital Takeoff Complete Implementation -->
+    <script src="js/digital-takeoff-complete.js"></script>
+    
 <!-- Module Integration -->
 <script type="module">
 import ForemanAI from './js/modules/app-integrator.js';
