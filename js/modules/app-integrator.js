@@ -312,27 +312,10 @@ class AppIntegrator {
      * Load projects from Azure
      */
     async loadProjects() {
-        try {
-            const response = await fetch(this.config.webhooks.getProjects || '/api/projects');
-            const projects = await response.json();
-            
-            // Populate project selector
-            const selector = document.getElementById('projectSelector');
-            if (selector && projects) {
-                selector.innerHTML = '<option value="">-- Select Project --</option>';
-                projects.forEach(project => {
-                    const option = document.createElement('option');
-                    option.value = project.id;
-                    option.textContent = project.name;
-                    selector.appendChild(option);
-                });
-            }
-            
-            this.emit('projects:loaded', { projects });
-            
-        } catch (error) {
-            console.error('Failed to load projects:', error);
-        }
+        // Skip webhook call - projects are loaded directly from Azure in projects.html
+        // The projects.html page already has its own Azure loading implementation
+        console.log('Projects loading handled by projects.html directly');
+        return;
     }
 
     /**
