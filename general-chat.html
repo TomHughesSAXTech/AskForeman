@@ -786,6 +786,59 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
         
         try {
+          // First upload attachments to blob storage if they exist
+          let uploadedFileUrls = [];
+          if (attachedImages && attachedImages.length > 0) {
+            // Show upload status
+            const uploadStatus = document.createElement('div');
+            uploadStatus.className = 'message assistant';
+            uploadStatus.innerHTML = `
+              <div class="message-avatar">⚠️</div>
+              <div class="message-content" style="background: linear-gradient(135deg, var(--safety-yellow), #f57f17); color: var(--dark-gray);">
+                <div><strong>📤 Uploading attachments for analysis...</strong></div>
+                <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+              </div>
+            `;
+            messagesContainer.appendChild(uploadStatus);
+            
+            for (const img of attachedImages) {
+              try {
+                // Extract base64 data
+                const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
+                
+                // Upload to blob storage as a temporary analysis file
+                const uploadResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/upload', {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    file: base64Data,
+                    fileName: img.name || `analysis_${Date.now()}.png`,
+                    mimeType: img.type || 'image/png',
+                    category: 'temp-analysis',  // Special category for chat attachments
+                    client: 'general',
+                    clientName: 'General'
+                  })
+                });
+                
+                if (uploadResponse.ok) {
+                  const uploadResult = await uploadResponse.json();
+                  uploadedFileUrls.push({
+                    url: uploadResult.url || uploadResult.fileUrl,
+                    name: img.name,
+                    type: img.type
+                  });
+                }
+              } catch (error) {
+                console.error('Error uploading attachment:', error);
+              }
+            }
+            
+            // Remove upload status message
+            uploadStatus.remove();
+          }
+          
           const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/chat', {
             method: 'POST',
             headers: {
@@ -793,19 +846,21 @@
             },
             body: JSON.stringify({
               message: message || '[Document Analysis Request]',
-              attachments: attachedImages.map(img => {
+              attachments: attachedImages.map((img, index) => {
                 // Extract base64 data from data URL
                 const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
                 return {
                   name: img.name,
                   type: img.type || 'image/png',
-                  data: base64Data,  // Send only the base64 string without the data URL prefix
+                  data: base64Data,  // Send base64 for immediate display
                   mimeType: img.type || 'image/png',
-                  isDocument: img.type && img.type.includes('pdf')
+                  isDocument: img.type && img.type.includes('pdf'),
+                  uploadedUrl: uploadedFileUrls[index]?.url || null  // Include blob storage URL if available
                 };
               }),
               hasAttachments: attachedImages.length > 0,
               attachmentCount: attachedImages.length,
+              uploadedFiles: uploadedFileUrls,  // Send uploaded file URLs separately
               timestamp: new Date().toISOString()
             })
           });

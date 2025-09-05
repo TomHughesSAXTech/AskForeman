@@ -3089,7 +3089,7 @@
         typingIndicator.className = "message assistant";
         typingIndicator.innerHTML = `
           <div class="message-avatar">
-            <img src="Estimate.png" alt="AI" />
+            <img src="Project.png" alt="AI" />
           </div>
           <div class="message-content">
             <div style="display: flex; gap: 0.3rem;">
@@ -3103,17 +3103,60 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
-          // Process attachments - extract base64 data without the data URL prefix
-          const processedAttachments = attachedImages ? attachedImages.map(img => {
+          // First upload attachments to blob storage if they exist
+          let uploadedFileUrls = [];
+          if (attachedImages && attachedImages.length > 0) {
+            addSystemMessage('📤 Uploading attachments for analysis...');
+            
+            for (const img of attachedImages) {
+              try {
+                // Extract base64 data
+                const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
+                
+                // Upload to blob storage as a temporary analysis file
+                const uploadResponse = await fetch(API_CONFIG.uploadWebhookUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    file: base64Data,
+                    fileName: img.name || `analysis_${Date.now()}.png`,
+                    mimeType: img.type || 'image/png',
+                    category: 'temp-analysis',  // Special category for chat attachments
+                    client: chatContext || 'general',
+                    clientName: chatContext || 'General'
+                  })
+                });
+                
+                if (uploadResponse.ok) {
+                  const uploadResult = await uploadResponse.json();
+                  uploadedFileUrls.push({
+                    url: uploadResult.url || uploadResult.fileUrl,
+                    name: img.name,
+                    type: img.type
+                  });
+                  addSystemMessage(`✅ Uploaded: ${img.name}`);
+                }
+              } catch (error) {
+                console.error('Error uploading attachment:', error);
+                addSystemMessage(`⚠️ Failed to upload ${img.name}`);
+              }
+            }
+          }
+          
+          // Process attachments - include both base64 and uploaded URLs
+          const processedAttachments = attachedImages ? attachedImages.map((img, index) => {
             // Extract base64 data from data URL
             const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
             
             return {
               type: img.type || 'image/png',
-              data: base64Data,  // Send only the base64 string without the data URL prefix
+              data: base64Data,  // Send base64 for immediate display
               name: img.name || `attachment_${Date.now()}.png`,
               mimeType: img.type || 'image/png',
-              isDocument: img.type && img.type.includes('pdf') // Flag PDF documents
+              isDocument: img.type && img.type.includes('pdf'),
+              uploadedUrl: uploadedFileUrls[index]?.url || null  // Include blob storage URL if available
             };
           }) : [];
           
@@ -3129,7 +3172,8 @@
               sessionId: chatContext,
               attachments: processedAttachments,
               hasAttachments: processedAttachments.length > 0,
-              attachmentCount: processedAttachments.length
+              attachmentCount: processedAttachments.length,
+              uploadedFiles: uploadedFileUrls  // Send uploaded file URLs separately
             })
           });
           
