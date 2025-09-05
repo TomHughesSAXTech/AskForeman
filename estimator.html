@@ -1372,6 +1372,48 @@
         transform: scale(1.05);
         box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
       }
+
+      /* Tab Navigation Styles */
+      .tab-btn {
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--steel-gray);
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .tab-btn:hover {
+        background: var(--light-gray);
+      }
+
+      .tab-btn.active {
+        color: var(--primary-green);
+        border-bottom-color: var(--primary-green);
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      .tab-content {
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      .small-input {
+        width: 80px !important;
+      }
+
+      .quantity-field {
+        background: var(--light-gray);
+        font-weight: bold;
+      }
+
+      .labor-cost {
+        background: var(--light-gray);
+        padding: 0.5rem;
+        font-weight: 600;
+        color: var(--primary-green);
+      }
     </style>
 
     <!-- Add XLSX library for Excel export -->
@@ -1628,149 +1670,303 @@
       </div>
     </div>
 
-    <!-- Estimate Generator Modal -->
+    <!-- Professional Estimate Generator Modal -->
     <div class="estimate-modal" id="estimateModal">
       <div class="estimate-content">
         <div class="estimate-header">
-          <h2>📊 Construction Estimate Generator</h2>
-          <button class="close-modal" onclick="closeEstimator()">Close ✕</button>
+          <h2>📊 Professional Construction Estimate Generator</h2>
+          <div style="display: flex; gap: 1rem;">
+            <select id="estimateClientSelect" style="padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.9); color: var(--concrete-gray);">
+              <option value="">Select Project for Estimate</option>
+            </select>
+            <button class="close-modal" onclick="closeEstimator()">Close ✕</button>
+          </div>
         </div>
         <div class="estimate-body">
-          <!-- Project Info Section -->
-          <div class="estimate-section">
-            <h3>Project Information</h3>
-            <table class="estimate-table">
-              <tr>
-                <td><strong>Project Name:</strong></td>
-                <td><input type="text" id="projectName" placeholder="Enter project name"></td>
-                <td><strong>Date:</strong></td>
-                <td><input type="date" id="estimateDate"></td>
-              </tr>
-              <tr>
-                <td><strong>Client:</strong></td>
-                <td><input type="text" id="clientName" placeholder="Client name"></td>
-                <td><strong>Estimator:</strong></td>
-                <td><input type="text" id="estimatorName" placeholder="Your name"></td>
-              </tr>
-            </table>
+          <!-- Tab Navigation -->
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid var(--medium-gray);">
+            <button class="tab-btn active" onclick="switchTab('scope')">Scope Notes</button>
+            <button class="tab-btn" onclick="switchTab('takeoff')">Takeoff Sheet</button>
+            <button class="tab-btn" onclick="switchTab('building1')">Building 1</button>
+            <button class="tab-btn" onclick="switchTab('building2')">Building 2</button>
+            <button class="tab-btn" onclick="switchTab('building3')">Building 3</button>
+            <button class="tab-btn" onclick="switchTab('summary')">Summary</button>
           </div>
 
-          <!-- Labor Section -->
-          <div class="estimate-section">
-            <h3>Labor Costs</h3>
-            <table class="estimate-table" id="laborTable">
-              <thead>
+          <!-- Scope Notes Tab -->
+          <div id="scopeTab" class="tab-content active">
+            <div class="estimate-section">
+              <h3>Project Scope & Information</h3>
+              <table class="estimate-table">
                 <tr>
-                  <th>Trade</th>
-                  <th>Hours</th>
-                  <th>Rate/Hour</th>
-                  <th>Total</th>
-                  <th>Action</th>
+                  <td><strong>Project Name:</strong></td>
+                  <td colspan="3"><input type="text" id="projectName" placeholder="Enter project name" style="width: 100%;"></td>
                 </tr>
-              </thead>
-              <tbody id="laborBody">
                 <tr>
-                  <td><input type="text" placeholder="e.g., Painters"></td>
-                  <td><input type="number" placeholder="0" onchange="calculateLabor(this)"></td>
-                  <td><input type="number" placeholder="0.00" onchange="calculateLabor(this)"></td>
-                  <td class="total">$0.00</td>
-                  <td><button onclick="removeRow(this)">❌</button></td>
+                  <td><strong>Client:</strong></td>
+                  <td><input type="text" id="clientName" placeholder="Client name"></td>
+                  <td><strong>Date:</strong></td>
+                  <td><input type="date" id="estimateDate"></td>
                 </tr>
-              </tbody>
-            </table>
-            <button onclick="addLaborRow()">+ Add Labor Item</button>
+                <tr>
+                  <td><strong>Location:</strong></td>
+                  <td><input type="text" id="projectLocation" placeholder="Project location"></td>
+                  <td><strong>Estimator:</strong></td>
+                  <td><input type="text" id="estimatorName" placeholder="Your name"></td>
+                </tr>
+                <tr>
+                  <td><strong>Scope Notes:</strong></td>
+                  <td colspan="3">
+                    <textarea id="scopeNotes" rows="6" style="width: 100%;" placeholder="Enter detailed scope notes, inclusions, exclusions, assumptions..."></textarea>
+                  </td>
+                </tr>
+              </table>
+            </div>
           </div>
 
-          <!-- Materials Section -->
-          <div class="estimate-section">
-            <h3>Materials</h3>
-            <table class="estimate-table" id="materialsTable">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Quantity</th>
-                  <th>Unit</th>
-                  <th>Unit Price</th>
-                  <th>Total</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="materialsBody">
-                <tr>
-                  <td><input type="text" placeholder="Material description"></td>
-                  <td><input type="number" placeholder="0" onchange="calculateMaterial(this)"></td>
-                  <td><input type="text" placeholder="e.g., GAL"></td>
-                  <td><input type="number" placeholder="0.00" onchange="calculateMaterial(this)"></td>
-                  <td class="total">$0.00</td>
-                  <td><button onclick="removeRow(this)">❌</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <button onclick="addMaterialRow()">+ Add Material Item</button>
+          <!-- Takeoff Sheet Tab -->
+          <div id="takeoffTab" class="tab-content" style="display: none;">
+            <div class="estimate-section">
+              <h3>Architectural Takeoff Sheet</h3>
+              <div style="overflow-x: auto;">
+                <table class="estimate-table" id="takeoffTable">
+                  <thead>
+                    <tr>
+                      <th>Sr No.</th>
+                      <th>SWG #</th>
+                      <th>Architectural Spec</th>
+                      <th>Description</th>
+                      <th>Units</th>
+                      <th>No.</th>
+                      <th>Length</th>
+                      <th>Width</th>
+                      <th>Height</th>
+                      <th>Quantity</th>
+                      <th>Remarks</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="takeoffBody">
+                    <tr>
+                      <td><input type="text" class="small-input" placeholder="1"></td>
+                      <td><input type="text" class="small-input" placeholder="SWG-001"></td>
+                      <td><input type="text" placeholder="Spec ref"></td>
+                      <td><input type="text" placeholder="Description"></td>
+                      <td><input type="text" class="small-input" placeholder="SF/LF"></td>
+                      <td><input type="number" class="small-input" placeholder="1" onchange="calculateTakeoffRow(this)"></td>
+                      <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+                      <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+                      <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+                      <td><input type="number" class="quantity-field" readonly></td>
+                      <td><input type="text" placeholder="Notes"></td>
+                      <td><button onclick="removeRow(this)">❌</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <button onclick="addTakeoffRow()">+ Add Takeoff Item</button>
+              </div>
+            </div>
           </div>
 
-          <!-- Equipment Section -->
-          <div class="estimate-section">
-            <h3>Equipment</h3>
-            <table class="estimate-table" id="equipmentTable">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Days</th>
-                  <th>Rate/Day</th>
-                  <th>Total</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="equipmentBody">
-                <tr>
-                  <td><input type="text" placeholder="Equipment description"></td>
-                  <td><input type="number" placeholder="0" onchange="calculateEquipment(this)"></td>
-                  <td><input type="number" placeholder="0.00" onchange="calculateEquipment(this)"></td>
-                  <td class="total">$0.00</td>
-                  <td><button onclick="removeRow(this)">❌</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <button onclick="addEquipmentRow()">+ Add Equipment Item</button>
+          <!-- Building 1 Tab -->
+          <div id="building1Tab" class="tab-content" style="display: none;">
+            <div class="estimate-section">
+              <h3>Building 1 - Detailed Estimate</h3>
+              <div style="overflow-x: auto;">
+                <table class="estimate-table" id="building1Table">
+                  <thead>
+                    <tr>
+                      <th>Item #</th>
+                      <th>Description</th>
+                      <th>System/Trade</th>
+                      <th>Material</th>
+                      <th>Labor Hours</th>
+                      <th>Labor Rate</th>
+                      <th>Material Cost</th>
+                      <th>Labor Cost</th>
+                      <th>Equipment</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="building1Body">
+                    <tr>
+                      <td><input type="text" class="small-input" placeholder="1.1"></td>
+                      <td><input type="text" placeholder="Work description"></td>
+                      <td><input type="text" placeholder="Painting/Flooring/etc"></td>
+                      <td><input type="text" placeholder="Material type"></td>
+                      <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, 'building1')"></td>
+                      <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, 'building1')"></td>
+                      <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, 'building1')"></td>
+                      <td class="labor-cost">$0.00</td>
+                      <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, 'building1')"></td>
+                      <td class="total">$0.00</td>
+                      <td><button onclick="removeRow(this)">❌</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <button onclick="addBuildingRow('building1')">+ Add Building 1 Item</button>
+              </div>
+            </div>
           </div>
 
-          <!-- Summary Section -->
-          <div class="estimate-section">
-            <h3>Cost Summary</h3>
-            <table class="estimate-table">
-              <tr>
-                <td><strong>Labor Total:</strong></td>
-                <td id="laborTotal">$0.00</td>
-              </tr>
-              <tr>
-                <td><strong>Materials Total:</strong></td>
-                <td id="materialsTotal">$0.00</td>
-              </tr>
-              <tr>
-                <td><strong>Equipment Total:</strong></td>
-                <td id="equipmentTotal">$0.00</td>
-              </tr>
-              <tr>
-                <td><strong>Subtotal:</strong></td>
-                <td id="subtotal">$0.00</td>
-              </tr>
-              <tr>
-                <td><strong>Overhead (%):</strong></td>
-                <td><input type="number" id="overheadPercent" value="10" onchange="calculateTotals()"></td>
-              </tr>
-              <tr>
-                <td><strong>Profit (%):</strong></td>
-                <td><input type="number" id="profitPercent" value="15" onchange="calculateTotals()"></td>
-              </tr>
-            </table>
+          <!-- Building 2 Tab -->
+          <div id="building2Tab" class="tab-content" style="display: none;">
+            <div class="estimate-section">
+              <h3>Building 2 - Detailed Estimate</h3>
+              <div style="overflow-x: auto;">
+                <table class="estimate-table" id="building2Table">
+                  <thead>
+                    <tr>
+                      <th>Item #</th>
+                      <th>Description</th>
+                      <th>System/Trade</th>
+                      <th>Material</th>
+                      <th>Labor Hours</th>
+                      <th>Labor Rate</th>
+                      <th>Material Cost</th>
+                      <th>Labor Cost</th>
+                      <th>Equipment</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="building2Body">
+                    <!-- Rows will be added dynamically -->
+                  </tbody>
+                </table>
+                <button onclick="addBuildingRow('building2')">+ Add Building 2 Item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Building 3 Tab -->
+          <div id="building3Tab" class="tab-content" style="display: none;">
+            <div class="estimate-section">
+              <h3>Building 3 - Detailed Estimate</h3>
+              <div style="overflow-x: auto;">
+                <table class="estimate-table" id="building3Table">
+                  <thead>
+                    <tr>
+                      <th>Item #</th>
+                      <th>Description</th>
+                      <th>System/Trade</th>
+                      <th>Material</th>
+                      <th>Labor Hours</th>
+                      <th>Labor Rate</th>
+                      <th>Material Cost</th>
+                      <th>Labor Cost</th>
+                      <th>Equipment</th>
+                      <th>Total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="building3Body">
+                    <!-- Rows will be added dynamically -->
+                  </tbody>
+                </table>
+                <button onclick="addBuildingRow('building3')">+ Add Building 3 Item</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Tab -->
+          <div id="summaryTab" class="tab-content" style="display: none;">
+            <div class="estimate-section">
+              <h3>Project Cost Summary</h3>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div>
+                  <h4>Building Totals</h4>
+                  <table class="estimate-table">
+                    <tr>
+                      <td><strong>Building 1:</strong></td>
+                      <td id="building1Total">$0.00</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Building 2:</strong></td>
+                      <td id="building2Total">$0.00</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Building 3:</strong></td>
+                      <td id="building3Total">$0.00</td>
+                    </tr>
+                    <tr style="border-top: 2px solid var(--medium-gray);">
+                      <td><strong>Buildings Subtotal:</strong></td>
+                      <td id="buildingsSubtotal">$0.00</td>
+                    </tr>
+                  </table>
+                </div>
+                <div>
+                  <h4>Category Breakdown</h4>
+                  <table class="estimate-table">
+                    <tr>
+                      <td><strong>Total Labor:</strong></td>
+                      <td id="totalLabor">$0.00</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Total Materials:</strong></td>
+                      <td id="totalMaterials">$0.00</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Total Equipment:</strong></td>
+                      <td id="totalEquipment">$0.00</td>
+                    </tr>
+                    <tr style="border-top: 2px solid var(--medium-gray);">
+                      <td><strong>Direct Costs:</strong></td>
+                      <td id="directCosts">$0.00</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              
+              <div style="margin-top: 2rem;">
+                <h4>Markups & Final Pricing</h4>
+                <table class="estimate-table">
+                  <tr>
+                    <td width="30%"><strong>Overhead (%):</strong></td>
+                    <td width="20%"><input type="number" id="overheadPercent" value="10" onchange="calculateTotals()" style="width: 100%;"></td>
+                    <td width="30%"><strong>Overhead Amount:</strong></td>
+                    <td width="20%" id="overheadAmount">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Profit Margin (%):</strong></td>
+                    <td><input type="number" id="profitPercent" value="15" onchange="calculateTotals()" style="width: 100%;"></td>
+                    <td><strong>Profit Amount:</strong></td>
+                    <td id="profitAmount">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Contingency (%):</strong></td>
+                    <td><input type="number" id="contingencyPercent" value="5" onchange="calculateTotals()" style="width: 100%;"></td>
+                    <td><strong>Contingency Amount:</strong></td>
+                    <td id="contingencyAmount">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Tax Rate (%):</strong></td>
+                    <td><input type="number" id="taxPercent" value="8.5" onchange="calculateTotals()" style="width: 100%;"></td>
+                    <td><strong>Tax Amount:</strong></td>
+                    <td id="taxAmount">$0.00</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
         <div class="estimate-footer">
           <div class="estimate-total">
-            TOTAL: <span id="grandTotal">$0.00</span>
+            <div style="font-size: 0.9rem; color: #666;">Project Total</div>
+            <div style="font-size: 2rem; font-weight: bold; color: var(--primary-green);">
+              <span id="grandTotal">$0.00</span>
+            </div>
           </div>
-          <button class="export-btn" onclick="exportToExcel()">📥 Export to Excel</button>
+          <div style="display: flex; gap: 1rem;">
+            <button class="save-btn" onclick="saveEstimateToProject()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+              💾 Save to Project
+            </button>
+            <button class="export-btn" onclick="exportToExcel()">📥 Export to Excel</button>
+            <button class="export-btn" onclick="exportToPDF()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #e53935, #c62828); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+              📄 Export to PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -3081,27 +3277,115 @@
         });
       }
 
-      // Estimate Generator Functions
+      // Professional Estimate Generator Functions
       function openEstimator() {
         document.getElementById('estimateModal').classList.add('active');
         // Set today's date
         document.getElementById('estimateDate').value = new Date().toISOString().split('T')[0];
+        // Populate client dropdown in estimate modal
+        const estimateClientSelect = document.getElementById('estimateClientSelect');
+        estimateClientSelect.innerHTML = '<option value="">Select Project for Estimate</option>';
+        availableClients.forEach(client => {
+          const option = document.createElement('option');
+          option.value = client.id;
+          option.textContent = client.name;
+          estimateClientSelect.appendChild(option);
+        });
       }
 
       function closeEstimator() {
         document.getElementById('estimateModal').classList.remove('active');
       }
 
-      function addLaborRow() {
-        const tbody = document.getElementById('laborBody');
+      // Tab switching
+      function switchTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.style.display = 'none';
+        });
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        // Show selected tab
+        document.getElementById(tabName + 'Tab').style.display = 'block';
+        // Add active class to clicked button
+        event.target.classList.add('active');
+      }
+
+      // Add takeoff row function
+      function addTakeoffRow() {
+        const tbody = document.getElementById('takeoffBody');
+        const rowCount = tbody.rows.length + 1;
         const row = tbody.insertRow();
         row.innerHTML = `
-          <td><input type="text" placeholder="e.g., Painters"></td>
-          <td><input type="number" placeholder="0" onchange="calculateLabor(this)"></td>
-          <td><input type="number" placeholder="0.00" onchange="calculateLabor(this)"></td>
+          <td><input type="text" class="small-input" placeholder="${rowCount}"></td>
+          <td><input type="text" class="small-input" placeholder="SWG-00${rowCount}"></td>
+          <td><input type="text" placeholder="Spec ref"></td>
+          <td><input type="text" placeholder="Description"></td>
+          <td><input type="text" class="small-input" placeholder="SF/LF"></td>
+          <td><input type="number" class="small-input" placeholder="1" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="quantity-field" readonly></td>
+          <td><input type="text" placeholder="Notes"></td>
+          <td><button onclick="removeRow(this)">❌</button></td>
+        `;
+      }
+
+      // Calculate takeoff row quantity
+      function calculateTakeoffRow(input) {
+        const row = input.closest('tr');
+        const no = parseFloat(row.cells[5].querySelector('input').value) || 0;
+        const length = parseFloat(row.cells[6].querySelector('input').value) || 0;
+        const width = parseFloat(row.cells[7].querySelector('input').value) || 0;
+        const height = parseFloat(row.cells[8].querySelector('input').value) || 0;
+        
+        let quantity = no;
+        if (length > 0) quantity *= length;
+        if (width > 0) quantity *= width;
+        if (height > 0) quantity *= height;
+        
+        row.cells[9].querySelector('input').value = quantity.toFixed(2);
+      }
+
+      // Add building row function
+      function addBuildingRow(building) {
+        const tbody = document.getElementById(building + 'Body');
+        const rowCount = tbody.rows.length + 1;
+        const buildingNum = building.replace('building', '');
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><input type="text" class="small-input" placeholder="${buildingNum}.${rowCount}"></td>
+          <td><input type="text" placeholder="Work description"></td>
+          <td><input type="text" placeholder="Painting/Flooring/etc"></td>
+          <td><input type="text" placeholder="Material type"></td>
+          <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
+          <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
+          <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
+          <td class="labor-cost">$0.00</td>
+          <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
           <td class="total">$0.00</td>
           <td><button onclick="removeRow(this)">❌</button></td>
         `;
+      }
+
+      // Calculate building row totals
+      function calculateBuildingRow(input, building) {
+        const row = input.closest('tr');
+        const laborHours = parseFloat(row.cells[4].querySelector('input').value) || 0;
+        const laborRate = parseFloat(row.cells[5].querySelector('input').value) || 0;
+        const materialCost = parseFloat(row.cells[6].querySelector('input').value) || 0;
+        const equipmentCost = parseFloat(row.cells[8].querySelector('input').value) || 0;
+        
+        const laborCost = laborHours * laborRate;
+        row.cells[7].textContent = `$${laborCost.toFixed(2)}`;
+        
+        const total = laborCost + materialCost + equipmentCost;
+        row.cells[9].textContent = `$${total.toFixed(2)}`;
+        
+        calculateTotals();
       }
 
       function addMaterialRow() {
@@ -3162,43 +3446,179 @@
       }
 
       function calculateTotals() {
-        // Calculate labor total
-        let laborTotal = 0;
-        document.querySelectorAll('#laborBody tr').forEach(row => {
-          const total = parseFloat(row.cells[3].textContent.replace('$', '')) || 0;
-          laborTotal += total;
+        let totalLabor = 0;
+        let totalMaterials = 0;
+        let totalEquipment = 0;
+        
+        // Calculate building totals
+        ['building1', 'building2', 'building3'].forEach(building => {
+          let buildingTotal = 0;
+          const tbody = document.getElementById(building + 'Body');
+          if (tbody) {
+            tbody.querySelectorAll('tr').forEach(row => {
+              const total = parseFloat(row.cells[9].textContent.replace('$', '')) || 0;
+              buildingTotal += total;
+              
+              // Add to category totals
+              const laborHours = parseFloat(row.cells[4].querySelector('input')?.value) || 0;
+              const laborRate = parseFloat(row.cells[5].querySelector('input')?.value) || 0;
+              const materialCost = parseFloat(row.cells[6].querySelector('input')?.value) || 0;
+              const equipmentCost = parseFloat(row.cells[8].querySelector('input')?.value) || 0;
+              
+              totalLabor += laborHours * laborRate;
+              totalMaterials += materialCost;
+              totalEquipment += equipmentCost;
+            });
+          }
+          const totalElement = document.getElementById(building + 'Total');
+          if (totalElement) {
+            totalElement.textContent = `$${buildingTotal.toFixed(2)}`;
+          }
         });
-        document.getElementById('laborTotal').textContent = `$${laborTotal.toFixed(2)}`;
         
-        // Calculate materials total
-        let materialsTotal = 0;
-        document.querySelectorAll('#materialsBody tr').forEach(row => {
-          const total = parseFloat(row.cells[4].textContent.replace('$', '')) || 0;
-          materialsTotal += total;
-        });
-        document.getElementById('materialsTotal').textContent = `$${materialsTotal.toFixed(2)}`;
+        // Update summary totals
+        document.getElementById('totalLabor').textContent = `$${totalLabor.toFixed(2)}`;
+        document.getElementById('totalMaterials').textContent = `$${totalMaterials.toFixed(2)}`;
+        document.getElementById('totalEquipment').textContent = `$${totalEquipment.toFixed(2)}`;
         
-        // Calculate equipment total
-        let equipmentTotal = 0;
-        document.querySelectorAll('#equipmentBody tr').forEach(row => {
-          const total = parseFloat(row.cells[3].textContent.replace('$', '')) || 0;
-          equipmentTotal += total;
-        });
-        document.getElementById('equipmentTotal').textContent = `$${equipmentTotal.toFixed(2)}`;
+        const directCosts = totalLabor + totalMaterials + totalEquipment;
+        document.getElementById('directCosts').textContent = `$${directCosts.toFixed(2)}`;
+        document.getElementById('buildingsSubtotal').textContent = `$${directCosts.toFixed(2)}`;
         
-        // Calculate subtotal
-        const subtotal = laborTotal + materialsTotal + equipmentTotal;
-        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        // Calculate markups
+        const overheadPercent = parseFloat(document.getElementById('overheadPercent')?.value) || 0;
+        const profitPercent = parseFloat(document.getElementById('profitPercent')?.value) || 0;
+        const contingencyPercent = parseFloat(document.getElementById('contingencyPercent')?.value) || 0;
+        const taxPercent = parseFloat(document.getElementById('taxPercent')?.value) || 0;
         
-        // Calculate with overhead and profit
-        const overheadPercent = parseFloat(document.getElementById('overheadPercent').value) || 0;
-        const profitPercent = parseFloat(document.getElementById('profitPercent').value) || 0;
+        const overhead = directCosts * (overheadPercent / 100);
+        const profit = directCosts * (profitPercent / 100);
+        const contingency = directCosts * (contingencyPercent / 100);
         
-        const overhead = subtotal * (overheadPercent / 100);
-        const profit = subtotal * (profitPercent / 100);
-        const grandTotal = subtotal + overhead + profit;
+        const beforeTax = directCosts + overhead + profit + contingency;
+        const tax = beforeTax * (taxPercent / 100);
+        const grandTotal = beforeTax + tax;
         
+        document.getElementById('overheadAmount').textContent = `$${overhead.toFixed(2)}`;
+        document.getElementById('profitAmount').textContent = `$${profit.toFixed(2)}`;
+        document.getElementById('contingencyAmount').textContent = `$${contingency.toFixed(2)}`;
+        document.getElementById('taxAmount').textContent = `$${tax.toFixed(2)}`;
         document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
+      }
+
+      // Save estimate to project
+      async function saveEstimateToProject() {
+        const selectedProject = document.getElementById('estimateClientSelect').value;
+        if (!selectedProject) {
+          alert('Please select a project to save the estimate to.');
+          return;
+        }
+        
+        const estimateData = gatherEstimateData();
+        const fileName = `Estimate_${estimateData.projectName}_${new Date().toISOString().split('T')[0]}.json`;
+        
+        try {
+          // Convert estimate to JSON and then to base64
+          const jsonString = JSON.stringify(estimateData, null, 2);
+          const base64Data = btoa(jsonString);
+          
+          // Upload using the existing webhook
+          const uploadData = {
+            file: base64Data,
+            fileName: fileName,
+            mimeType: 'application/json',
+            category: 'estimates',
+            client: selectedProject,
+            clientName: selectedProject
+          };
+          
+          const response = await fetch(API_CONFIG.uploadWebhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(uploadData)
+          });
+          
+          if (response.ok) {
+            addSystemMessage(`✅ Estimate saved successfully to ${selectedProject} project!`);
+            // Also trigger Excel export
+            exportToExcel();
+          } else {
+            throw new Error('Failed to save estimate');
+          }
+        } catch (error) {
+          console.error('Error saving estimate:', error);
+          addSystemMessage('❌ Failed to save estimate. Please try again.');
+        }
+      }
+
+      // Gather all estimate data
+      function gatherEstimateData() {
+        const data = {
+          projectName: document.getElementById('projectName').value,
+          clientName: document.getElementById('clientName').value,
+          estimateDate: document.getElementById('estimateDate').value,
+          estimatorName: document.getElementById('estimatorName').value,
+          projectLocation: document.getElementById('projectLocation')?.value || '',
+          scopeNotes: document.getElementById('scopeNotes')?.value || '',
+          takeoffItems: [],
+          buildings: {
+            building1: [],
+            building2: [],
+            building3: []
+          },
+          totals: {
+            labor: document.getElementById('totalLabor').textContent,
+            materials: document.getElementById('totalMaterials').textContent,
+            equipment: document.getElementById('totalEquipment').textContent,
+            overhead: document.getElementById('overheadAmount').textContent,
+            profit: document.getElementById('profitAmount').textContent,
+            contingency: document.getElementById('contingencyAmount').textContent,
+            tax: document.getElementById('taxAmount').textContent,
+            grandTotal: document.getElementById('grandTotal').textContent
+          }
+        };
+        
+        // Gather takeoff data
+        document.querySelectorAll('#takeoffBody tr').forEach(row => {
+          data.takeoffItems.push({
+            srNo: row.cells[0].querySelector('input').value,
+            swg: row.cells[1].querySelector('input').value,
+            spec: row.cells[2].querySelector('input').value,
+            description: row.cells[3].querySelector('input').value,
+            units: row.cells[4].querySelector('input').value,
+            no: row.cells[5].querySelector('input').value,
+            length: row.cells[6].querySelector('input').value,
+            width: row.cells[7].querySelector('input').value,
+            height: row.cells[8].querySelector('input').value,
+            quantity: row.cells[9].querySelector('input').value,
+            remarks: row.cells[10].querySelector('input').value
+          });
+        });
+        
+        // Gather building data
+        ['building1', 'building2', 'building3'].forEach(building => {
+          const tbody = document.getElementById(building + 'Body');
+          if (tbody) {
+            tbody.querySelectorAll('tr').forEach(row => {
+              data.buildings[building].push({
+                itemNo: row.cells[0].querySelector('input').value,
+                description: row.cells[1].querySelector('input').value,
+                system: row.cells[2].querySelector('input').value,
+                material: row.cells[3].querySelector('input').value,
+                laborHours: row.cells[4].querySelector('input').value,
+                laborRate: row.cells[5].querySelector('input').value,
+                materialCost: row.cells[6].querySelector('input').value,
+                laborCost: row.cells[7].textContent,
+                equipmentCost: row.cells[8].querySelector('input').value,
+                total: row.cells[9].textContent
+              });
+            });
+          }
+        });
+        
+        return data;
       }
 
       function exportToExcel() {
