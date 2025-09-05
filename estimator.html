@@ -513,6 +513,7 @@
         user-select: none;
         min-height: 48px;
         border-radius: 3px;
+        overflow: hidden;
       }
 
       .existing-file-item:hover {
@@ -554,6 +555,7 @@
         align-items: center;
         gap: 0.5rem;
         width: 100%;
+        min-width: 0;
       }
       
       .file-icon {
@@ -571,7 +573,7 @@
       }
       
       .existing-file-name {
-        flex: 1;
+        flex: 1 1 auto;
         color: var(--concrete-gray);
         font-size: 0.85rem;
         font-weight: 500;
@@ -579,6 +581,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         min-width: 0;
+        max-width: calc(100% - 200px);
       }
 
       .existing-file-meta {
@@ -587,6 +590,7 @@
         font-size: 0.75rem;
         color: var(--steel-gray);
         align-items: center;
+        flex-shrink: 0;
       }
       
       .file-meta-item {
@@ -602,7 +606,8 @@
         display: flex;
         gap: 0.4rem;
         align-items: center;
-        margin-left: auto;
+        margin-left: 0.5rem;
+        flex-shrink: 0;
       }
 
       .file-action-btn {
@@ -630,6 +635,8 @@
         background: var(--warning-red);
         color: white;
         border-color: var(--warning-red);
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
       }
       
       .file-action-btn.delete:hover {
@@ -663,6 +670,7 @@
         padding-left: 28px;
         margin-top: 0.25rem;
         font-size: 0.75rem;
+        overflow: hidden;
       }
 
       .no-files-message {
