@@ -841,13 +841,20 @@
             uploadStatus.remove();
           }
           
+          // Enhanced message with document context
+          const enhancedMessage = attachedImages.length > 0 && !message
+            ? "Please analyze the attached document(s) and provide a summary."
+            : attachedImages.length > 0
+            ? `${message} [Note: ${attachedImages.length} document(s) attached for context]`
+            : message;
+          
           const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/chat', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              message: message || '[Document Analysis Request]',
+              message: enhancedMessage,
               attachments: attachedImages.map((img, index) => {
                 // Extract base64 data from data URL
                 const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
@@ -855,14 +862,24 @@
                   name: img.name,
                   type: img.type || 'image/png',
                   data: base64Data,  // Send base64 for immediate display
+                  base64: base64Data,  // Duplicate field for compatibility
                   mimeType: img.type || 'image/png',
                   isDocument: img.type && img.type.includes('pdf'),
-                  uploadedUrl: uploadedFileUrls[index]?.url || null  // Include blob storage URL if available
+                  uploadedUrl: uploadedFileUrls[index]?.url || null,  // Include blob storage URL if available
+                  metadata: {
+                    fileName: img.name,
+                    fileType: img.type,
+                    fileSize: img.size || 0,
+                    uploadedAt: new Date().toISOString()
+                  }
                 };
               }),
               hasAttachments: attachedImages.length > 0,
               attachmentCount: attachedImages.length,
               uploadedFiles: uploadedFileUrls,  // Send uploaded file URLs separately
+              documentAnalysisRequired: attachedImages.length > 0,
+              includeInContext: true,
+              requestType: 'chat_with_document_context',
               timestamp: new Date().toISOString()
             })
           });
