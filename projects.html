@@ -175,7 +175,7 @@
       .container {
         flex: 1;
         display: grid;
-        grid-template-columns: 350px 1fr 350px;
+        grid-template-columns: 1fr 2fr 1fr;
         gap: 2rem;
         padding: 2rem;
         max-width: 1600px;
@@ -198,846 +198,1301 @@
         box-shadow: var(--shadow-lg);
         border: 2px solid var(--medium-gray);
         position: relative;
-        overflow: hidden;
       }
 
-      .card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--light-blue);
-      }
-
-      /* Project Selector */
-      .client-selector {
+      /* Project List Styles */
+      .project-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
-        padding: 1rem;
-        background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
-        border-radius: 8px;
-        border: 2px solid var(--light-blue);
       }
 
-      .client-selector label {
-        display: block;
-        font-weight: 600;
-        color: var(--concrete-gray);
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
+      .project-list h2 {
+        color: var(--primary-blue);
+        font-size: 1.4rem;
       }
 
-      .client-selector select {
+      .create-project-btn {
+        background: linear-gradient(135deg, var(--hi-vis-green), #64dd17);
+        color: var(--dark-gray);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+
+      .create-project-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(118, 255, 3, 0.3);
+      }
+
+      .project-search {
         width: 100%;
         padding: 0.75rem;
         border: 2px solid var(--medium-gray);
         border-radius: 5px;
-        font-size: 1rem;
-        background: white;
-        color: var(--concrete-gray);
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .client-selector select:hover {
-        border-color: var(--light-blue);
-      }
-
-      .client-selector select:focus {
-        outline: none;
-        border-color: var(--light-blue);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-      }
-
-      /* Document Categories */
-      .document-categories {
-        margin-top: 1rem;
-      }
-
-      .document-categories h3 {
-        color: var(--concrete-gray);
         margin-bottom: 1rem;
-        font-size: 1.2rem;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .document-categories h3::before {
-        content: "📁";
-        font-size: 1.5rem;
-      }
-
-      .category-group {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .category-item {
-        background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
-        border: 2px solid var(--medium-gray);
-        border-radius: 8px;
-        padding: 1rem;
-        transition: all 0.3s ease;
-      }
-
-      .category-item:hover {
-        border-color: var(--light-blue);
-        transform: translateX(5px);
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
-      }
-
-      .category-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .category-header input[type="checkbox"] {
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-        accent-color: var(--light-blue);
-      }
-
-      .category-header label {
-        flex: 1;
-        font-weight: 600;
-        color: var(--concrete-gray);
-        cursor: pointer;
         font-size: 1rem;
       }
 
-      .category-files {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        padding-left: 2rem;
+      .project-items {
+        max-height: 500px;
+        overflow-y: auto;
       }
 
-      .file-input-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
-      }
-
-      .file-input-wrapper input[type="file"] {
-        display: none;
-      }
-
-      .choose-files-btn {
-        background: linear-gradient(135deg, var(--light-blue) 0%, var(--primary-blue) 100%);
-        color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        font-size: 0.9rem;
+      .project-item {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: var(--light-gray);
+        border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
-        font-weight: 600;
+        border: 2px solid transparent;
       }
 
-      .choose-files-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+      .project-item:hover {
+        background: #e3f2fd;
+        border-color: var(--primary-blue);
+        transform: translateX(5px);
       }
 
-      .file-count {
+      .project-item.active {
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-color: var(--primary-blue);
+        box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+      }
+
+      .project-name {
+        font-weight: bold;
+        color: var(--dark-gray);
+        margin-bottom: 0.25rem;
+      }
+
+      .project-stats {
         font-size: 0.85rem;
         color: var(--steel-gray);
-        font-weight: 500;
       }
 
-      .process-button {
-        width: 100%;
-        background: linear-gradient(135deg, var(--light-blue) 0%, var(--primary-blue) 100%);
-        color: white;
-        border: none;
-        padding: 1rem;
-        border-radius: 8px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
-      }
-
-      .process-button:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
-      }
-
-      /* Chat Container */
-      .chat-container {
+      /* Main Content Area */
+      .main-content {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 250px);
-        position: relative;
+        gap: 1.5rem;
       }
 
-      .chat-container::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: var(--light-blue);
+      .project-header {
+        background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+        padding: 1.5rem;
+        border-radius: 10px;
+        color: white;
+      }
+
+      .project-title {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .project-info {
+        display: flex;
+        gap: 2rem;
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      /* File Browser */
+      .file-browser {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        min-height: 400px;
+      }
+
+      .file-browser-navigation {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: #f8f8f8;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        gap: 0.75rem;
+      }
+
+      .nav-button {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        border-radius: 3px;
+        transition: all 0.1s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .nav-button svg {
+        width: 20px;
+        height: 20px;
+        color: #666;
+      }
+
+      .nav-button:hover:not(:disabled) {
+        background: #e3f2fd;
+        border-color: var(--primary-blue);
+      }
+
+      .nav-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .breadcrumb {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        overflow-x: auto;
+        min-height: 36px;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-item {
+        color: var(--primary-blue);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .breadcrumb-item:hover {
+        text-decoration: underline;
+      }
+
+      .breadcrumb-separator {
+        color: #666;
+        margin: 0 0.25rem;
+      }
+
+      .file-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
+        color: white;
+        border-radius: 8px;
+      }
+
+      .file-list-header h4 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      /* File Items */
+      .folder-item,
+      .file-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 1px solid #e0e0e0;
+        margin: 0 0.5rem 2px 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.1s ease;
+        border-radius: 3px;
+      }
+
+      .folder-item:hover,
+      .file-item:hover {
+        background: #e3f2fd;
+        border-color: var(--primary-blue);
+      }
+
+      .file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .file-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+
+      .file-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .file-name {
+        flex: 1;
+        color: var(--concrete-gray);
+        font-size: 0.85rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+      }
+
+      .file-meta {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--steel-gray);
+        align-items: center;
+      }
+
+      .file-actions {
+        display: flex;
+        gap: 0.4rem;
+        margin-left: auto;
+      }
+
+      .file-action-btn {
+        padding: 0.2rem 0.4rem;
+        border: 1px solid #d0d0d0;
+        background: white;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.7rem;
+        transition: all 0.1s ease;
+      }
+
+      .file-action-btn:hover {
+        background: #f0f0f0;
+        border-color: #999;
+      }
+
+      .file-action-btn.delete {
+        background: var(--warning-red);
+        color: white;
+        border-color: var(--warning-red);
+      }
+
+      .file-action-btn.delete:hover {
+        background: #b71c1c;
+        transform: scale(1.05);
+      }
+
+      .folder-file-count {
+        font-size: 0.75rem;
+        color: var(--steel-gray);
+        margin-left: auto;
+        padding: 0.15rem 0.5rem;
+        background: #e3f2fd;
+        border-radius: 10px;
+      }
+
+      .no-files-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--steel-gray);
+        font-style: italic;
+        background: var(--light-gray);
+        border-radius: 8px;
+        border: 2px dashed var(--medium-gray);
+        margin: 1rem;
+      }
+
+      /* Chat Section */
+      .chat-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-lg);
+        display: flex;
+        flex-direction: column;
+        height: 600px;
       }
 
       .chat-header {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+        background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
         color: white;
-        padding: 1.5rem;
-        border-radius: 10px 10px 0 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 4px solid var(--light-blue);
-      }
-
-      .chat-header h2 {
-        font-size: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-      }
-
-      .chat-header h2::before {
-        content: "📋";
-        font-size: 1.8rem;
+        padding: 1rem;
+        border-radius: 8px 8px 0 0;
+        margin: -1.5rem -1.5rem 1rem -1.5rem;
       }
 
       .chat-messages {
         flex: 1;
-        padding: 1.5rem;
         overflow-y: auto;
-        background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        padding: 1rem;
+        background: var(--light-gray);
+        border-radius: 5px;
+        margin-bottom: 1rem;
       }
 
       .message {
+        margin-bottom: 1rem;
         display: flex;
-        animation: fadeIn 0.3s ease-out;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        gap: 0.5rem;
       }
 
       .message.user {
         justify-content: flex-end;
       }
 
-      .message.assistant .message-avatar {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 0.75rem;
-        flex-shrink: 0;
-        animation: float 3s ease-in-out infinite;
-        background: transparent;
-      }
-
-      .message.assistant .message-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        border-radius: 50%;
-      }
-
-      @keyframes float {
-        0%, 100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-10px);
-        }
-      }
-
       .message-content {
         max-width: 70%;
-        padding: 1rem 1.25rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        position: relative;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
       .message.user .message-content {
-        background: linear-gradient(135deg, #64b5f6 0%, #2196f3 100%);
-        color: white;
-        border-bottom-right-radius: 3px;
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
       }
 
-      .message.assistant .message-content {
-        background: white;
-        color: var(--concrete-gray);
-        border-bottom-left-radius: 3px;
-        border: 1px solid var(--medium-gray);
-      }
-
-      .message-time {
-        font-size: 0.75rem;
-        color: #95a5a6;
-        margin-top: 0.5rem;
-      }
-
-      .message.user .message-time {
-        color: rgba(255, 255, 255, 0.8);
+      .message.system .message-content {
+        background: #fff3cd;
+        border-left: 4px solid var(--safety-yellow);
       }
 
       .chat-input-container {
-        padding: 1.5rem;
-        background: white;
-        border-radius: 0 0 10px 10px;
-        border-top: 2px solid var(--medium-gray);
-      }
-
-      .chat-input-wrapper {
         display: flex;
-        gap: 1rem;
-        align-items: center;
+        gap: 0.5rem;
       }
 
       .chat-input {
         flex: 1;
-        padding: 0.75rem 1rem;
+        padding: 0.75rem;
         border: 2px solid var(--medium-gray);
-        border-radius: 25px;
+        border-radius: 5px;
         font-size: 1rem;
-        transition: all 0.3s ease;
+        resize: none;
       }
 
-      .chat-input:focus {
-        outline: none;
-        border-color: var(--light-blue);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-      }
-
-      .send-btn {
+      .send-button {
         padding: 0.75rem 1.5rem;
         background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
         color: white;
         border: none;
-        border-radius: 25px;
-        font-weight: 600;
+        border-radius: 5px;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.3s ease;
-      }
-
-      .send-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
-      }
-
-      /* Toolbox Styles */
-      .toolbox {
-        background: linear-gradient(135deg, #8d6e63, #6d4c41);
-        border-radius: 10px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-lg);
-        border: 3px solid #5d4037;
-        position: relative;
-      }
-
-      .toolbox::before {
-        content: "🧰";
-        position: absolute;
-        top: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 2rem;
-        background: white;
-        padding: 0 10px;
-        border-radius: 50%;
-      }
-
-      .toolbox h3 {
-        color: white;
-        text-align: center;
-        margin-bottom: 1.5rem;
-        font-size: 1.3rem;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .tool-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
-      .tool-btn {
-        background: linear-gradient(135deg, #fdd835, #fbc02d);
-        color: var(--dark-gray);
-        border: 2px solid #f9a825;
-        padding: 1rem;
-        border-radius: 8px;
         font-weight: bold;
-        cursor: pointer;
         transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        font-size: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
       }
 
-      .tool-btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        background: linear-gradient(135deg, #fbc02d, #fdd835);
+      .send-button:hover {
+        background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+        transform: scale(1.05);
       }
 
-      .tool-btn span {
-        font-size: 1.5rem;
-      }
-
-      /* Takeoff Modal (Read-Only) */
-      .takeoff-modal {
-        display: none;
+      /* Context Menu */
+      .context-menu {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         z-index: 10000;
-        padding: 2rem;
+        display: none;
       }
 
-      .takeoff-modal.active {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .context-menu.show {
+        display: block;
       }
 
-      .takeoff-content {
-        background: white;
-        border-radius: 10px;
-        width: 90%;
-        height: 90%;
-        max-width: 1400px;
-        display: flex;
-        flex-direction: column;
-        position: relative;
-      }
-
-      .takeoff-header {
-        background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
-        color: white;
-        padding: 1rem;
-        border-radius: 10px 10px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .read-only-badge {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 0.25rem 0.75rem;
-        border-radius: 15px;
-        font-size: 0.9rem;
-      }
-
-      .takeoff-tools {
-        display: flex;
-        gap: 0.5rem;
-        padding: 1rem;
-        background: var(--light-gray);
-        border-bottom: 2px solid var(--medium-gray);
-      }
-
-      .takeoff-tool-btn {
+      .context-menu-item {
         padding: 0.5rem 1rem;
-        background: white;
-        border: 2px solid var(--medium-gray);
-        border-radius: 5px;
         cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
+        border-bottom: 1px solid #eee;
       }
 
-      .takeoff-tool-btn:hover:not(.disabled) {
-        background: var(--light-blue);
-        border-color: var(--primary-blue);
-      }
-
-      .takeoff-tool-btn.active {
-        background: var(--primary-blue);
-        color: white;
-      }
-
-      .takeoff-tool-btn.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .takeoff-canvas-wrapper {
-        flex: 1;
-        overflow: auto;
+      .context-menu-item:hover {
         background: #f0f0f0;
-        position: relative;
       }
 
-      .close-modal {
-        padding: 0.5rem 1rem;
-        background: var(--warning-red);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
+      .context-menu-separator {
+        border-bottom: 2px solid #ddd;
+        margin: 0.25rem 0;
       }
 
-      .close-modal:hover {
-        background: #b71c1c;
+      /* Loading indicator */
+      .loading-indicator {
+        display: none;
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--steel-gray);
+      }
+
+      .loading-indicator.active {
+        display: block;
+      }
+
+      @media (max-width: 1200px) {
+        .container {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          display: none;
+        }
       }
     </style>
   </head>
+  
   <body>
-    <header class="header">
+    <div class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img src="PM.png" alt="PM Logo" />
+          <img src="images/logo3.png" alt="Foreman" />
         </div>
         <div>
-          <h1>ASK FOREMAN AI</h1>
-          <div class="tagline">Project Management</div>
+          <h1>ASK FOREMAN</h1>
+          <div class="tagline">Project Management Portal</div>
         </div>
       </div>
       <div class="nav-buttons">
-        <a href="index.html" class="nav-btn">🏠 Home</a>
-        <a href="general-chat.html" class="nav-btn">💬 General</a>
-        <a href="estimator.html" class="nav-btn">📊 Estimating</a>
-        <a href="admin.html" class="nav-btn admin">⚙️ Admin</a>
-      </div>
-    </header>
-
-    <div class="container">
-      <!-- Left Sidebar - Document Management -->
-      <div class="sidebar">
-        <div class="card">
-          <div class="client-selector">
-            <label for="projectSelect">Select Project:</label>
-            <select id="projectSelect">
-              <option value="">Choose a project...</option>
-            </select>
-          </div>
-
-          <div class="document-categories">
-            <h3>Project Documents</h3>
-            <div class="category-group">
-              <div class="category-item">
-                <div class="category-header">
-                  <input type="checkbox" id="contracts" />
-                  <label for="contracts">Contracts</label>
-                </div>
-                <div class="category-files">
-                  <div class="file-input-wrapper">
-                    <input type="file" id="contractsFiles" multiple accept=".pdf,.doc,.docx" />
-                    <button class="choose-files-btn" onclick="document.getElementById('contractsFiles').click()">
-                      Choose Files
-                    </button>
-                  </div>
-                  <span class="file-count">0 files</span>
-                </div>
-              </div>
-
-              <div class="category-item">
-                <div class="category-header">
-                  <input type="checkbox" id="submittals" />
-                  <label for="submittals">Submittals</label>
-                </div>
-                <div class="category-files">
-                  <div class="file-input-wrapper">
-                    <input type="file" id="submittalFiles" multiple accept=".pdf,.doc,.docx" />
-                    <button class="choose-files-btn" onclick="document.getElementById('submittalFiles').click()">
-                      Choose Files
-                    </button>
-                  </div>
-                  <span class="file-count">0 files</span>
-                </div>
-              </div>
-
-              <div class="category-item">
-                <div class="category-header">
-                  <input type="checkbox" id="reports" />
-                  <label for="reports">Progress Reports</label>
-                </div>
-                <div class="category-files">
-                  <div class="file-input-wrapper">
-                    <input type="file" id="reportFiles" multiple accept=".pdf,.xlsx,.xls" />
-                    <button class="choose-files-btn" onclick="document.getElementById('reportFiles').click()">
-                      Choose Files
-                    </button>
-                  </div>
-                  <span class="file-count">0 files</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button class="process-button" id="processButton">
-            Upload Documents
-          </button>
-        </div>
-      </div>
-
-      <!-- Main Content - Chat -->
-      <div class="card chat-container">
-        <div class="chat-header">
-          <h2>Project Management Assistant</h2>
-        </div>
-        
-        <div class="chat-messages" id="chatMessages">
-          <div class="message assistant">
-            <div class="message-avatar">
-              <img src="PM.png" alt="PM" />
-            </div>
-            <div class="message-content">
-              <div>Hello! I'm your project management assistant. I can help you with:</div>
-              <ul style="margin: 0.5rem 0 0 1.5rem;">
-                <li>Project scheduling & timelines</li>
-                <li>Resource allocation</li>
-                <li>Progress tracking</li>
-                <li>Document management</li>
-                <li>Contract review</li>
-              </ul>
-              <div class="message-time">Just now</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="chat-input-container">
-          <div class="chat-input-wrapper">
-            <input 
-              type="text" 
-              class="chat-input" 
-              id="chatInput"
-              placeholder="Ask about your project..." 
-              onkeypress="if(event.key === 'Enter') sendMessage()"
-            />
-            <button class="send-btn" onclick="sendMessage()">
-              Send ➤
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Sidebar - Toolbox -->
-      <div class="toolbox">
-        <h3>PROJECT TOOLBOX</h3>
-        <div class="tool-grid">
-          <button class="tool-btn" onclick="openTakeoff()">
-            <span>📐</span>
-            View Takeoff
-          </button>
-          <button class="tool-btn" onclick="viewEstimates()">
-            <span>📊</span>
-            View Estimates
-          </button>
-          <button class="tool-btn" onclick="viewSchedule()">
-            <span>📅</span>
-            Project Schedule
-          </button>
-          <button class="tool-btn" onclick="viewReports()">
-            <span>📈</span>
-            Reports
-          </button>
-        </div>
+        <a href="estimator.html" class="nav-btn">🏗️ Estimator</a>
+        <a href="general-chat.html" class="nav-btn">💬 General Chat</a>
+        <a href="admin.html" class="nav-btn admin">🔧 Admin</a>
       </div>
     </div>
 
-    <!-- Read-Only Takeoff Modal -->
-    <div class="takeoff-modal" id="takeoffModal">
-      <div class="takeoff-content">
-        <div class="takeoff-header">
-          <h2>Project Takeoff Viewer</h2>
-          <span class="read-only-badge">📖 View Only</span>
-          <button class="close-modal" onclick="closeTakeoff()">Close ✕</button>
+    <div class="container">
+      <!-- Left Sidebar - Project List -->
+      <div class="sidebar">
+        <div class="card project-list">
+          <div class="project-list-header">
+            <h2>📁 Projects</h2>
+            <button class="create-project-btn" id="createProjectBtn">+ New</button>
+          </div>
+          <input type="text" class="project-search" id="projectSearch" placeholder="🔍 Search projects..." />
+          <div class="project-items" id="projectItems">
+            <!-- Projects will be loaded here -->
+          </div>
         </div>
-        <div class="takeoff-tools">
-          <button class="takeoff-tool-btn active" data-tool="pan">✋ Pan</button>
-          <button class="takeoff-tool-btn" data-tool="zoom">🔍 Zoom</button>
-          <button class="takeoff-tool-btn disabled" data-tool="measure">📏 Measure (Disabled)</button>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <div class="project-header" id="projectHeader">
+          <div class="project-title">Select a Project</div>
+          <div class="project-info">
+            <span>Choose a project from the list to view details</span>
+          </div>
         </div>
-        <div class="takeoff-canvas-wrapper" id="pdfCanvasWrapper">
-          <canvas id="pdfCanvas"></canvas>
-          <canvas id="annotationCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+
+        <div class="file-browser" id="fileBrowser">
+          <div id="fileList">
+            <!-- File browser will be loaded here -->
+          </div>
+          <div class="loading-indicator" id="filesLoadingIndicator">
+            Loading files...
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Sidebar - Chat -->
+      <div class="sidebar">
+        <div class="chat-container">
+          <div class="chat-header">
+            <h3>💬 Project Assistant</h3>
+            <select id="chatContext" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.25rem; border-radius: 3px; margin-top: 0.5rem;">
+              <option value="general">General Knowledge</option>
+              <option value="current">Current Project</option>
+              <option value="all">All Projects</option>
+            </select>
+          </div>
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-input-container">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask about this project..." rows="2"></textarea>
+            <button class="send-button" id="sendButton">Send</button>
+          </div>
         </div>
       </div>
     </div>
 
     <script>
-      // Load projects
+      // Azure Blob Storage Configuration
+      const AZURE_STORAGE = {
+        account: "saxtechfcs",
+        container: "fcs-clients",
+        sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
+      };
+
+      // API Configuration
+      const API_CONFIG = {
+        chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/EstimatorChat",
+        deleteWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/delete"
+      };
+
+      // State Management
+      let selectedProject = null;
+      let projectFiles = [];
+      let fileStructure = {};
+      let currentPath = [];
+      let chatContext = 'general';
+
+      // DOM Elements
+      const projectItems = document.getElementById('projectItems');
+      const projectSearch = document.getElementById('projectSearch');
+      const createProjectBtn = document.getElementById('createProjectBtn');
+      const projectHeader = document.getElementById('projectHeader');
+      const fileList = document.getElementById('fileList');
+      const filesLoadingIndicator = document.getElementById('filesLoadingIndicator');
+      const chatMessages = document.getElementById('chatMessages');
+      const chatInput = document.getElementById('chatInput');
+      const sendButton = document.getElementById('sendButton');
+      const chatContextSelect = document.getElementById('chatContext');
+
+      // Load projects on page load
       async function loadProjects() {
         try {
-          const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list');
-          const data = await response.json();
+          const projects = [];
+          const projectSet = new Set();
           
-          const projects = Array.isArray(data) ? data : (data.projects || data.clients || []);
+          // Get list from Azure Blob Storage
+          const fcsUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
           
-          const select = document.getElementById('projectSelect');
-          select.innerHTML = '<option value="">Choose a project...</option>';
+          const response = await fetch(fcsUrl);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           
-          if (Array.isArray(projects)) {
-            projects.forEach(project => {
-              const option = document.createElement('option');
-              option.value = project.id || project.name;
-              option.textContent = project.name;
-              select.appendChild(option);
-            });
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+          
+          for (let i = 0; i < prefixes.length; i++) {
+            const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+            if (nameElement) {
+              const fullPath = nameElement.textContent.replace(/\/$/, '');
+              const pathParts = fullPath.split('/');
+              
+              if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                const projectId = pathParts[1];
+                
+                if (!projectSet.has(projectId) && !projectId.startsWith('.') && projectId.length > 0) {
+                  projectSet.add(projectId);
+                  projects.push({
+                    id: projectId,
+                    name: formatProjectName(projectId)
+                  });
+                }
+              }
+            }
           }
+          
+          renderProjects(projects);
+          
         } catch (error) {
           console.error('Error loading projects:', error);
+          addSystemMessage("⚠️ Could not load project list. Please check connection.");
         }
+      }
+
+      function formatProjectName(name) {
+        return name
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
+
+      function renderProjects(projects) {
+        projectItems.innerHTML = '';
+        
+        projects.forEach(project => {
+          const projectItem = document.createElement('div');
+          projectItem.className = 'project-item';
+          projectItem.onclick = () => selectProject(project);
+          
+          projectItem.innerHTML = `
+            <div class="project-name">${project.name}</div>
+            <div class="project-stats">Loading...</div>
+          `;
+          
+          projectItems.appendChild(projectItem);
+        });
+      }
+
+      async function selectProject(project) {
+        // Update UI
+        document.querySelectorAll('.project-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+        
+        selectedProject = project;
+        
+        // Update header
+        projectHeader.innerHTML = `
+          <div class="project-title">📂 ${project.name}</div>
+          <div class="project-info">
+            <span>Project ID: ${project.id}</span>
+            <span>Loading file details...</span>
+          </div>
+        `;
+        
+        // Load project files
+        await loadProjectFiles(project.id);
+        
+        // Update chat context
+        if (chatContextSelect.value === 'current') {
+          addSystemMessage(`🎯 Chat focused on ${project.name} project.`);
+        }
+      }
+
+      async function loadProjectFiles(projectId) {
+        try {
+          filesLoadingIndicator.classList.add('active');
+          
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${projectId}/`;
+          
+          const response = await fetch(listUrl);
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          projectFiles = [];
+          
+          for (let i = 0; i < blobs.length; i++) {
+            const nameElement = blobs[i].getElementsByTagName("Name")[0];
+            const sizeElement = blobs[i].getElementsByTagName("Properties")[0]?.getElementsByTagName("Content-Length")[0];
+            const lastModifiedElement = blobs[i].getElementsByTagName("Properties")[0]?.getElementsByTagName("Last-Modified")[0];
+            
+            if (nameElement) {
+              const fullPath = nameElement.textContent;
+              const fileName = fullPath.split('/').pop();
+              
+              if (fileName && !fileName.startsWith('.') && fileName !== 'placeholder.json') {
+                const encodedPath = fullPath.split('/').map(p => encodeURIComponent(p)).join('/');
+                const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+                
+                projectFiles.push({
+                  name: fileName,
+                  fullPath: fullPath,
+                  blobUrl: blobUrl,
+                  size: parseInt(sizeElement?.textContent || '0'),
+                  lastModified: lastModifiedElement?.textContent || new Date().toISOString(),
+                  category: fullPath.split('/')[2] || 'General'
+                });
+              }
+            }
+          }
+          
+          // Build file structure
+          fileStructure = buildFileStructure(projectFiles);
+          currentPath = [];
+          
+          filesLoadingIndicator.classList.remove('active');
+          renderFileBrowser();
+          
+          // Update project stats
+          const fileCount = projectFiles.length;
+          const totalSize = projectFiles.reduce((sum, f) => sum + f.size, 0);
+          
+          projectHeader.innerHTML = `
+            <div class="project-title">📂 ${selectedProject.name}</div>
+            <div class="project-info">
+              <span>Files: ${fileCount}</span>
+              <span>Size: ${formatFileSize(totalSize)}</span>
+              <span>Last Updated: ${new Date(Math.max(...projectFiles.map(f => new Date(f.lastModified)))).toLocaleDateString()}</span>
+            </div>
+          `;
+          
+          addSystemMessage(`📁 Loaded ${fileCount} file${fileCount !== 1 ? 's' : ''} for ${selectedProject.name}`);
+          
+        } catch (error) {
+          console.error('Error loading project files:', error);
+          fileList.innerHTML = '<div class="no-files-message">Could not load files. Please check your connection.</div>';
+        }
+      }
+
+      function buildFileStructure(files) {
+        const structure = {};
+        
+        files.forEach(file => {
+          const pathParts = file.fullPath.split('/').slice(2); // Remove client prefix
+          let current = structure;
+          
+          // Navigate/create folder structure
+          for (let i = 0; i < pathParts.length - 1; i++) {
+            const folder = pathParts[i];
+            if (!current[folder]) {
+              current[folder] = { _files: [] };
+            }
+            current = current[folder];
+          }
+          
+          // Add file to current folder
+          if (!current._files) {
+            current._files = [];
+          }
+          current._files.push(file);
+        });
+        
+        return structure;
+      }
+
+      function getCurrentFolder() {
+        let current = fileStructure;
+        for (const folder of currentPath) {
+          current = current[folder];
+        }
+        return current;
+      }
+
+      function renderFileBrowser() {
+        fileList.innerHTML = '';
+        
+        // Add navigation
+        const navBar = document.createElement('div');
+        navBar.className = 'file-browser-navigation';
+        
+        navBar.innerHTML = `
+          <button class="nav-button" onclick="navigateBack()" title="Back" ${currentPath.length === 0 ? 'disabled' : ''}>
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+          <button class="nav-button" onclick="navigateToPath(0)" title="Home">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+            </svg>
+          </button>
+          <div class="breadcrumb">
+            <span class="breadcrumb-item" onclick="navigateToPath(0)">${selectedProject ? selectedProject.name : 'Root'}</span>
+            ${currentPath.map((folder, index) => `
+              <span class="breadcrumb-separator">/</span>
+              <span class="breadcrumb-item" onclick="navigateToPath(${index + 1})">${folder}</span>
+            `).join('')}
+          </div>
+          <button class="nav-button" onclick="refreshFiles()" title="Refresh">
+            <svg viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        `;
+        
+        fileList.appendChild(navBar);
+        
+        // Add header
+        const header = document.createElement('div');
+        header.className = 'file-list-header';
+        header.innerHTML = '<h4>Project Files</h4>';
+        fileList.appendChild(header);
+        
+        // Get current folder content
+        const currentFolder = getCurrentFolder();
+        const folders = Object.keys(currentFolder).filter(key => key !== '_files');
+        const files = currentFolder._files || [];
+        
+        const contentContainer = document.createElement('div');
+        
+        if (folders.length === 0 && files.length === 0) {
+          contentContainer.innerHTML = '<div class="no-files-message">📁 This folder is empty</div>';
+        } else {
+          // Render folders
+          folders.forEach(folderName => {
+            const folderItem = document.createElement('div');
+            folderItem.className = 'folder-item';
+            folderItem.ondblclick = () => navigateToFolder(folderName);
+            folderItem.oncontextmenu = (e) => showContextMenu(e, folderName, true);
+            
+            const folderObj = currentFolder[folderName];
+            const fileCount = countFilesInFolder(folderObj);
+            
+            folderItem.innerHTML = `
+              <div class="file-info">
+                <div class="file-icon">
+                  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#FFA000" d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+                  </svg>
+                </div>
+                <div class="file-name">${folderName}</div>
+                <div class="folder-file-count">${fileCount} file${fileCount !== 1 ? 's' : ''}</div>
+              </div>
+            `;
+            
+            contentContainer.appendChild(folderItem);
+          });
+          
+          // Render files
+          files.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.ondblclick = () => openFilePreview(file);
+            fileItem.oncontextmenu = (e) => showContextMenu(e, file.name, false, file);
+            
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            
+            fileItem.innerHTML = `
+              <div class="file-info">
+                <div class="file-icon">${getFileIcon(fileExt)}</div>
+                <div class="file-name">${file.name}</div>
+                <div class="file-meta">
+                  <span>${formatFileSize(file.size)}</span>
+                  <span>${new Date(file.lastModified).toLocaleDateString()}</span>
+                </div>
+                <div class="file-actions">
+                  <button class="file-action-btn delete" onclick="event.stopPropagation(); deleteFile('${file.fullPath}', '${file.name}')">🗑️</button>
+                </div>
+              </div>
+            `;
+            
+            contentContainer.appendChild(fileItem);
+          });
+        }
+        
+        fileList.appendChild(contentContainer);
+      }
+
+      function countFilesInFolder(folder) {
+        let count = 0;
+        if (folder._files) {
+          count += folder._files.length;
+        }
+        Object.keys(folder).forEach(key => {
+          if (key !== '_files' && typeof folder[key] === 'object') {
+            count += countFilesInFolder(folder[key]);
+          }
+        });
+        return count;
+      }
+
+      function navigateToFolder(folderName) {
+        currentPath.push(folderName);
+        renderFileBrowser();
+      }
+
+      function navigateBack() {
+        if (currentPath.length > 0) {
+          currentPath.pop();
+          renderFileBrowser();
+        }
+      }
+
+      function navigateToPath(index) {
+        currentPath = currentPath.slice(0, index);
+        renderFileBrowser();
+      }
+
+      function refreshFiles() {
+        if (selectedProject) {
+          addSystemMessage('🔄 Refreshing file list...');
+          loadProjectFiles(selectedProject.id);
+        }
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+      }
+
+      function getFileIcon(ext) {
+        // Returns SVG icon based on file extension
+        if (ext === 'pdf') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <rect width="24" height="24" rx="2" fill="#DC372C"/>
+            <text x="12" y="16" font-family="Arial" font-size="8" font-weight="bold" fill="white" text-anchor="middle">PDF</text>
+          </svg>`;
+        } else if (ext === 'docx' || ext === 'doc') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#2B579A" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+          </svg>`;
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#107C41" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+          </svg>`;
+        } else if (ext === 'dwg' || ext === 'dxf') {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <rect fill="#E51937" width="24" height="24" rx="2"/>
+            <text x="12" y="16" font-family="Arial" font-size="8" font-weight="bold" fill="white" text-anchor="middle">DWG</text>
+          </svg>`;
+        } else {
+          return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#757575" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+            <path fill="#FFF" opacity=".5" d="M14 2v6h6"/>
+          </svg>`;
+        }
+      }
+
+      function openFilePreview(file) {
+        const modal = document.createElement('div');
+        modal.className = 'file-preview-modal';
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.8);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          max-width: 500px;
+          width: 90%;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        `;
+        
+        modalContent.innerHTML = `
+          <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-blue);">File Preview</h3>
+          <div style="margin-bottom: 1rem;">
+            <strong>File:</strong> ${file.name}<br>
+            <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+            <strong>Category:</strong> ${file.category || 'General'}
+          </div>
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button onclick="window.open('${file.blobUrl}', '_blank'); this.closest('.file-preview-modal').remove();" 
+              style="flex: 1; padding: 0.75rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">
+              👁️ Preview
+            </button>
+            <button onclick="downloadFileWithWarning('${file.blobUrl}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
+              style="flex: 1; padding: 0.75rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">
+              📥 Download
+            </button>
+            <button onclick="this.closest('.file-preview-modal').remove();" 
+              style="padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+              Cancel
+            </button>
+          </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        modal.onclick = (e) => {
+          if (e.target === modal) modal.remove();
+        };
+      }
+
+      function downloadFileWithWarning(blobUrl, fileName) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        a.click();
+        
+        setTimeout(() => {
+          const warningModal = document.createElement('div');
+          warningModal.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10001;
+            max-width: 450px;
+          `;
+          
+          warningModal.innerHTML = `
+            <h3 style="margin-top: 0; color: #d93025;">⚠️ Important Notice</h3>
+            <p style="margin: 1rem 0; color: #666;">
+              If you make changes to this file, please remember to upload it back to the project 
+              to ensure everyone has access to the latest version.
+            </p>
+            <button onclick="this.parentElement.remove();" 
+              style="width: 100%; padding: 0.75rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">
+              Got it!
+            </button>
+          `;
+          
+          document.body.appendChild(warningModal);
+        }, 500);
+      }
+
+      function showContextMenu(event, itemName, isFolder, fileObj = null) {
+        event.preventDefault();
+        
+        const existingMenu = document.querySelector('.context-menu');
+        if (existingMenu) existingMenu.remove();
+        
+        const menu = document.createElement('div');
+        menu.className = 'context-menu show';
+        menu.style.left = event.pageX + 'px';
+        menu.style.top = event.pageY + 'px';
+        
+        if (isFolder) {
+          menu.innerHTML = `
+            <div class="context-menu-item" onclick="navigateToFolder('${itemName}'); closeContextMenu();">📂 Open</div>
+          `;
+        } else {
+          const file = fileObj || getCurrentFolder()._files.find(f => f.name === itemName);
+          
+          menu.innerHTML = `
+            <div class="context-menu-item" onclick="openFilePreview(${JSON.stringify(file).replace(/"/g, '&quot;')}); closeContextMenu();">👁️ Preview</div>
+            <div class="context-menu-item" onclick="downloadFileWithWarning('${file.blobUrl}', '${file.name}'); closeContextMenu();">📥 Download</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" onclick="deleteFile('${file.fullPath}', '${file.name}'); closeContextMenu();">🗑️ Delete</div>
+          `;
+        }
+        
+        document.body.appendChild(menu);
+        
+        setTimeout(() => {
+          document.addEventListener('click', closeContextMenu);
+        }, 100);
+      }
+
+      function closeContextMenu() {
+        const menu = document.querySelector('.context-menu');
+        if (menu) {
+          menu.remove();
+          document.removeEventListener('click', closeContextMenu);
+        }
+      }
+
+      async function deleteFile(fullPath, fileName) {
+        if (confirm(`Are you sure you want to delete ${fileName}?`)) {
+          try {
+            addSystemMessage(`🗑️ Deleting ${fileName}...`);
+            
+            const response = await fetch(API_CONFIG.deleteWebhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                filePath: fullPath,
+                client: selectedProject ? selectedProject.id : null
+              })
+            });
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            addSystemMessage(`✅ Successfully deleted: ${fileName}`);
+            
+            if (selectedProject) {
+              setTimeout(() => {
+                loadProjectFiles(selectedProject.id);
+              }, 500);
+            }
+          } catch (error) {
+            console.error('Error deleting file:', error);
+            addSystemMessage(`❌ Failed to delete ${fileName}: ${error.message}`);
+          }
+        }
+      }
+
+      // Create project modal
+      createProjectBtn.addEventListener('click', () => {
+        const modalHTML = `
+          <div id="projectModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+          ">
+            <div style="
+              background: white;
+              padding: 2rem;
+              border-radius: 10px;
+              width: 90%;
+              max-width: 500px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            ">
+              <h2 style="margin-bottom: 1.5rem; color: var(--primary-blue);">🏗️ Create New Project</h2>
+              
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Project Name *</label>
+                <input type="text" id="projectNameInput" placeholder="e.g. ABC Construction" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                ">
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button onclick="document.getElementById('projectModal').remove()" style="
+                  padding: 0.75rem 1.5rem;
+                  background: var(--medium-gray);
+                  color: var(--dark-gray);
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Cancel</button>
+                <button onclick="createProject()" style="
+                  padding: 0.75rem 1.5rem;
+                  background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
+                  color: white;
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Create Project</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+      });
+
+      async function createProject() {
+        const projectNameInput = document.getElementById('projectNameInput');
+        const projectName = projectNameInput.value.trim();
+        
+        if (!projectName) {
+          alert('Please enter a project name');
+          return;
+        }
+        
+        const folderId = projectName.toLowerCase().replace(/\s+/g, '-');
+        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
+        
+        for (const category of categories) {
+          const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
+          await createPlaceholderFile(placeholderPath);
+        }
+        
+        document.getElementById('projectModal').remove();
+        addSystemMessage(`✅ Created new project: ${projectName}`);
+        
+        await loadProjects();
+      }
+
+      async function createPlaceholderFile(path) {
+        const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${path}${AZURE_STORAGE.sasToken}`;
+        
+        await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ placeholder: true, created: new Date().toISOString() })
+        });
       }
 
       // Chat functionality
-      async function sendMessage() {
-        const input = document.getElementById('chatInput');
-        const message = input.value.trim();
+      function addMessage(text, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
         
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = text;
+        
+        messageDiv.appendChild(contentDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function addSystemMessage(text) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message system';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = text;
+        
+        messageDiv.appendChild(contentDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      async function sendMessage() {
+        const message = chatInput.value.trim();
         if (!message) return;
         
-        const messagesContainer = document.getElementById('chatMessages');
-        
-        // Add user message
-        const userMessage = document.createElement('div');
-        userMessage.className = 'message user';
-        userMessage.innerHTML = `
-          <div class="message-content">
-            <div>${message}</div>
-            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-          </div>
-        `;
-        messagesContainer.appendChild(userMessage);
-        
-        // Clear input
-        input.value = '';
-        
-        // Add typing indicator
-        const typingIndicator = document.createElement('div');
-        typingIndicator.className = 'message assistant';
-        typingIndicator.innerHTML = `
-          <div class="message-avatar">
-            <img src="PM.png" alt="PM" />
-          </div>
-          <div class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        `;
-        messagesContainer.appendChild(typingIndicator);
-        
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        addMessage(message, 'user');
+        chatInput.value = '';
         
         try {
-          const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/PMchat', {
+          const contextValue = chatContextSelect.value;
+          let context = 'general';
+          
+          if (contextValue === 'current' && selectedProject) {
+            context = selectedProject.id;
+          } else if (contextValue === 'all') {
+            context = 'all-clients';
+          }
+          
+          const response = await fetch(API_CONFIG.chatWebhookUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
               message: message,
-              project: document.getElementById('projectSelect').value,
-              timestamp: new Date().toISOString()
+              context: context
             })
           });
           
-          let responseText = await response.text();
+          if (!response.ok) throw new Error('Chat request failed');
           
-          try {
-            const jsonResponse = JSON.parse(responseText);
-            responseText = jsonResponse.response || jsonResponse.message || responseText;
-          } catch (e) {}
-          
-          // Remove typing indicator
-          typingIndicator.remove();
-          
-          // Add assistant response
-          const assistantMessage = document.createElement('div');
-          assistantMessage.className = 'message assistant';
-          assistantMessage.innerHTML = `
-            <div class="message-avatar">
-              <img src="PM.png" alt="PM" />
-            </div>
-            <div class="message-content">
-              <div>${responseText}</div>
-              <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-            </div>
-          `;
-          messagesContainer.appendChild(assistantMessage);
+          const data = await response.json();
+          addMessage(data.response || 'I apologize, but I couldn\'t process your request.', 'assistant');
           
         } catch (error) {
-          console.error('Error:', error);
-          typingIndicator.remove();
+          console.error('Chat error:', error);
+          addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
         }
+      }
+
+      sendButton.addEventListener('click', sendMessage);
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      chatContextSelect.addEventListener('change', (e) => {
+        chatContext = e.target.value;
+        if (chatContext === 'general') {
+          addSystemMessage('🌐 Chat context set to General Construction Knowledge.');
+        } else if (chatContext === 'all') {
+          addSystemMessage('🔍 Knowledge Graph mode activated! Searching across ALL projects.');
+        } else if (chatContext === 'current' && selectedProject) {
+          addSystemMessage(`🎯 Chat focused on ${selectedProject.name} project.`);
+        }
+      });
+
+      projectSearch.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('.project-item');
         
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
-
-      // Toolbox functions
-      function openTakeoff() {
-        document.getElementById('takeoffModal').classList.add('active');
-      }
-
-      function closeTakeoff() {
-        document.getElementById('takeoffModal').classList.remove('active');
-      }
-
-      function viewEstimates() {
-        alert('Opening Estimates Viewer...');
-      }
-
-      function viewSchedule() {
-        alert('Opening Project Schedule...');
-      }
-
-      function viewReports() {
-        alert('Opening Reports...');
-      }
-
-      // Read-only takeoff functionality
-      document.querySelectorAll('.takeoff-tool-btn:not(.disabled)').forEach(btn => {
-        btn.addEventListener('click', function() {
-          if (!this.classList.contains('disabled')) {
-            document.querySelectorAll('.takeoff-tool-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-          }
+        items.forEach(item => {
+          const name = item.querySelector('.project-name').textContent.toLowerCase();
+          item.style.display = name.includes(searchTerm) ? 'block' : 'none';
         });
       });
 
       // Initialize
       loadProjects();
+      addSystemMessage('👋 Welcome to Project Management! Select a project to get started.');
     </script>
   </body>
 </html>
