@@ -4320,10 +4320,7 @@
             // Add a count marker
             addCountMarker(x, y, ctx);
           } else if (currentTool === 'annotation') {
-            const text = prompt('Enter annotation text:');
-            if (text) {
-              addTextAnnotation(x, y, text, ctx);
-            }
+            showAnnotationDialog(x, y, ctx);
           } else if (currentTool === 'scale') {
             // Start measuring for scale setting
             if (!isDrawing) {
@@ -4567,6 +4564,55 @@
           area -= points[j].x * points[i].y;
         }
         return Math.abs(area / 2);
+      }
+      
+      // Show annotation dialog
+      function showAnnotationDialog(x, y, ctx) {
+        // Create modal for annotation input
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          z-index: 10001;
+        `;
+        
+        modal.innerHTML = `
+          <h3 style="margin-top: 0; color: var(--concrete-gray);">Add Annotation</h3>
+          <p style="color: #666;">Enter text to add at the selected location:</p>
+          <textarea id="annotationText" placeholder="Enter annotation..." style="width: 300px; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; resize: vertical;"></textarea>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="this.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            <button id="addAnnotationBtn" style="padding: 8px 16px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Focus on textarea
+        const textArea = document.getElementById('annotationText');
+        textArea.focus();
+        
+        // Handle annotation add
+        document.getElementById('addAnnotationBtn').onclick = function() {
+          const text = textArea.value.trim();
+          if (text) {
+            addTextAnnotation(x, y, text, ctx);
+          }
+          modal.remove();
+        };
+        
+        // Handle enter key
+        textArea.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && e.ctrlKey) {
+            document.getElementById('addAnnotationBtn').click();
+          }
+        });
       }
       
       // Show scale setting dialog

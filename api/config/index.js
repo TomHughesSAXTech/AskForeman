@@ -7,7 +7,7 @@ module.exports = async function (context, req) {
     // Only provide non-sensitive configuration
     // The function key is injected server-side when needed
     const config = {
-        functionBaseUrl: 'https://askforeman-functions.azurewebsites.net/api',
+        functionBaseUrl: 'https://saxtech-docprocessor.azurewebsites.net/api',
         functionKey: process.env.AZURE_FUNCTION_KEY || '',
         endpoints: {
             analyzeImage: '/analyze-image',

@@ -936,10 +936,38 @@
 
       .message-time {
         font-size: 0.75rem;
-        color: #95a5a6;
-        margin-top: 0.5rem;
+        color: #999;
+        margin-top: 0.25rem;
       }
-
+      
+      /* Takeoff Viewer Modal Styles */
+      .takeoff-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .takeoff-modal.active {
+        display: flex;
+      }
+      
+      .takeoff-content {
+        width: 90%;
+        height: 85%;
+        background: white;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    </style>
       .message.user .message-time {
         color: rgba(255, 255, 255, 0.8);
       }
@@ -1780,6 +1808,66 @@
       </div>
     </div>
 
+    <!-- Takeoff Viewer Modal (Read-Only) -->
+    <div class="takeoff-modal" id="takeoffViewerModal" style="display: none;">
+      <div class="takeoff-content" style="background: linear-gradient(135deg, #0d47a1, #002171); border: 2px solid var(--light-blue);">
+        <div class="takeoff-header" style="background: linear-gradient(135deg, var(--dark-blue), var(--primary-blue)); padding: 1rem; border-bottom: 2px solid var(--light-blue);">
+          <h2 style="color: white; margin: 0;">📐 Takeoff Document Viewer</h2>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <span id="viewerFileName" style="color: #90caf9; font-size: 0.9rem;"></span>
+            <button onclick="closeTakeoffViewer()" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer;">
+              Close ✕
+            </button>
+          </div>
+        </div>
+        
+        <div class="takeoff-workspace" style="display: flex; height: calc(100% - 60px);">
+          <div class="takeoff-canvas-wrapper" id="viewerCanvasWrapper" style="flex: 1; position: relative; overflow: hidden; background: #f5f5f5;">
+            <canvas id="viewerCanvas" style="background: white;"></canvas>
+            <div style="position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 0.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                <button onclick="viewerZoomIn()" style="padding: 0.25rem 0.5rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">🔍+</button>
+                <button onclick="viewerZoomOut()" style="padding: 0.25rem 0.5rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">🔍-</button>
+                <button onclick="viewerResetZoom()" style="padding: 0.25rem 0.5rem; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">Reset</button>
+              </div>
+              <div id="viewerPageNav" style="display: none; gap: 0.5rem;">
+                <button onclick="viewerPrevPage()" id="viewerPrevBtn" style="padding: 0.25rem 0.5rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>← Prev</button>
+                <span id="viewerPageInfo" style="padding: 0.25rem; color: #333;">Page 1 of 1</span>
+                <button onclick="viewerNextPage()" id="viewerNextBtn" style="padding: 0.25rem 0.5rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>Next →</button>
+              </div>
+            </div>
+            <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(255,193,7,0.95); padding: 0.5rem; border-radius: 8px;">
+              <strong style="color: #333;">📖 Read-Only Mode</strong>
+            </div>
+          </div>
+          
+          <div class="takeoff-sidebar" style="width: 350px; background: white; border-left: 2px solid var(--medium-gray); overflow-y: auto;">
+            <div style="padding: 1rem; border-bottom: 1px solid var(--medium-gray);">
+              <h3 style="color: var(--primary-blue); margin-bottom: 0.5rem;">AI Document Assistant</h3>
+              <div id="viewerChatMessages" style="height: 300px; overflow-y: auto; margin-bottom: 1rem; padding: 0.5rem; background: #f5f5f5; border-radius: 8px;">
+                <div style="padding: 0.5rem; background: white; border-radius: 4px; margin-bottom: 0.5rem;">
+                  <strong>AI:</strong> I can help you understand this document. Ask me about measurements, specifications, or any details you see.
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="viewerChatInput" placeholder="Ask about this document..." style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onkeypress="if(event.key === 'Enter') sendViewerChat()">
+                <button onclick="sendViewerChat()" style="padding: 0.5rem 1rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">Send</button>
+              </div>
+            </div>
+            
+            <div style="padding: 1rem;">
+              <h4 style="color: var(--concrete-gray); margin-bottom: 0.5rem;">Document Info</h4>
+              <div id="viewerDocInfo" style="font-size: 0.9rem; color: #666;">
+                <p><strong>Type:</strong> <span id="viewerDocType">-</span></p>
+                <p><strong>Size:</strong> <span id="viewerDocSize">-</span></p>
+                <p><strong>Project:</strong> <span id="viewerProject">-</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       // Azure Blob Storage Configuration
       const AZURE_STORAGE = {
@@ -2518,61 +2606,131 @@
       
       // Open file preview modal
       function openFilePreview(file) {
-        const modal = document.createElement('div');
-        modal.className = 'file-preview-modal';
-        modal.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.8);
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
+        const fileExtension = file.name.split('.').pop().toLowerCase();
         
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-          background: white;
-          padding: 2rem;
-          border-radius: 8px;
-          max-width: 500px;
-          width: 90%;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        `;
-        
-        modalContent.innerHTML = `
-          <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-green);">File Preview</h3>
-          <div style="margin-bottom: 1rem;">
-            <strong>File:</strong> ${file.name}<br>
-            <strong>Size:</strong> ${formatFileSize(file.size)}<br>
-            <strong>Category:</strong> ${file.category || 'General'}
-          </div>
-          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button onclick="window.open('${file.blobUrl}', '_blank'); this.closest('.file-preview-modal').remove();" 
-              style="flex: 1; padding: 0.75rem; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer;">
-              👁️ Preview in Browser
-            </button>
-            <button onclick="downloadFileWithWarning('${file.blobUrl}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
-              style="flex: 1; padding: 0.75rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              📥 Download
-            </button>
-            <button onclick="this.closest('.file-preview-modal').remove();" 
-              style="padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-              Cancel
-            </button>
-          </div>
-        `;
-        
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-        
-        // Close on background click
-        modal.onclick = (e) => {
-          if (e.target === modal) modal.remove();
-        };
+        // For PDFs and images, use the takeoff viewer
+        if (['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(fileExtension)) {
+          // Check if it's a drawing file
+          const isDrawing = file.fullPath && file.fullPath.includes('/drawings/');
+          
+          if (isDrawing) {
+            // Directly open in takeoff viewer for drawings
+            openTakeoffViewer(file.blobUrl || file.url, file.name, selectedClient);
+          } else {
+            // Show modal with options
+            const modal = document.createElement('div');
+            modal.className = 'file-preview-modal';
+            modal.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0,0,0,0.8);
+              z-index: 10000;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+              background: white;
+              padding: 2rem;
+              border-radius: 8px;
+              max-width: 500px;
+              width: 90%;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            
+            modalContent.innerHTML = `
+              <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-blue);">View Document: ${file.name}</h3>
+              <div style="margin-bottom: 1rem; color: #666;">
+                <p><strong>Size:</strong> ${formatFileSize(file.size)}</p>
+                <p><strong>Type:</strong> ${fileExtension.toUpperCase()}</p>
+                <p style="margin-top: 1rem;">Choose how you want to view this document:</p>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem;">
+                <button onclick="openTakeoffViewer('${file.blobUrl || file.url}', '${file.name}', '${selectedClient}'); this.closest('.file-preview-modal').remove();" 
+                  style="padding: 1rem; background: linear-gradient(135deg, var(--primary-blue), var(--light-blue)); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                  📐 Open in Document Viewer with AI Assistant
+                </button>
+                <button onclick="window.open('${file.blobUrl || file.url}', '_blank'); this.closest('.file-preview-modal').remove();" 
+                  style="padding: 1rem; background: white; color: var(--primary-blue); border: 2px solid var(--primary-blue); border-radius: 4px; cursor: pointer; font-weight: 600;">
+                  🌐 Open in New Browser Tab
+                </button>
+                <button onclick="downloadFileWithWarning('${file.blobUrl || file.url}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
+                  style="padding: 1rem; background: #f5f5f5; color: #666; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;">
+                  📥 Download File
+                </button>
+                <button onclick="this.closest('.file-preview-modal').remove();" 
+                  style="padding: 0.75rem; background: transparent; color: #999; border: none; cursor: pointer; text-decoration: underline;">
+                  Cancel
+                </button>
+              </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Close on background click
+            modal.onclick = (e) => {
+              if (e.target === modal) modal.remove();
+            };
+          }
+        } else {
+          // For non-viewable files, show download option
+          const modal = document.createElement('div');
+          modal.className = 'file-preview-modal';
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          `;
+          
+          const modalContent = document.createElement('div');
+          modalContent.style.cssText = `
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          `;
+          
+          modalContent.innerHTML = `
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--concrete-gray);">File: ${file.name}</h3>
+            <div style="margin-bottom: 1.5rem; color: #666;">
+              <p>This file type (.${fileExtension}) cannot be previewed in the browser.</p>
+              <p style="margin-top: 0.5rem;"><strong>Size:</strong> ${formatFileSize(file.size)}</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+              <button onclick="downloadFileWithWarning('${file.blobUrl || file.url}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
+                style="flex: 1; padding: 0.75rem; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📥 Download
+              </button>
+              <button onclick="this.closest('.file-preview-modal').remove();" 
+                style="padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+                Cancel
+              </button>
+            </div>
+          `;
+          
+          modal.appendChild(modalContent);
+          document.body.appendChild(modal);
+          
+          // Close on background click
+          modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+          };
+        }
       }
       
       // Download file with warning
@@ -3841,6 +3999,210 @@
         loadClients();
         setupImageUpload();
       });
+      
+      // Takeoff Viewer Functions
+      let viewerZoom = 1;
+      let viewerCurrentPDF = null;
+      let viewerCurrentPage = 1;
+      let viewerTotalPages = 1;
+      
+      function openTakeoffViewer(fileUrl, fileName, project) {
+        const modal = document.getElementById('takeoffViewerModal');
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        
+        document.getElementById('viewerFileName').textContent = fileName;
+        document.getElementById('viewerProject').textContent = project || selectedClient;
+        document.getElementById('viewerDocType').textContent = fileName.endsWith('.pdf') ? 'PDF Document' : 'Image';
+        
+        // Load and display the file
+        loadFileInViewer(fileUrl, fileName);
+      }
+      
+      function closeTakeoffViewer() {
+        const modal = document.getElementById('takeoffViewerModal');
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        viewerCurrentPDF = null;
+        viewerZoom = 1;
+      }
+      
+      async function loadFileInViewer(fileUrl, fileName) {
+        const canvas = document.getElementById('viewerCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        try {
+          const response = await fetch(fileUrl);
+          const blob = await response.blob();
+          document.getElementById('viewerDocSize').textContent = (blob.size / 1024).toFixed(1) + ' KB';
+          
+          if (fileName.endsWith('.pdf')) {
+            // Load PDF using PDF.js
+            const arrayBuffer = await blob.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+            const pdf = await loadingTask.promise;
+            
+            viewerCurrentPDF = pdf;
+            viewerTotalPages = pdf.numPages;
+            viewerCurrentPage = 1;
+            
+            // Show page navigation if multiple pages
+            if (viewerTotalPages > 1) {
+              document.getElementById('viewerPageNav').style.display = 'flex';
+              document.getElementById('viewerPageInfo').textContent = `Page 1 of ${viewerTotalPages}`;
+              document.getElementById('viewerNextBtn').disabled = false;
+            }
+            
+            await renderViewerPDFPage(1);
+          } else {
+            // Display image
+            const img = new Image();
+            img.onload = function() {
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+            };
+            img.src = URL.createObjectURL(blob);
+          }
+        } catch (error) {
+          console.error('Error loading file in viewer:', error);
+          addSystemMessage(`❌ Error loading file: ${error.message}`);
+        }
+      }
+      
+      async function renderViewerPDFPage(pageNum) {
+        if (!viewerCurrentPDF) return;
+        
+        const canvas = document.getElementById('viewerCanvas');
+        const ctx = canvas.getContext('2d');
+        const page = await viewerCurrentPDF.getPage(pageNum);
+        
+        const viewport = page.getViewport({ scale: 1.5 * viewerZoom });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        
+        await page.render({
+          canvasContext: ctx,
+          viewport: viewport
+        }).promise;
+      }
+      
+      // Viewer zoom controls
+      function viewerZoomIn() {
+        viewerZoom = Math.min(viewerZoom * 1.2, 3);
+        applyViewerZoom();
+      }
+      
+      function viewerZoomOut() {
+        viewerZoom = Math.max(viewerZoom * 0.8, 0.5);
+        applyViewerZoom();
+      }
+      
+      function viewerResetZoom() {
+        viewerZoom = 1;
+        applyViewerZoom();
+      }
+      
+      function applyViewerZoom() {
+        if (viewerCurrentPDF) {
+          renderViewerPDFPage(viewerCurrentPage);
+        } else {
+          const canvas = document.getElementById('viewerCanvas');
+          canvas.style.transform = `scale(${viewerZoom})`;
+          canvas.style.transformOrigin = '0 0';
+        }
+      }
+      
+      // Page navigation
+      function viewerPrevPage() {
+        if (viewerCurrentPage > 1) {
+          viewerCurrentPage--;
+          renderViewerPDFPage(viewerCurrentPage);
+          updateViewerPageInfo();
+        }
+      }
+      
+      function viewerNextPage() {
+        if (viewerCurrentPage < viewerTotalPages) {
+          viewerCurrentPage++;
+          renderViewerPDFPage(viewerCurrentPage);
+          updateViewerPageInfo();
+        }
+      }
+      
+      function updateViewerPageInfo() {
+        document.getElementById('viewerPageInfo').textContent = `Page ${viewerCurrentPage} of ${viewerTotalPages}`;
+        document.getElementById('viewerPrevBtn').disabled = viewerCurrentPage === 1;
+        document.getElementById('viewerNextBtn').disabled = viewerCurrentPage === viewerTotalPages;
+      }
+      
+      // AI Chat for viewer
+      async function sendViewerChat() {
+        const input = document.getElementById('viewerChatInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        const chatMessages = document.getElementById('viewerChatMessages');
+        
+        // Add user message
+        chatMessages.innerHTML += `
+          <div style="padding: 0.5rem; background: #e3f2fd; border-radius: 4px; margin-bottom: 0.5rem;">
+            <strong>You:</strong> ${message}
+          </div>
+        `;
+        
+        input.value = '';
+        
+        // Add typing indicator
+        const typingDiv = document.createElement('div');
+        typingDiv.innerHTML = `
+          <div style="padding: 0.5rem; background: white; border-radius: 4px; margin-bottom: 0.5rem;">
+            <strong>AI:</strong> <span style="color: #666;">Thinking...</span>
+          </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        
+        try {
+          const response = await fetch(API_CONFIG.chatWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: `Regarding the document ${document.getElementById('viewerFileName').textContent}: ${message}`,
+              client: selectedClient,
+              context: 'document_viewer'
+            })
+          });
+          
+          const data = await response.json();
+          typingDiv.remove();
+          
+          // Add AI response
+          chatMessages.innerHTML += `
+            <div style="padding: 0.5rem; background: white; border-radius: 4px; margin-bottom: 0.5rem;">
+              <strong>AI:</strong> ${data.response || 'I can help you analyze this document.'}
+            </div>
+          `;
+          
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        } catch (error) {
+          typingDiv.remove();
+          chatMessages.innerHTML += `
+            <div style="padding: 0.5rem; background: #ffebee; border-radius: 4px; margin-bottom: 0.5rem;">
+              <strong>AI:</strong> Sorry, I encountered an error. Please try again.
+            </div>
+          `;
+        }
+      }
+      
+      // Add PDF.js library if not already loaded
+      if (!window.pdfjsLib) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        document.head.appendChild(script);
+        script.onload = () => {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        };
+      }
     </script>
   </body>
 </html>
