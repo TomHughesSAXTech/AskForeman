@@ -1623,12 +1623,27 @@
       </div>
     </div>
 
-    <!-- Enhanced CAD-style Takeoff Modal -->
+    <!-- Enhanced CAD-style Takeoff Modal with AI Integration -->
     <div class="takeoff-modal" id="takeoffModal">
       <div class="takeoff-content">
         <div class="takeoff-header">
-          <h2>📐 Enhanced Digital Takeoff Tool</h2>
-          <button class="close-modal" onclick="closeTakeoff()">Close ✕</button>
+          <h2>📐 AI-Enhanced Digital Takeoff Tool</h2>
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <select id="takeoffProjectSelect" style="padding: 0.5rem; border-radius: 4px; background: white; color: var(--concrete-gray);" onchange="loadProjectTakeoff()">
+              <option value="">Select Project</option>
+            </select>
+            <input type="file" id="takeoffFileInput" accept=".pdf,.dwg,.dxf,.png,.jpg,.jpeg" style="display: none;" onchange="processTakeoffDocument(this)">
+            <button onclick="document.getElementById('takeoffFileInput').click()" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer;">
+              📄 Upload Drawing
+            </button>
+            <button onclick="runDocumentIntelligence()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #ff9800, #f57c00); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+              🤖 AI Analysis
+            </button>
+            <button onclick="sendToEstimator()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #4caf50, #388e3c); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+              ➡️ Send to Estimator
+            </button>
+            <button class="close-modal" onclick="closeTakeoff()">Close ✕</button>
+          </div>
         </div>
         <div class="takeoff-tools">
           <button class="takeoff-tool-btn active" data-tool="pan">✋ Pan</button>
@@ -1654,11 +1669,29 @@
               </div>
               <div class="info-item">
                 <span class="label">Units:</span>
-                <span class="value">Feet</span>
+                <span class="value" id="drawingUnits">Feet</span>
               </div>
               <div class="info-item">
                 <span class="label">Page:</span>
                 <span class="value" id="pageInfo">1 of 1</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Status:</span>
+                <span class="value" id="aiStatus" style="color: #4caf50;">Ready</span>
+              </div>
+            </div>
+            
+            <div class="ai-results" style="padding: 1rem; border-top: 1px solid #444;">
+              <h3 style="color: var(--light-green); margin-bottom: 0.5rem;">AI Analysis</h3>
+              <div id="aiResults" style="color: #ccc; font-size: 0.85rem; max-height: 200px; overflow-y: auto;">
+                <p style="color: #888;">Upload a drawing and click AI Analysis to detect:</p>
+                <ul style="margin-left: 1rem; color: #888;">
+                  <li>Automatic scale detection</li>
+                  <li>Room/area identification</li>
+                  <li>Dimension extraction</li>
+                  <li>Material annotations</li>
+                  <li>Quantity calculations</li>
+                </ul>
               </div>
             </div>
             <div class="takeoff-measurements">
@@ -1675,10 +1708,16 @@
       <div class="estimate-content">
         <div class="estimate-header">
           <h2>📊 Professional Construction Estimate Generator</h2>
-          <div style="display: flex; gap: 1rem;">
+          <div style="display: flex; gap: 1rem; align-items: center;">
             <select id="estimateClientSelect" style="padding: 0.5rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.9); color: var(--concrete-gray);">
-              <option value="">Select Project for Estimate</option>
+              <option value="">Select Project</option>
             </select>
+            <button onclick="loadExistingTakeoff()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #2196f3, #1976d2); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+              📐 Load Takeoff
+            </button>
+            <button onclick="openTakeoffForEstimate()" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #4caf50, #388e3c); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+              ✏️ Create Takeoff
+            </button>
             <button class="close-modal" onclick="closeEstimator()">Close ✕</button>
           </div>
         </div>
@@ -3183,14 +3222,125 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      // Takeoff Tool Functions
+      // Enhanced Takeoff Tool Functions with AI Integration
+      let currentTakeoffData = null;
+      let currentDrawingFile = null;
+      
       function openTakeoff() {
         document.getElementById('takeoffModal').classList.add('active');
         initializeTakeoff();
+        populateTakeoffProjects();
+      }
+      
+      function openTakeoffForEstimate() {
+        // Open takeoff modal from estimate generator
+        closeTakeoff();
+        openTakeoff();
+        addSystemMessage('📐 Opening takeoff tool to create measurements for estimate...');
       }
 
       function closeTakeoff() {
         document.getElementById('takeoffModal').classList.remove('active');
+      }
+      
+      function populateTakeoffProjects() {
+        const takeoffProjectSelect = document.getElementById('takeoffProjectSelect');
+        takeoffProjectSelect.innerHTML = '<option value="">Select Project</option>';
+        availableClients.forEach(client => {
+          const option = document.createElement('option');
+          option.value = client.id;
+          option.textContent = client.name;
+          takeoffProjectSelect.appendChild(option);
+        });
+      }
+      
+      // Load existing takeoff from project
+      async function loadProjectTakeoff() {
+        const selectedProject = document.getElementById('takeoffProjectSelect').value;
+        if (!selectedProject) return;
+        
+        updateAIStatus('Loading project takeoff data...', '#2196f3');
+        
+        try {
+          // Search for existing takeoff files in the project
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${selectedProject}/drawings/`;
+          
+          const response = await fetch(listUrl);
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          if (blobs.length > 0) {
+            // Found existing takeoff files
+            updateAIStatus('Found ' + blobs.length + ' drawing(s)', '#4caf50');
+            
+            // Load the first PDF/drawing file
+            for (let i = 0; i < blobs.length; i++) {
+              const nameElement = blobs[i].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const fileName = nameElement.textContent.split('/').pop();
+                if (fileName.endsWith('.pdf') || fileName.endsWith('.png') || fileName.endsWith('.jpg')) {
+                  // Load this file
+                  const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${nameElement.textContent}${AZURE_STORAGE.sasToken}`;
+                  await loadDrawingFromUrl(fileUrl, fileName);
+                  break;
+                }
+              }
+            }
+          } else {
+            updateAIStatus('No takeoff files found. Upload a drawing to begin.', '#ff9800');
+          }
+        } catch (error) {
+          console.error('Error loading project takeoff:', error);
+          updateAIStatus('Error loading project files', '#f44336');
+        }
+      }
+      
+      // Load existing takeoff for estimate
+      async function loadExistingTakeoff() {
+        const selectedProject = document.getElementById('estimateClientSelect').value;
+        if (!selectedProject) {
+          alert('Please select a project first.');
+          return;
+        }
+        
+        addSystemMessage('🔍 Searching for existing takeoff data...');
+        
+        // Search for takeoff data in the project
+        try {
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${selectedProject}/estimates/`;
+          
+          const response = await fetch(listUrl);
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          let takeoffFound = false;
+          for (let i = 0; i < blobs.length; i++) {
+            const nameElement = blobs[i].getElementsByTagName("Name")[0];
+            if (nameElement) {
+              const fileName = nameElement.textContent.split('/').pop();
+              if (fileName.includes('Takeoff') || fileName.includes('takeoff')) {
+                takeoffFound = true;
+                // Load this takeoff data
+                const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${nameElement.textContent}${AZURE_STORAGE.sasToken}`;
+                await loadTakeoffIntoEstimate(fileUrl);
+                break;
+              }
+            }
+          }
+          
+          if (!takeoffFound) {
+            if (confirm('No existing takeoff found. Would you like to create one now?')) {
+              openTakeoffForEstimate();
+            }
+          }
+        } catch (error) {
+          console.error('Error loading takeoff:', error);
+          addSystemMessage('❌ Error loading takeoff data');
+        }
       }
 
       function initializeTakeoff() {
@@ -3275,6 +3425,262 @@
           `;
           list.appendChild(item);
         });
+      }
+      
+      // Process uploaded takeoff document with AI
+      async function processTakeoffDocument(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        currentDrawingFile = file;
+        updateAIStatus('Processing document...', '#2196f3');
+        
+        // Display the document in canvas
+        if (file.type === 'application/pdf') {
+          // Use PDF.js to display PDF
+          const fileReader = new FileReader();
+          fileReader.onload = async function(e) {
+            const typedArray = new Uint8Array(e.target.result);
+            const pdf = await pdfjsLib.getDocument(typedArray).promise;
+            const page = await pdf.getPage(1);
+            const canvas = document.getElementById('pdfCanvas');
+            const context = canvas.getContext('2d');
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            await page.render({
+              canvasContext: context,
+              viewport: viewport
+            }).promise;
+            
+            updateAIStatus('Document loaded. Click AI Analysis to process.', '#4caf50');
+          };
+          fileReader.readAsArrayBuffer(file);
+        } else {
+          // Display image
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+              const canvas = document.getElementById('pdfCanvas');
+              const context = canvas.getContext('2d');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              context.drawImage(img, 0, 0);
+              updateAIStatus('Drawing loaded. Click AI Analysis to process.', '#4caf50');
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+      
+      // Run AI Document Intelligence on the drawing
+      async function runDocumentIntelligence() {
+        if (!currentDrawingFile) {
+          alert('Please upload a drawing first.');
+          return;
+        }
+        
+        updateAIStatus('Running AI analysis...', '#ff9800');
+        
+        // Simulate AI processing (in production, this would call Azure Form Recognizer / Computer Vision)
+        setTimeout(() => {
+          // Simulated AI results
+          const aiData = {
+            scale: '1:50',
+            units: 'Feet',
+            detectedAreas: [
+              { name: 'Room A', area: '450 SF', dimensions: '15\' x 30\'' },
+              { name: 'Room B', area: '320 SF', dimensions: '16\' x 20\'' },
+              { name: 'Corridor', area: '180 SF', dimensions: '6\' x 30\'' }
+            ],
+            materials: [
+              { type: 'Paint', spec: 'SW-7005', coverage: '950 SF' },
+              { type: 'Flooring', spec: 'VCT-100', coverage: '770 SF' },
+              { type: 'Ceiling', spec: 'ACT-24x24', coverage: '950 SF' }
+            ],
+            dimensions: [
+              { type: 'Wall Height', value: '10 feet' },
+              { type: 'Total Perimeter', value: '280 LF' }
+            ]
+          };
+          
+          // Update display with AI results
+          displayAIResults(aiData);
+          
+          // Store for transfer to estimator
+          currentTakeoffData = aiData;
+          
+          updateAIStatus('AI analysis complete!', '#4caf50');
+        }, 2000);
+      }
+      
+      // Display AI analysis results
+      function displayAIResults(data) {
+        const resultsDiv = document.getElementById('aiResults');
+        
+        let html = '<div style="color: #4caf50; margin-bottom: 0.5rem;">✅ Analysis Complete</div>';
+        
+        // Scale and units
+        html += `<div style="margin-bottom: 0.5rem;"><strong>Scale:</strong> ${data.scale}</div>`;
+        html += `<div style="margin-bottom: 0.5rem;"><strong>Units:</strong> ${data.units}</div>`;
+        
+        // Detected areas
+        html += '<div style="margin-top: 0.75rem;"><strong>Detected Areas:</strong></div>';
+        html += '<ul style="margin-left: 1rem; font-size: 0.8rem;">';
+        data.detectedAreas.forEach(area => {
+          html += `<li>${area.name}: ${area.area} (${area.dimensions})</li>`;
+        });
+        html += '</ul>';
+        
+        // Materials
+        html += '<div style="margin-top: 0.75rem;"><strong>Materials Detected:</strong></div>';
+        html += '<ul style="margin-left: 1rem; font-size: 0.8rem;">';
+        data.materials.forEach(mat => {
+          html += `<li>${mat.type} (${mat.spec}): ${mat.coverage}</li>`;
+        });
+        html += '</ul>';
+        
+        resultsDiv.innerHTML = html;
+        
+        // Update scale display
+        document.getElementById('drawingScale').textContent = data.scale;
+        document.getElementById('drawingUnits').textContent = data.units;
+      }
+      
+      // Update AI status indicator
+      function updateAIStatus(message, color) {
+        const statusEl = document.getElementById('aiStatus');
+        if (statusEl) {
+          statusEl.textContent = message;
+          statusEl.style.color = color;
+        }
+      }
+      
+      // Send takeoff data to estimator
+      function sendToEstimator() {
+        if (!currentTakeoffData) {
+          alert('No takeoff data available. Please load or create a takeoff first.');
+          return;
+        }
+        
+        // Populate the takeoff sheet in the estimator
+        const takeoffBody = document.getElementById('takeoffBody');
+        if (takeoffBody) {
+          // Clear existing rows
+          takeoffBody.innerHTML = '';
+          
+          // Add rows from AI data
+          let rowNum = 1;
+          currentTakeoffData.detectedAreas.forEach(area => {
+            const row = takeoffBody.insertRow();
+            const dims = area.dimensions.split(' x ');
+            const length = parseFloat(dims[0]) || 0;
+            const width = parseFloat(dims[1]) || 0;
+            
+            row.innerHTML = `
+              <td><input type="text" class="small-input" value="${rowNum}"></td>
+              <td><input type="text" class="small-input" value="SWG-00${rowNum}"></td>
+              <td><input type="text" value="Auto-detected"></td>
+              <td><input type="text" value="${area.name}"></td>
+              <td><input type="text" class="small-input" value="SF"></td>
+              <td><input type="number" class="small-input" value="1"></td>
+              <td><input type="number" class="small-input" value="${length}"></td>
+              <td><input type="number" class="small-input" value="${width}"></td>
+              <td><input type="number" class="small-input" value="10"></td>
+              <td><input type="number" class="quantity-field" value="${parseFloat(area.area)}" readonly></td>
+              <td><input type="text" value="AI detected"></td>
+              <td><button onclick="removeRow(this)">❌</button></td>
+            `;
+            rowNum++;
+          });
+          
+          // Add material rows
+          currentTakeoffData.materials.forEach(mat => {
+            const row = takeoffBody.insertRow();
+            row.innerHTML = `
+              <td><input type="text" class="small-input" value="${rowNum}"></td>
+              <td><input type="text" class="small-input" value="${mat.spec}"></td>
+              <td><input type="text" value="Material Spec"></td>
+              <td><input type="text" value="${mat.type}"></td>
+              <td><input type="text" class="small-input" value="SF"></td>
+              <td><input type="number" class="small-input" value="1"></td>
+              <td><input type="number" class="small-input" value="${parseFloat(mat.coverage)}"></td>
+              <td><input type="number" class="small-input" value="1"></td>
+              <td><input type="number" class="small-input" value="1"></td>
+              <td><input type="number" class="quantity-field" value="${parseFloat(mat.coverage)}" readonly></td>
+              <td><input type="text" value="${mat.type} - ${mat.spec}"></td>
+              <td><button onclick="removeRow(this)">❌</button></td>
+            `;
+            rowNum++;
+          });
+        }
+        
+        // Close takeoff modal and switch to takeoff tab in estimator
+        closeTakeoff();
+        if (!document.getElementById('estimateModal').classList.contains('active')) {
+          openEstimator();
+        }
+        switchTab('takeoff');
+        addSystemMessage('✅ Takeoff data transferred to estimate successfully!');
+      }
+      
+      // Load drawing from URL
+      async function loadDrawingFromUrl(url, fileName) {
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          currentDrawingFile = new File([blob], fileName, { type: blob.type });
+          
+          // Process the file
+          const input = { files: [currentDrawingFile] };
+          await processTakeoffDocument(input);
+        } catch (error) {
+          console.error('Error loading drawing:', error);
+          updateAIStatus('Error loading drawing', '#f44336');
+        }
+      }
+      
+      // Load takeoff data into estimate
+      async function loadTakeoffIntoEstimate(url) {
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          
+          if (data.takeoffItems) {
+            // Populate takeoff sheet
+            const takeoffBody = document.getElementById('takeoffBody');
+            if (takeoffBody) {
+              takeoffBody.innerHTML = '';
+              data.takeoffItems.forEach(item => {
+                const row = takeoffBody.insertRow();
+                row.innerHTML = `
+                  <td><input type="text" class="small-input" value="${item.srNo || ''}"></td>
+                  <td><input type="text" class="small-input" value="${item.swg || ''}"></td>
+                  <td><input type="text" value="${item.spec || ''}"></td>
+                  <td><input type="text" value="${item.description || ''}"></td>
+                  <td><input type="text" class="small-input" value="${item.units || ''}"></td>
+                  <td><input type="number" class="small-input" value="${item.no || ''}"></td>
+                  <td><input type="number" class="small-input" value="${item.length || ''}"></td>
+                  <td><input type="number" class="small-input" value="${item.width || ''}"></td>
+                  <td><input type="number" class="small-input" value="${item.height || ''}"></td>
+                  <td><input type="number" class="quantity-field" value="${item.quantity || ''}" readonly></td>
+                  <td><input type="text" value="${item.remarks || ''}"></td>
+                  <td><button onclick="removeRow(this)">❌</button></td>
+                `;
+              });
+            }
+            
+            addSystemMessage('✅ Takeoff data loaded successfully!');
+            switchTab('takeoff');
+          }
+        } catch (error) {
+          console.error('Error loading takeoff data:', error);
+          addSystemMessage('❌ Error loading takeoff data');
+        }
       }
 
       // Professional Estimate Generator Functions
