@@ -331,11 +331,31 @@
         display: flex;
         gap: 1rem;
         align-items: center;
+        position: relative;
+      }
+      
+      .attachment-btn {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+        z-index: 10;
+        padding: 5px;
+      }
+      
+      .attachment-btn:hover {
+        opacity: 1;
       }
 
       .chat-input {
         flex: 1;
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 3.5rem 0.75rem 1rem;
         border: 2px solid var(--medium-gray);
         border-radius: 25px;
         font-size: 1rem;
@@ -512,8 +532,12 @@
                 class="chat-input" 
                 id="chatInput"
                 placeholder="Type your construction question here..." 
-                onkeypress="if(event.key === 'Enter') sendMessage()"
+                onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
               />
+              <input type="file" id="chatFileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="handleChatFileSelect(this)" />
+              <button class="attachment-btn" onclick="document.getElementById('chatFileInput').click()" title="Attach files">
+                📎
+              </button>
               <button class="send-btn" onclick="sendMessage()">
                 <span>Send</span>
                 <span>➤</span>
@@ -525,27 +549,207 @@
     </div>
 
     <script>
+      // Variables for file attachments
+      let attachedImages = [];
+      
+      // Handle chat file selection
+      async function handleChatFileSelect(input) {
+        const files = input.files;
+        if (files.length === 0) return;
+        
+        for (let file of files) {
+          await handleImageFile(file);
+        }
+        
+        // Reset the input
+        input.value = '';
+      }
+      
+      // Handle file upload (images and documents)
+      async function handleImageFile(file) {
+        // Accept images and common document types
+        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
+        const isAccepted = acceptedTypes.some(type => file.type.startsWith(type));
+        
+        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif)$/i)) {
+          addSystemMessage('⚠️ Please select an image or document file');
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target.result;
+          const imageObj = { 
+            url: imageUrl, 
+            file: file,
+            name: file.name || `Screenshot_${Date.now()}.png`,
+            type: file.type
+          };
+          attachedImages.push(imageObj);
+          displayAttachedImage(imageObj);
+          
+          // Add system message based on file type
+          if (file.type.startsWith('image/')) {
+            addSystemMessage(`🖼️ Image attached: ${imageObj.name}`);
+          } else {
+            addSystemMessage(`📄 Document attached: ${imageObj.name}`);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      
+      // Display attached image preview
+      function displayAttachedImage(imageObj) {
+        let previewContainer = document.getElementById('imagePreviewContainer');
+        if (!previewContainer) {
+          previewContainer = document.createElement('div');
+          previewContainer.id = 'imagePreviewContainer';
+          previewContainer.style.cssText = `
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            max-height: 120px;
+            overflow-x: auto;
+          `;
+          const chatInputContainer = document.querySelector('.chat-input-container');
+          if (chatInputContainer) {
+            chatInputContainer.insertBefore(previewContainer, chatInputContainer.firstChild);
+          }
+        }
+        
+        const preview = document.createElement('div');
+        preview.style.cssText = `
+          position: relative;
+          width: 80px;
+          height: 80px;
+          border-radius: 4px;
+          overflow: hidden;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          flex-shrink: 0;
+        `;
+        const imgIndex = attachedImages.indexOf(imageObj);
+        preview.innerHTML = `
+          <img src="${imageObj.url}" style="width: 100%; height: 100%; object-fit: cover;" title="${imageObj.name}" />
+          <button onclick="removeAttachedImage(${imgIndex})" style="
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+          ">×</button>
+        `;
+        previewContainer.appendChild(preview);
+      }
+      
+      // Remove attached image
+      function removeAttachedImage(index) {
+        attachedImages.splice(index, 1);
+        const container = document.getElementById('imagePreviewContainer');
+        if (container) {
+          container.innerHTML = '';
+          if (attachedImages.length > 0) {
+            attachedImages.forEach(img => displayAttachedImage(img));
+          } else {
+            container.remove();
+          }
+        }
+      }
+      
+      // Add system message
+      function addSystemMessage(content) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const systemMessage = document.createElement('div');
+        systemMessage.className = 'message assistant';
+        systemMessage.innerHTML = `
+          <div class="message-avatar">⚠️</div>
+          <div class="message-content" style="background: linear-gradient(135deg, var(--safety-yellow), #f57f17); color: var(--dark-gray);">
+            <div><strong>${content}</strong></div>
+            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+          </div>
+        `;
+        messagesContainer.appendChild(systemMessage);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+      
+      // Setup paste event handler
+      function setupPasteHandler() {
+        const chatInput = document.getElementById('chatInput');
+        if (chatInput) {
+          chatInput.addEventListener('paste', async (e) => {
+            const items = e.clipboardData.items;
+            for (let item of items) {
+              if (item.type.indexOf('image') !== -1 || item.type.indexOf('application') !== -1) {
+                e.preventDefault();
+                const file = item.getAsFile();
+                if (file) {
+                  await handleImageFile(file);
+                }
+              }
+            }
+          });
+        }
+      }
+      
+      // Initialize on page load
+      window.addEventListener('DOMContentLoaded', () => {
+        setupPasteHandler();
+      });
+      
       async function sendMessage() {
         const input = document.getElementById('chatInput');
         const message = input.value.trim();
         
-        if (!message) return;
+        if (!message && attachedImages.length === 0) return;
         
         const messagesContainer = document.getElementById('chatMessages');
         
-        // Add user message
+        // Add user message with attachments if any
         const userMessage = document.createElement('div');
         userMessage.className = 'message user';
+        let messageContent = message ? `<div>${message}</div>` : '';
+        
+        // Add image previews if attachments exist
+        if (attachedImages.length > 0) {
+          messageContent += '<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">';
+          attachedImages.forEach(img => {
+            if (img.type && img.type.startsWith('image/')) {
+              messageContent += `<img src="${img.url}" style="max-width: 200px; max-height: 200px; border-radius: 8px; cursor: pointer;" onclick="window.open('${img.url}', '_blank')" />`;
+            } else {
+              messageContent += `
+                <div style="padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                  <span>📄</span>
+                  <span style="font-size: 0.9em;">${img.name}</span>
+                </div>`;
+            }
+          });
+          messageContent += '</div>';
+        }
+        
         userMessage.innerHTML = `
           <div class="message-content">
-            <div>${message}</div>
+            ${messageContent}
             <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>
         `;
         messagesContainer.appendChild(userMessage);
         
-        // Clear input
+        // Clear input and attachments
         input.value = '';
+        attachedImages = [];
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        if (previewContainer) previewContainer.remove();
         
         // Add typing indicator
         const typingIndicator = document.createElement('div');
@@ -572,7 +776,12 @@
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              message: message,
+              message: message || 'User sent attachments',
+              attachments: attachedImages.map(img => ({
+                name: img.name,
+                type: img.type,
+                data: img.url
+              })),
               timestamp: new Date().toISOString()
             })
           });

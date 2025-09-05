@@ -959,6 +959,26 @@
         align-items: center;
         position: relative;
       }
+      
+      .attachment-btn {
+        position: absolute;
+        right: 140px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.3s ease;
+        padding: 0.5rem;
+        z-index: 1;
+      }
+      
+      .attachment-btn:hover {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.1);
+      }
 
       .chat-input {
         flex: 1;
@@ -1611,6 +1631,10 @@
               placeholder="Ask about your estimate..." 
               onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
             />
+            <input type="file" id="chatFileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="handleChatFileSelect(this)" />
+            <button class="attachment-btn" onclick="document.getElementById('chatFileInput').click()" title="Attach files">
+              📎
+            </button>
             <button class="send-btn" id="sendButton" onclick="sendMessage()">
               Send ➤
             </button>
@@ -2107,17 +2131,32 @@
       // Image attachment support variables
       let attachedImages = [];
       
+      // Handle chat file selection
+      async function handleChatFileSelect(input) {
+        const files = input.files;
+        if (files.length === 0) return;
+        
+        for (let file of files) {
+          await handleImageFile(file);
+        }
+        
+        // Reset the input
+        input.value = '';
+      }
+      
       // Setup image upload functionality
       function setupImageUpload() {
-        // Add paste event listener for screenshots
+        // Add paste event listener for screenshots and documents
         if (chatInput) {
           chatInput.addEventListener('paste', async (e) => {
             const items = e.clipboardData.items;
             for (let item of items) {
-              if (item.type.indexOf('image') !== -1) {
+              if (item.type.indexOf('image') !== -1 || item.type.indexOf('application') !== -1) {
                 e.preventDefault();
                 const file = item.getAsFile();
-                await handleImageFile(file);
+                if (file) {
+                  await handleImageFile(file);
+                }
               }
             }
           });
@@ -2589,7 +2628,7 @@
       });
 
       function handleCategoryFiles(files, category) {
-        const checkbox = document.getElementById(category);
+        const checkbox = document.getElementById(category + 'Category');
         if (checkbox && files.length > 0) {
           checkbox.checked = true;
         }
@@ -2604,6 +2643,16 @@
         
         updateFileCounts();
         updateProcessButton();
+        
+        // Auto-uncheck after processing is complete (if needed)
+        if (checkbox && processButton.disabled === false) {
+          setTimeout(() => {
+            // Only uncheck if processing has been initiated
+            if (uploadedFiles[category].length === 0) {
+              checkbox.checked = false;
+            }
+          }, 100);
+        }
       }
 
       function isValidFile(file) {

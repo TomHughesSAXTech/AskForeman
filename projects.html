@@ -957,11 +957,12 @@
         display: flex;
         gap: 1rem;
         align-items: center;
+        position: relative;
       }
 
       .chat-input {
         flex: 1;
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 3.5rem 0.75rem 1rem;
         border: 2px solid var(--medium-gray);
         border-radius: 25px;
         font-size: 1rem;
@@ -1828,15 +1829,17 @@
       
       // Setup image upload functionality
       function setupImageUpload() {
-        // Add paste event listener for screenshots
+        // Add paste event listener for screenshots and documents
         if (chatInput) {
           chatInput.addEventListener('paste', async (e) => {
             const items = e.clipboardData.items;
             for (let item of items) {
-              if (item.type.indexOf('image') !== -1) {
+              if (item.type.indexOf('image') !== -1 || item.type.indexOf('application') !== -1) {
                 e.preventDefault();
                 const file = item.getAsFile();
-                await handleImageFile(file);
+                if (file) {
+                  await handleImageFile(file);
+                }
               }
             }
           });
@@ -1851,16 +1854,17 @@
           uploadBtn.title = 'Attach file or image (or paste with Ctrl+V)';
           uploadBtn.style.cssText = `
             position: absolute;
-            right: 100px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
-            padding: 5px 10px;
+            padding: 5px;
             opacity: 0.6;
             transition: opacity 0.2s;
+            z-index: 10;
           `;
           uploadBtn.onmouseover = () => uploadBtn.style.opacity = '1';
           uploadBtn.onmouseout = () => uploadBtn.style.opacity = '0.7';
@@ -1884,23 +1888,35 @@
         }
       }
       
-      // Handle image file upload
+      // Handle file upload (images and documents)
       async function handleImageFile(file) {
-        if (!file.type.startsWith('image/')) {
-          addSystemMessage('⚠️ Please select an image file');
+        // Accept images and common document types
+        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
+        const isAccepted = acceptedTypes.some(type => file.type.startsWith(type));
+        
+        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif)$/i)) {
+          addSystemMessage('⚠️ Please select an image or document file');
           return;
         }
         
         const reader = new FileReader();
-        reader.onload = (e) => {
+          reader.onload = (e) => {
           const imageUrl = e.target.result;
           const imageObj = { 
             url: imageUrl, 
             file: file,
-            name: file.name || `Screenshot_${Date.now()}.png`
+            name: file.name || `Screenshot_${Date.now()}.png`,
+            type: file.type
           };
           attachedImages.push(imageObj);
           displayAttachedImage(imageObj);
+          
+          // Add system message based on file type
+          if (file.type.startsWith('image/')) {
+            addSystemMessage(`🖼️ Image attached: ${imageObj.name}`);
+          } else {
+            addSystemMessage(`📄 Document attached: ${imageObj.name}`);
+          }
         };
         reader.readAsDataURL(file);
       }
