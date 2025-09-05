@@ -806,7 +806,8 @@
                 // Extract base64 data
                 const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
                 
-                // Upload to blob storage as a temporary analysis file
+                // Upload to separate container for chat attachments
+                const timestamp = Date.now();
                 const uploadResponse = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/upload', {
                   method: "POST",
                   headers: {
@@ -814,11 +815,12 @@
                   },
                   body: JSON.stringify({
                     file: base64Data,
-                    fileName: img.name || `analysis_${Date.now()}.png`,
+                    fileName: img.name || `chat_${timestamp}.png`,
                     mimeType: img.type || 'image/png',
-                    category: 'temp-analysis',  // Special category for chat attachments
-                    client: 'general',
-                    clientName: 'General'
+                    useContainer: 'temp-chat-files',  // Use temp container
+                    category: 'general',  // Always use general for general-chat
+                    timestamp: timestamp,
+                    isTemporary: true  // Flag for cleanup
                   })
                 });
                 

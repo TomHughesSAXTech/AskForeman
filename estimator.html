@@ -1482,7 +1482,7 @@
           <div class="client-selector">
             <label for="clientSelect">Upload to Project:</label>
             <select id="clientSelect">
-              <option value="">-- Choose a Client --</option>
+              <option value="">-- Choose a Project --</option>
               <option value="__create_new__" style="font-weight: bold; color: var(--primary-green);">🏗️ Create New Project</option>
             </select>
           </div>
@@ -2087,6 +2087,7 @@
       const AZURE_STORAGE = {
         account: "saxtechfcs",
         container: "fcs-clients",
+        tempContainer: "temp-chat-files", // New container for chat attachments
         sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
       };
 
@@ -3518,7 +3519,8 @@
                 // Extract base64 data
                 const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
                 
-                // Upload to blob storage as a temporary analysis file
+                // Upload to separate container for chat attachments
+                const timestamp = Date.now();
                 const uploadResponse = await fetch(API_CONFIG.uploadWebhookUrl, {
                   method: "POST",
                   headers: {
@@ -3526,11 +3528,12 @@
                   },
                   body: JSON.stringify({
                     file: base64Data,
-                    fileName: img.name || `analysis_${Date.now()}.png`,
+                    fileName: img.name || `chat_${timestamp}.png`,
                     mimeType: img.type || 'image/png',
-                    category: 'temp-analysis',  // Special category for chat attachments
-                    client: chatContext || 'general',
-                    clientName: chatContext || 'General'
+                    useContainer: AZURE_STORAGE.tempContainer,  // Use temp container
+                    category: chatContext || 'general',  // Use chat context as category
+                    timestamp: timestamp,
+                    isTemporary: true  // Flag for cleanup
                   })
                 });
                 
