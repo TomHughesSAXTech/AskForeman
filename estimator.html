@@ -375,11 +375,11 @@
         font-weight: 500;
       }
 
-      /* File List Browser */
+      /* Enhanced File List Browser */
       .file-list {
-        margin-top: 1rem;
-        min-height: 200px;
-        max-height: 300px;
+        margin-top: 1.5rem;
+        min-height: 300px;
+        max-height: 500px;
         overflow-y: auto;
         border: 1px solid var(--medium-gray);
         background: white;
@@ -390,9 +390,11 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 1rem;
         padding: 0.75rem;
         background: linear-gradient(135deg, var(--light-green), var(--primary-green));
         color: white;
+        border-radius: 8px;
         position: sticky;
         top: 0;
         z-index: 10;
@@ -404,6 +406,11 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+      }
+
+      .file-list-header h4::before {
+        content: "📂";
+        font-size: 1.2rem;
       }
 
       .refresh-btn {
@@ -420,6 +427,281 @@
       .refresh-btn:hover {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(1.05);
+      }
+
+      /* File Browser Navigation */
+      .file-browser-navigation {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: #f8f8f8;
+        border-bottom: 1px solid var(--medium-gray);
+        margin-bottom: 0.75rem;
+        gap: 0.75rem;
+      }
+      
+      .nav-button {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 1.2rem;
+        line-height: 1;
+        transition: all 0.1s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        white-space: nowrap;
+      }
+      
+      .nav-button:hover:not(:disabled) {
+        background: #e8f4fd;
+        border-color: #0078d4;
+      }
+      
+      .nav-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      .breadcrumb {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 0.75rem;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        overflow-x: auto;
+        min-height: 36px;
+        white-space: nowrap;
+      }
+      
+      .breadcrumb-item {
+        color: #0078d4;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      
+      .breadcrumb-item:hover {
+        text-decoration: underline;
+      }
+      
+      .breadcrumb-separator {
+        color: #666;
+        margin: 0 0.25rem;
+      }
+
+      /* File Items */
+      .existing-file-item {
+        display: flex;
+        flex-direction: column;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 1px solid transparent;
+        margin: 0 0.5rem 4px 0.5rem;
+        transition: all 0.1s ease;
+        cursor: pointer;
+        user-select: none;
+        min-height: 60px;
+      }
+
+      .existing-file-item:hover {
+        background: #e8f4fd;
+        border: 1px solid #0078d4;
+      }
+      
+      .existing-file-item.selected {
+        background: #cce8ff;
+        border: 1px solid #0078d4;
+      }
+      
+      .folder-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: white;
+        border: 1px solid transparent;
+        margin: 0 0.5rem 2px 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.1s ease;
+        min-height: 40px;
+      }
+      
+      .folder-item:hover {
+        background: #e8f4fd;
+        border: 1px solid #0078d4;
+      }
+      
+      .folder-item.selected {
+        background: #cce8ff;
+        border: 1px solid #0078d4;
+      }
+
+      .existing-file-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      
+      .file-icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+      
+      .existing-file-name {
+        flex: 1;
+        color: var(--concrete-gray);
+        font-size: 0.95rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+
+      .existing-file-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: var(--steel-gray);
+        align-items: center;
+      }
+      
+      .file-meta-item {
+        min-width: 70px;
+        text-align: left;
+      }
+      
+      .file-meta-date {
+        min-width: 100px;
+      }
+
+      .existing-file-actions {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+        margin-left: auto;
+      }
+
+      .file-action-btn {
+        padding: 0.3rem 0.6rem;
+        border: 1px solid #d0d0d0;
+        background: white;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: all 0.1s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        white-space: nowrap;
+        color: var(--concrete-gray);
+      }
+
+      .file-action-btn:hover {
+        background: #f0f0f0;
+        border-color: #999;
+      }
+      
+      .file-action-btn.delete {
+        background: var(--warning-red);
+        color: white;
+        border-color: var(--warning-red);
+      }
+      
+      .file-action-btn.delete:hover {
+        background: #b71c1c;
+        transform: scale(1.05);
+      }
+      
+      .file-details-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding-left: 28px;
+      }
+
+      .no-files-message {
+        text-align: center;
+        padding: 2rem;
+        color: var(--steel-gray);
+        font-style: italic;
+        background: var(--light-gray);
+        border-radius: 8px;
+        border: 2px dashed var(--medium-gray);
+        margin: 1rem;
+      }
+
+      .loading-indicator {
+        display: none;
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--steel-gray);
+        background: var(--light-gray);
+        border-radius: 8px;
+        margin: 0.5rem;
+      }
+
+      .loading-indicator.active {
+        display: block;
+      }
+
+      .loading-indicator::before {
+        content: "⏳";
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+        animation: pulse 1.5s infinite;
+      }
+
+      /* Context Menu */
+      .context-menu {
+        position: fixed;
+        background: white;
+        border: 1px solid #ccc;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        border-radius: 3px;
+        padding: 0.25rem 0;
+        z-index: 1000;
+        display: none;
+        min-width: 150px;
+      }
+      
+      .context-menu.show {
+        display: block;
+      }
+      
+      .context-menu-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-size: 0.9rem;
+        color: var(--concrete-gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .context-menu-item:hover {
+        background: #e8f4fd;
+      }
+      
+      .context-menu-separator {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 0.25rem 0;
       }
 
       .process-button {
@@ -1158,13 +1440,11 @@
             </div>
           </div>
 
-          <!-- File List Browser -->
+          <!-- Enhanced File List Browser -->
           <div class="file-list" id="fileList">
-            <div class="file-list-header">
-              <h4>📂 Project Files</h4>
-              <button class="refresh-btn" onclick="refreshFiles()">↻ Refresh</button>
+            <div class="loading-indicator" id="filesLoadingIndicator">
+              Loading existing files...
             </div>
-            <div id="fileListContent"></div>
           </div>
 
           <!-- Progress Bar -->
@@ -1752,9 +2032,329 @@
         processButton.disabled = !(hasFiles && hasClient);
       }
 
-      // Load client files
+      // File browser state
+      let currentPath = [];
+      let fileStructure = {};
+      let selectedFiles = new Set();
+      let clientFiles = [];
+      
+      // Initialize file list
+      function initializeFileList() {
+        const fileList = document.getElementById("fileList");
+        const loadingIndicator = document.getElementById("filesLoadingIndicator");
+
+        if (fileList && loadingIndicator) {
+          fileList.innerHTML = "";
+          fileList.appendChild(loadingIndicator);
+
+          const noClientMessage = document.createElement("div");
+          noClientMessage.className = "no-files-message";
+          noClientMessage.innerHTML = "📁 Select a client project above to view existing files and upload new documents.";
+          fileList.appendChild(noClientMessage);
+        }
+      }
+      
+      // Build hierarchical file structure from flat file list
+      function buildFileStructure(files) {
+        const structure = {};
+        
+        files.forEach(file => {
+          const pathParts = file.fullPath.split('/');
+          // Remove the client prefix parts (FCS-OriginalClients/ClientName/)
+          const relevantParts = pathParts.slice(2);
+          
+          let current = structure;
+          
+          relevantParts.forEach((part, index) => {
+            if (index === relevantParts.length - 1) {
+              // It's a file
+              if (!current._files) current._files = [];
+              current._files.push({
+                ...file,
+                name: part
+              });
+            } else {
+              // It's a folder
+              if (!current[part]) {
+                current[part] = {};
+              }
+              current = current[part];
+            }
+          });
+        });
+        
+        return structure;
+      }
+      
+      // Get current folder content based on path
+      function getCurrentFolder() {
+        let current = fileStructure;
+        currentPath.forEach(folder => {
+          current = current[folder];
+        });
+        return current;
+      }
+      
+      // Navigate to a folder
+      function navigateToFolder(folderName) {
+        currentPath.push(folderName);
+        renderFileBrowser();
+      }
+      
+      // Navigate back
+      function navigateBack() {
+        if (currentPath.length > 0) {
+          currentPath.pop();
+          renderFileBrowser();
+        }
+      }
+      
+      // Navigate to specific path level
+      function navigateToPath(pathIndex) {
+        currentPath = currentPath.slice(0, pathIndex);
+        renderFileBrowser();
+      }
+      
+      // Handle file/folder click
+      function handleItemClick(event, itemName, isFolder) {
+        const item = event.currentTarget;
+        
+        if (event.detail === 2) {
+          // Double click
+          if (isFolder) {
+            navigateToFolder(itemName);
+          } else {
+            // Open file
+            openFile(itemName);
+          }
+        } else {
+          // Single click - selection
+          if (event.ctrlKey || event.metaKey) {
+            // Multi-select
+            item.classList.toggle('selected');
+            if (item.classList.contains('selected')) {
+              selectedFiles.add(itemName);
+            } else {
+              selectedFiles.delete(itemName);
+            }
+          } else {
+            // Single select
+            document.querySelectorAll('.existing-file-item, .folder-item').forEach(el => {
+              el.classList.remove('selected');
+            });
+            selectedFiles.clear();
+            item.classList.add('selected');
+            selectedFiles.add(itemName);
+          }
+        }
+      }
+      
+      // Right-click context menu
+      function showContextMenu(event, itemName, isFolder) {
+        event.preventDefault();
+        
+        // Remove existing context menu if any
+        const existingMenu = document.querySelector('.context-menu');
+        if (existingMenu) existingMenu.remove();
+        
+        const menu = document.createElement('div');
+        menu.className = 'context-menu show';
+        menu.style.left = event.pageX + 'px';
+        menu.style.top = event.pageY + 'px';
+        
+        if (isFolder) {
+          menu.innerHTML = `
+            <div class="context-menu-item" onclick="navigateToFolder('${itemName}'); closeContextMenu();">📂 Open</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" onclick="deleteFolder('${itemName}'); closeContextMenu();">🗑️ Delete</div>
+          `;
+        } else {
+          const currentFolder = getCurrentFolder();
+          const file = currentFolder._files.find(f => f.name === itemName);
+          
+          menu.innerHTML = `
+            <div class="context-menu-item" onclick="openFile('${itemName}'); closeContextMenu();">📄 Open</div>
+            <div class="context-menu-item" onclick="window.open('${file.blobUrl}', '_blank'); closeContextMenu();">🔽 Download</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" onclick="deleteFile('${file.fullPath}'); closeContextMenu();">🗑️ Delete</div>
+          `;
+        }
+        
+        document.body.appendChild(menu);
+        
+        // Close menu when clicking outside
+        setTimeout(() => {
+          document.addEventListener('click', closeContextMenu);
+        }, 100);
+      }
+      
+      function closeContextMenu() {
+        const menu = document.querySelector('.context-menu');
+        if (menu) {
+          menu.remove();
+          document.removeEventListener('click', closeContextMenu);
+        }
+      }
+      
+      // Open file
+      function openFile(fileName) {
+        const currentFolder = getCurrentFolder();
+        const file = currentFolder._files.find(f => f.name === fileName);
+        if (file) {
+          window.open(file.blobUrl, '_blank');
+        }
+      }
+      
+      // Delete file
+      async function deleteFile(fullPath) {
+        if (confirm('Are you sure you want to delete this file?')) {
+          try {
+            const encodedPath = fullPath.split('/').map(p => encodeURIComponent(p)).join('/');
+            const deleteUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+            
+            await fetch(deleteUrl, {
+              method: 'DELETE'
+            });
+            
+            addSystemMessage(`✅ File deleted successfully`);
+            
+            // Reload files
+            if (selectedClient) {
+              await loadClientFiles(selectedClient);
+            }
+          } catch (error) {
+            console.error('Error deleting file:', error);
+            addSystemMessage(`⚠️ Failed to delete file`);
+          }
+        }
+      }
+      
+      // Delete folder
+      async function deleteFolder(folderName) {
+        if (confirm('Are you sure you want to delete this folder and all its contents?')) {
+          // Implementation for folder deletion
+          addSystemMessage(`⚠️ Folder deletion requires additional permissions`);
+        }
+      }
+      
+      // Format file size
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+      }
+      
+      // Render file browser
+      function renderFileBrowser() {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        
+        // Add navigation
+        const navBar = document.createElement('div');
+        navBar.className = 'file-browser-navigation';
+        
+        navBar.innerHTML = `
+          <button class="nav-button" onclick="navigateBack()" ${currentPath.length === 0 ? 'disabled' : ''}>
+            ⬅ Back
+          </button>
+          <button class="nav-button" onclick="navigateToPath(0)">
+            🏠 Home
+          </button>
+          <div class="breadcrumb">
+            <span class="breadcrumb-item" onclick="navigateToPath(0)">${selectedClient || 'Root'}</span>
+            ${currentPath.map((folder, index) => `
+              <span class="breadcrumb-separator">/</span>
+              <span class="breadcrumb-item" onclick="navigateToPath(${index + 1})">${folder}</span>
+            `).join('')}
+          </div>
+          <button class="nav-button" onclick="refreshFiles()">
+            ↻ Refresh
+          </button>
+        `;
+        
+        fileList.appendChild(navBar);
+        
+        // Add header
+        const header = document.createElement('div');
+        header.className = 'file-list-header';
+        header.innerHTML = `
+          <h4>Project Files</h4>
+          <button class="refresh-btn" onclick="refreshFiles()">↻ Refresh</button>
+        `;
+        fileList.appendChild(header);
+        
+        // Get current folder content
+        const currentFolder = getCurrentFolder();
+        const folders = Object.keys(currentFolder).filter(key => key !== '_files');
+        const files = currentFolder._files || [];
+        
+        const contentContainer = document.createElement('div');
+        
+        if (folders.length === 0 && files.length === 0) {
+          contentContainer.innerHTML = '<div class="no-files-message">📁 This folder is empty</div>';
+        } else {
+          // Render folders
+          folders.forEach(folderName => {
+            const folderItem = document.createElement('div');
+            folderItem.className = 'folder-item';
+            folderItem.onclick = (e) => handleItemClick(e, folderName, true);
+            folderItem.oncontextmenu = (e) => showContextMenu(e, folderName, true);
+            
+            folderItem.innerHTML = `
+              <div class="existing-file-info">
+                <div class="file-icon">📁</div>
+                <div class="existing-file-name">${folderName}</div>
+              </div>
+            `;
+            
+            contentContainer.appendChild(folderItem);
+          });
+          
+          // Render files
+          files.forEach(file => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'existing-file-item';
+            fileItem.onclick = (e) => handleItemClick(e, file.name, false);
+            fileItem.oncontextmenu = (e) => showContextMenu(e, file.name, false);
+            
+            fileItem.innerHTML = `
+              <div class="existing-file-info">
+                <div class="file-icon">📄</div>
+                <div class="existing-file-name">${file.name}</div>
+                <div class="existing-file-meta">
+                  <span class="file-meta-item">${formatFileSize(file.size)}</span>
+                  <span class="file-meta-date">${new Date(file.lastModified).toLocaleDateString()}</span>
+                </div>
+                <div class="existing-file-actions">
+                  <a href="${file.blobUrl}" target="_blank" class="file-action-btn">🔗 Open</a>
+                  <button class="file-action-btn delete" onclick="event.stopPropagation(); deleteFile('${file.fullPath}')">🗑️</button>
+                </div>
+              </div>
+              <div class="file-details-row">
+                <div class="existing-file-category">${file.category || 'General'}</div>
+              </div>
+            `;
+            
+            contentContainer.appendChild(fileItem);
+          });
+        }
+        
+        fileList.appendChild(contentContainer);
+      }
+      
+      // Load client files with enhanced structure
       async function loadClientFiles(clientName) {
         try {
+          const fileList = document.getElementById('fileList');
+          
+          // Show loading indicator
+          const loadingIndicator = document.getElementById('filesLoadingIndicator');
+          if (loadingIndicator) {
+            loadingIndicator.classList.add('active');
+          }
+          
           const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${clientName}/`;
           
           const response = await fetch(listUrl);
@@ -1763,42 +2363,64 @@
           const xmlDoc = parser.parseFromString(xmlText, "text/xml");
           const blobs = xmlDoc.getElementsByTagName("Blob");
           
-          let filesHTML = '<div style="padding: 0.5rem;">';
-          let fileCount = 0;
+          clientFiles = [];
           
           for (let i = 0; i < blobs.length; i++) {
             const nameElement = blobs[i].getElementsByTagName("Name")[0];
+            const sizeElement = blobs[i].getElementsByTagName("Properties")[0]?.getElementsByTagName("Content-Length")[0];
+            const lastModifiedElement = blobs[i].getElementsByTagName("Properties")[0]?.getElementsByTagName("Last-Modified")[0];
+            
             if (nameElement) {
               const fullPath = nameElement.textContent;
               const fileName = fullPath.split('/').pop();
               
               if (fileName && !fileName.startsWith('.') && fileName !== 'placeholder.json') {
-                fileCount++;
-                filesHTML += `
-                  <div style="padding: 0.25rem; border-bottom: 1px solid #eee;">
-                    📄 ${fileName}
-                  </div>
-                `;
+                const encodedPath = fullPath.split('/').map(p => encodeURIComponent(p)).join('/');
+                const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${encodedPath}${AZURE_STORAGE.sasToken}`;
+                
+                clientFiles.push({
+                  name: fileName,
+                  fullPath: fullPath,
+                  blobUrl: blobUrl,
+                  size: parseInt(sizeElement?.textContent || '0'),
+                  lastModified: lastModifiedElement?.textContent || new Date().toISOString(),
+                  category: fullPath.split('/')[2] || 'General'
+                });
               }
             }
           }
           
-          if (fileCount === 0) {
-            filesHTML += '<div style="color: #999;">No files uploaded yet</div>';
+          // Build file structure
+          fileStructure = buildFileStructure(clientFiles);
+          
+          // Reset navigation
+          currentPath = [];
+          
+          // Hide loading indicator
+          if (loadingIndicator) {
+            loadingIndicator.classList.remove('active');
           }
           
-          filesHTML += '</div>';
-          fileList.innerHTML = filesHTML;
+          // Render file browser
+          renderFileBrowser();
+          
+          // Add file count message
+          const fileCount = clientFiles.length;
+          if (fileCount > 0) {
+            addSystemMessage(`📁 Loaded ${fileCount} file${fileCount !== 1 ? 's' : ''} for ${formatClientName(clientName)}`);
+          }
           
         } catch (error) {
           console.error('Error loading client files:', error);
-          fileList.innerHTML = '<div style="padding: 0.5rem; color: #999;">Could not load files</div>';
+          const fileList = document.getElementById('fileList');
+          fileList.innerHTML = '<div class="no-files-message">Could not load files. Please check your connection.</div>';
         }
       }
-
+      
       // Refresh files
       function refreshFiles() {
         if (selectedClient) {
+          addSystemMessage('🔄 Refreshing file list...');
           loadClientFiles(selectedClient);
         }
       }
@@ -2334,6 +2956,7 @@
 
       // Initialize on load
       window.addEventListener("load", () => {
+        initializeFileList();
         loadClients();
       });
     </script>
