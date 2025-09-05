@@ -3857,12 +3857,24 @@
         }
       }
 
+      // Global variables for takeoff tool state
+      let currentPDF = null;
+      let currentPageNum = 1;
+      let totalPages = 0;
+      let pdfScale = 1.5;
+      let drawingScale = 100; // Default scale 1:100
+      let isDrawing = false;
+      let startPoint = null;
+      let currentPoints = [];
+      let allAnnotations = [];
+      
       function initializeTakeoff() {
         // Initialize PDF.js and canvas for takeoff
         const canvas = document.getElementById('pdfCanvas');
         const annotationCanvas = document.getElementById('annotationCanvas');
         const ctx = canvas.getContext('2d');
         const annotationCtx = annotationCanvas.getContext('2d');
+        const canvasWrapper = document.getElementById('pdfCanvasWrapper');
         
         // Setup tool buttons
         document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
@@ -3870,60 +3882,396 @@
             document.querySelectorAll('.takeoff-tool-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             currentTool = this.dataset.tool;
+            updateCursor();
           });
         });
         
-        // Canvas event handlers for drawing
-        let isDrawing = false;
-        let startX, startY;
+        // Add zoom controls
+        setupZoomControls(canvasWrapper, canvas, annotationCanvas);
         
-        annotationCanvas.addEventListener('mousedown', (e) => {
-          if (currentTool !== 'pan') {
-            isDrawing = true;
-            const rect = annotationCanvas.getBoundingClientRect();
-            startX = e.clientX - rect.left;
-            startY = e.clientY - rect.top;
+        // Canvas event handlers for drawing and measurements
+        setupDrawingHandlers(annotationCanvas, annotationCtx);
+        
+        // Add page navigation buttons
+        addPageNavigationButtons();
+      }
+      
+      // Setup zoom and pan controls
+      function setupZoomControls(wrapper, canvas, annotationCanvas) {
+        let currentZoom = 1;
+        let isPanning = false;
+        let panStart = { x: 0, y: 0 };
+        let currentPan = { x: 0, y: 0 };
+        
+        // Mouse wheel zoom
+        wrapper.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = e.deltaY < 0 ? 1.1 : 0.9;
+          currentZoom = Math.min(Math.max(0.5, currentZoom * delta), 3);
+          
+          canvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
+          annotationCanvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
+        });
+        
+        // Pan functionality
+        wrapper.addEventListener('mousedown', (e) => {
+          if (currentTool === 'pan' || e.button === 1) { // Middle mouse button
+            isPanning = true;
+            panStart = { x: e.clientX - currentPan.x, y: e.clientY - currentPan.y };
+            wrapper.style.cursor = 'grabbing';
           }
         });
         
-        annotationCanvas.addEventListener('mousemove', (e) => {
-          if (isDrawing && currentTool === 'line') {
-            const rect = annotationCanvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
-            
-            // Clear and redraw
-            annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
-            annotationCtx.strokeStyle = '#76ff03';
-            annotationCtx.lineWidth = 2;
-            annotationCtx.beginPath();
-            annotationCtx.moveTo(startX, startY);
-            annotationCtx.lineTo(currentX, currentY);
-            annotationCtx.stroke();
+        wrapper.addEventListener('mousemove', (e) => {
+          if (isPanning) {
+            currentPan = { x: e.clientX - panStart.x, y: e.clientY - panStart.y };
+            canvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
+            annotationCanvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
           }
         });
         
-        annotationCanvas.addEventListener('mouseup', (e) => {
-          if (isDrawing && currentTool === 'line') {
-            const rect = annotationCanvas.getBoundingClientRect();
-            const endX = e.clientX - rect.left;
-            const endY = e.clientY - rect.top;
+        wrapper.addEventListener('mouseup', () => {
+          isPanning = false;
+          updateCursor();
+        });
+        
+        wrapper.addEventListener('mouseleave', () => {
+          isPanning = false;
+          updateCursor();
+        });
+      }
+      
+      // Setup drawing and measurement handlers
+      function setupDrawingHandlers(canvas, ctx) {
+        let measurementText = null;
+        
+        canvas.addEventListener('mousedown', (e) => {
+          if (currentTool === 'pan') return;
+          
+          const rect = canvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          if (currentTool === 'line' || currentTool === 'area' || currentTool === 'polygon') {
+            if (!isDrawing) {
+              isDrawing = true;
+              startPoint = { x, y };
+              currentPoints = [startPoint];
+            }
+          } else if (currentTool === 'count') {
+            // Add a count marker
+            addCountMarker(x, y, ctx);
+          } else if (currentTool === 'annotation') {
+            // Add text annotation
+            const text = prompt('Enter annotation text:');
+            if (text) {
+              addTextAnnotation(x, y, text, ctx);
+            }
+          }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+          if (!isDrawing) return;
+          
+          const rect = canvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          // Clear canvas and redraw
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          redrawAllAnnotations(ctx);
+          
+          ctx.strokeStyle = '#76ff03';
+          ctx.lineWidth = 2;
+          ctx.fillStyle = '#76ff03';
+          ctx.font = '14px Arial';
+          
+          if (currentTool === 'line') {
+            // Draw line with real-time measurement
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
             
-            // Calculate distance
-            const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-            const scaledDistance = (distance / 10).toFixed(2); // Simple scaling
+            // Calculate and display distance
+            const distance = calculateRealDistance(startPoint, { x, y });
+            const midX = (startPoint.x + x) / 2;
+            const midY = (startPoint.y + y) / 2;
             
-            // Add measurement
+            // Draw measurement label
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(midX - 30, midY - 20, 60, 20);
+            ctx.fillStyle = '#76ff03';
+            ctx.fillText(`${distance.toFixed(1)} ft`, midX - 25, midY - 5);
+          } else if (currentTool === 'area') {
+            // Draw rectangle with area calculation
+            const width = x - startPoint.x;
+            const height = y - startPoint.y;
+            
+            ctx.strokeRect(startPoint.x, startPoint.y, width, height);
+            ctx.fillStyle = 'rgba(118, 255, 3, 0.2)';
+            ctx.fillRect(startPoint.x, startPoint.y, width, height);
+            
+            // Calculate and display area
+            const area = calculateRealArea(Math.abs(width), Math.abs(height));
+            const centerX = startPoint.x + width / 2;
+            const centerY = startPoint.y + height / 2;
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(centerX - 40, centerY - 20, 80, 20);
+            ctx.fillStyle = '#76ff03';
+            ctx.fillText(`${area.toFixed(1)} sq ft`, centerX - 35, centerY - 5);
+          }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+          if (!isDrawing) return;
+          
+          const rect = canvas.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          if (currentTool === 'line') {
+            const distance = calculateRealDistance(startPoint, { x, y });
             const measurement = {
               type: 'Line',
-              value: scaledDistance + ' ft',
+              value: `${distance.toFixed(1)} ft`,
               timestamp: new Date().toLocaleTimeString()
             };
             measurements.push(measurement);
+            allAnnotations.push({ type: 'line', start: startPoint, end: { x, y }, measurement: distance });
+            updateMeasurementsList();
+          } else if (currentTool === 'area') {
+            const width = Math.abs(x - startPoint.x);
+            const height = Math.abs(y - startPoint.y);
+            const area = calculateRealArea(width, height);
+            const measurement = {
+              type: 'Area',
+              value: `${area.toFixed(1)} sq ft`,
+              timestamp: new Date().toLocaleTimeString()
+            };
+            measurements.push(measurement);
+            allAnnotations.push({ type: 'area', start: startPoint, end: { x, y }, measurement: area });
             updateMeasurementsList();
           }
+          
           isDrawing = false;
         });
+        
+        canvas.addEventListener('dblclick', (e) => {
+          if (currentTool === 'polygon' && currentPoints.length > 2) {
+            // Close polygon and calculate area
+            const area = calculatePolygonArea(currentPoints);
+            const measurement = {
+              type: 'Polygon',
+              value: `${area.toFixed(1)} sq ft`,
+              timestamp: new Date().toLocaleTimeString()
+            };
+            measurements.push(measurement);
+            allAnnotations.push({ type: 'polygon', points: [...currentPoints], measurement: area });
+            updateMeasurementsList();
+            
+            currentPoints = [];
+            isDrawing = false;
+          }
+        });
+      }
+      
+      // Calculate real-world distance based on scale
+      function calculateRealDistance(point1, point2) {
+        const pixelDistance = Math.sqrt(
+          Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2)
+        );
+        // Convert pixels to real-world units based on drawing scale
+        return (pixelDistance * drawingScale) / 100;
+      }
+      
+      // Calculate real-world area based on scale
+      function calculateRealArea(widthPixels, heightPixels) {
+        const realWidth = (widthPixels * drawingScale) / 100;
+        const realHeight = (heightPixels * drawingScale) / 100;
+        return realWidth * realHeight;
+      }
+      
+      // Calculate polygon area using shoelace formula
+      function calculatePolygonArea(points) {
+        let area = 0;
+        for (let i = 0; i < points.length; i++) {
+          const j = (i + 1) % points.length;
+          area += points[i].x * points[j].y;
+          area -= points[j].x * points[i].y;
+        }
+        area = Math.abs(area) / 2;
+        return calculateRealArea(area, 1);
+      }
+      
+      // Add count marker
+      function addCountMarker(x, y, ctx) {
+        const count = allAnnotations.filter(a => a.type === 'count').length + 1;
+        
+        ctx.fillStyle = '#ff6b35';
+        ctx.beginPath();
+        ctx.arc(x, y, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(count.toString(), x, y + 5);
+        
+        allAnnotations.push({ type: 'count', x, y, number: count });
+        
+        const measurement = {
+          type: 'Count',
+          value: `Item #${count}`,
+          timestamp: new Date().toLocaleTimeString()
+        };
+        measurements.push(measurement);
+        updateMeasurementsList();
+      }
+      
+      // Add text annotation
+      function addTextAnnotation(x, y, text, ctx) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(x - 5, y - 20, text.length * 8 + 10, 25);
+        
+        ctx.fillStyle = '#ffc107';
+        ctx.font = '14px Arial';
+        ctx.fillText(text, x, y);
+        
+        allAnnotations.push({ type: 'text', x, y, text });
+      }
+      
+      // Redraw all annotations
+      function redrawAllAnnotations(ctx) {
+        allAnnotations.forEach(ann => {
+          if (ann.type === 'line') {
+            ctx.strokeStyle = '#76ff03';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ann.start.x, ann.start.y);
+            ctx.lineTo(ann.end.x, ann.end.y);
+            ctx.stroke();
+          } else if (ann.type === 'area') {
+            const width = ann.end.x - ann.start.x;
+            const height = ann.end.y - ann.start.y;
+            ctx.strokeStyle = '#76ff03';
+            ctx.strokeRect(ann.start.x, ann.start.y, width, height);
+            ctx.fillStyle = 'rgba(118, 255, 3, 0.2)';
+            ctx.fillRect(ann.start.x, ann.start.y, width, height);
+          } else if (ann.type === 'count') {
+            ctx.fillStyle = '#ff6b35';
+            ctx.beginPath();
+            ctx.arc(ann.x, ann.y, 15, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(ann.number.toString(), ann.x, ann.y + 5);
+          } else if (ann.type === 'text') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(ann.x - 5, ann.y - 20, ann.text.length * 8 + 10, 25);
+            ctx.fillStyle = '#ffc107';
+            ctx.font = '14px Arial';
+            ctx.fillText(ann.text, ann.x, ann.y);
+          }
+        });
+      }
+      
+      // Update cursor based on current tool
+      function updateCursor() {
+        const wrapper = document.getElementById('pdfCanvasWrapper');
+        if (!wrapper) return;
+        
+        switch (currentTool) {
+          case 'pan':
+            wrapper.style.cursor = 'grab';
+            break;
+          case 'line':
+          case 'area':
+            wrapper.style.cursor = 'crosshair';
+            break;
+          case 'count':
+            wrapper.style.cursor = 'pointer';
+            break;
+          case 'annotation':
+            wrapper.style.cursor = 'text';
+            break;
+          default:
+            wrapper.style.cursor = 'default';
+        }
+      }
+      
+      // Add page navigation buttons
+      function addPageNavigationButtons() {
+        const infoDiv = document.querySelector('.takeoff-info');
+        if (!infoDiv) return;
+        
+        const navDiv = document.createElement('div');
+        navDiv.style.cssText = 'display: flex; gap: 10px; margin-top: 10px;';
+        navDiv.innerHTML = `
+          <button onclick="previousPage()" id="prevPageBtn" style="flex: 1; padding: 5px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>
+            ← Previous
+          </button>
+          <button onclick="nextPage()" id="nextPageBtn" style="flex: 1; padding: 5px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;" disabled>
+            Next →
+          </button>
+        `;
+        
+        const pageInfoElement = document.getElementById('pageInfo');
+        if (pageInfoElement && pageInfoElement.parentNode) {
+          pageInfoElement.parentNode.parentNode.appendChild(navDiv);
+        }
+      }
+      
+      // Navigate to previous page
+      async function previousPage() {
+        if (currentPDF && currentPageNum > 1) {
+          currentPageNum--;
+          await renderPDFPage(currentPDF, currentPageNum);
+        }
+      }
+      
+      // Navigate to next page
+      async function nextPage() {
+        if (currentPDF && currentPageNum < totalPages) {
+          currentPageNum++;
+          await renderPDFPage(currentPDF, currentPageNum);
+        }
+      }
+      
+      // Render PDF page
+      async function renderPDFPage(pdf, pageNum) {
+        const page = await pdf.getPage(pageNum);
+        const canvas = document.getElementById('pdfCanvas');
+        const annotationCanvas = document.getElementById('annotationCanvas');
+        const context = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: pdfScale });
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        if (annotationCanvas) {
+          annotationCanvas.height = viewport.height;
+          annotationCanvas.width = viewport.width;
+        }
+        
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+        
+        // Update page info
+        document.getElementById('pageInfo').textContent = `${pageNum} of ${totalPages}`;
+        
+        // Update navigation buttons
+        document.getElementById('prevPageBtn').disabled = pageNum === 1;
+        document.getElementById('nextPageBtn').disabled = pageNum === totalPages;
+        
+        // Clear annotations for new page
+        allAnnotations = [];
+        measurements = [];
+        updateMeasurementsList();
       }
 
       function updateMeasurementsList() {
@@ -4349,19 +4697,20 @@
           const fileReader = new FileReader();
           fileReader.onload = async function(e) {
             try {
-              const typedArray = new Uint8Array(e.target.result);
+          const typedArray = new Uint8Array(e.target.result);
               const pdf = await pdfjsLib.getDocument(typedArray).promise;
-              const page = await pdf.getPage(1);
-              const context = canvas.getContext('2d');
-              const viewport = page.getViewport({ scale: 1.5 });
               
-              canvas.height = viewport.height;
-              canvas.width = viewport.width;
+              // Store PDF reference and page count
+              currentPDF = pdf;
+              totalPages = pdf.numPages;
+              currentPageNum = 1;
               
-              // Match annotation canvas size
-              if (annotationCanvas) {
-                annotationCanvas.height = viewport.height;
-                annotationCanvas.width = viewport.width;
+              // Render first page
+              await renderPDFPage(pdf, 1);
+              
+              // Enable page navigation if multiple pages
+              if (totalPages > 1) {
+                document.getElementById('nextPageBtn').disabled = false;
               }
               
               await page.render({
