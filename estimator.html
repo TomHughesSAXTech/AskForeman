@@ -1959,33 +1959,70 @@
               </div>
               
               <div style="margin-top: 2rem;">
-                <h4>Markups & Final Pricing</h4>
+                <h4>Cost Analysis & Pricing</h4>
                 <table class="estimate-table">
-                  <tr>
-                    <td width="30%"><strong>Overhead (%):</strong></td>
-                    <td width="20%"><input type="number" id="overheadPercent" value="10" onchange="calculateTotals()" style="width: 100%;"></td>
-                    <td width="30%"><strong>Overhead Amount:</strong></td>
-                    <td width="20%" id="overheadAmount">$0.00</td>
+                  <tr style="background: #f9f9f9;">
+                    <td colspan="4" style="font-weight: bold; text-align: center;">COST BREAKDOWN</td>
                   </tr>
                   <tr>
-                    <td><strong>Profit Margin (%):</strong></td>
-                    <td><input type="number" id="profitPercent" value="15" onchange="calculateTotals()" style="width: 100%;"></td>
-                    <td><strong>Profit Amount:</strong></td>
-                    <td id="profitAmount">$0.00</td>
+                    <td width="30%"><strong>Direct Costs:</strong></td>
+                    <td width="20%" id="directCostsSummary" style="font-weight: bold;">$0.00</td>
+                    <td width="30%"><strong>Cost/Sqft:</strong></td>
+                    <td width="20%" id="costPerSqft">$0.00</td>
                   </tr>
                   <tr>
-                    <td><strong>Contingency (%):</strong></td>
-                    <td><input type="number" id="contingencyPercent" value="5" onchange="calculateTotals()" style="width: 100%;"></td>
-                    <td><strong>Contingency Amount:</strong></td>
-                    <td id="contingencyAmount">$0.00</td>
+                    <td><strong>Escalation (%):</strong></td>
+                    <td><input type="number" id="escalationPercent" value="10" onchange="calculateTotals()" style="width: 100%;" title="Price escalation for future work"></td>
+                    <td><strong>Escalation Amount:</strong></td>
+                    <td id="escalationAmount">$0.00</td>
                   </tr>
                   <tr>
-                    <td><strong>Tax Rate (%):</strong></td>
-                    <td><input type="number" id="taxPercent" value="8.5" onchange="calculateTotals()" style="width: 100%;"></td>
-                    <td><strong>Tax Amount:</strong></td>
-                    <td id="taxAmount">$0.00</td>
+                    <td><strong>Surface Prep Cost:</strong></td>
+                    <td><input type="number" id="surfacePrepCost" value="500" onchange="calculateTotals()" style="width: 100%;" placeholder="$500"></td>
+                    <td colspan="2" style="font-size: 0.9rem; color: #666;">Additional prep work allowance</td>
+                  </tr>
+                  <tr style="background: #f0f7f0; border-top: 2px solid var(--medium-gray);">
+                    <td><strong>Total Cost:</strong></td>
+                    <td id="totalCost" style="font-weight: bold; color: var(--dark-green);">$0.00</td>
+                    <td><strong>Total Cost/Sqft:</strong></td>
+                    <td id="totalCostPerSqft" style="font-weight: bold;">$0.00</td>
+                  </tr>
+                  <tr style="background: #f9f9f9; margin-top: 1rem;">
+                    <td colspan="4" style="font-weight: bold; text-align: center; padding-top: 1rem;">PRICING MARKUP</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Markup (%):</strong></td>
+                    <td>
+                      <select id="markupPercent" onchange="calculateTotals()" style="width: 100%;">
+                        <option value="25">25% (Minimum)</option>
+                        <option value="35">35% (Standard)</option>
+                        <option value="50" selected>50% (Target)</option>
+                        <option value="75">75% (Premium)</option>
+                        <option value="100">100% (Specialty)</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                      <input type="number" id="customMarkup" placeholder="Custom %" style="display: none; width: 100%; margin-top: 5px;" onchange="calculateTotals()">
+                    </td>
+                    <td><strong>Markup Amount:</strong></td>
+                    <td id="markupAmount" style="font-weight: bold;">$0.00</td>
+                  </tr>
+                  <tr style="background: #e8f5e9; border-top: 2px solid var(--primary-green);">
+                    <td><strong>PRICE:</strong></td>
+                    <td id="finalPrice" style="font-weight: bold; font-size: 1.2rem; color: var(--primary-green);">$0.00</td>
+                    <td><strong>Price/Sqft:</strong></td>
+                    <td id="pricePerSqft" style="font-weight: bold; font-size: 1.1rem;">$0.00</td>
                   </tr>
                 </table>
+                
+                <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                  <strong>📊 Pricing Notes:</strong>
+                  <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.9rem;">
+                    <li>Standard markup includes overhead and profit</li>
+                    <li>Escalation accounts for material price increases</li>
+                    <li>Surface prep is added as a fixed allowance</li>
+                    <li>All work to be performed on weekends/after hours as specified</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -3901,79 +3938,285 @@
         event.target.classList.add('active');
       }
 
-      // Add takeoff row function
+      // Add enhanced takeoff row function matching professional format
       function addTakeoffRow() {
         const tbody = document.getElementById('takeoffBody');
         const rowCount = tbody.rows.length + 1;
         const row = tbody.insertRow();
         row.innerHTML = `
-          <td><input type="text" class="small-input" placeholder="${rowCount}"></td>
-          <td><input type="text" class="small-input" placeholder="SWG-00${rowCount}"></td>
-          <td><input type="text" placeholder="Spec ref"></td>
-          <td><input type="text" placeholder="Description"></td>
-          <td><input type="text" class="small-input" placeholder="SF/LF"></td>
-          <td><input type="number" class="small-input" placeholder="1" onchange="calculateTakeoffRow(this)"></td>
-          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
-          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
-          <td><input type="number" class="small-input" placeholder="0" onchange="calculateTakeoffRow(this)"></td>
-          <td><input type="number" class="quantity-field" readonly></td>
-          <td><input type="text" placeholder="Notes"></td>
+          <td><input type="text" class="small-input" value="${rowCount}" style="width: 40px;"></td>
+          <td><input type="text" class="small-input" placeholder="A-104" title="Drawing Number"></td>
+          <td><input type="text" placeholder="099100" title="Spec Number"></td>
+          <td>
+            <select class="location-select" onchange="updateDescription(this)" style="width: 100%; margin-bottom: 5px;">
+              <option value="">Select Location</option>
+              <option value="Pump Pit">Pump Pit</option>
+              <option value="Mechanical Equipment Room">Mechanical Equipment Room</option>
+              <option value="Building Common Area">Building Common Area</option>
+              <option value="Roof">Roof</option>
+              <option value="Basement">Basement</option>
+              <option value="Exterior">Exterior</option>
+            </select>
+            <input type="text" placeholder="Description (Walls, Floor, etc.)" class="description-input">
+          </td>
+          <td>
+            <select class="small-input" onchange="calculateTakeoffRow(this)">
+              <option value="Sqft">Sqft</option>
+              <option value="LF">LF</option>
+              <option value="SF">SF</option>
+              <option value="Nos">Nos</option>
+              <option value="GAL">GAL</option>
+              <option value="EA">EA</option>
+            </select>
+          </td>
+          <td><input type="number" class="small-input" value="1" placeholder="No." onchange="calculateTakeoffRow(this)" style="width: 50px;"></td>
+          <td><input type="number" class="small-input" placeholder="Length" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="small-input" placeholder="Width" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="small-input" placeholder="Height" onchange="calculateTakeoffRow(this)"></td>
+          <td><input type="number" class="quantity-field" readonly style="background: #f0f0f0; font-weight: bold;"></td>
+          <td>
+            <select class="small-input">
+              <option value="Existing">Existing</option>
+              <option value="New">New</option>
+              <option value="Demo">Demo</option>
+            </select>
+          </td>
           <td><button onclick="removeRow(this)">❌</button></td>
         `;
       }
 
-      // Calculate takeoff row quantity
+      // Calculate takeoff row quantity based on unit type
       function calculateTakeoffRow(input) {
         const row = input.closest('tr');
-        const no = parseFloat(row.cells[5].querySelector('input').value) || 0;
+        const units = row.cells[4].querySelector('select').value;
+        const no = parseFloat(row.cells[5].querySelector('input').value) || 1;
         const length = parseFloat(row.cells[6].querySelector('input').value) || 0;
         const width = parseFloat(row.cells[7].querySelector('input').value) || 0;
         const height = parseFloat(row.cells[8].querySelector('input').value) || 0;
         
-        let quantity = no;
-        if (length > 0) quantity *= length;
-        if (width > 0) quantity *= width;
-        if (height > 0) quantity *= height;
+        let quantity = 0;
+        
+        switch(units) {
+          case 'Sqft':
+          case 'SF':
+            // Square footage: length x width (or length x height for walls)
+            if (width > 0) {
+              quantity = no * length * width;
+            } else if (height > 0) {
+              quantity = no * length * height;
+            } else {
+              quantity = no * length;
+            }
+            break;
+          case 'LF':
+            // Linear feet
+            quantity = no * length;
+            break;
+          case 'Nos':
+          case 'EA':
+            // Count/Each
+            quantity = no;
+            break;
+          case 'GAL':
+            // Gallons - might need coverage calculation
+            quantity = no;
+            break;
+          default:
+            // Generic calculation
+            quantity = no;
+            if (length > 0) quantity *= length;
+            if (width > 0) quantity *= width;
+            if (height > 0) quantity *= height;
+        }
         
         row.cells[9].querySelector('input').value = quantity.toFixed(2);
+        updateTakeoffSummary();
+      }
+      
+      // Update description based on location selection
+      function updateDescription(select) {
+        const row = select.closest('tr');
+        const location = select.value;
+        const descInput = row.querySelector('.description-input');
+        
+        // Auto-suggest description based on location
+        if (location === 'Pump Pit' || location === 'Mechanical Equipment Room') {
+          if (!descInput.value) {
+            descInput.placeholder = 'Walls, Floor, Ceiling, Equipment Pads';
+          }
+        }
+      }
+      
+      // Update takeoff summary with grouped totals
+      function updateTakeoffSummary() {
+        const tbody = document.getElementById('takeoffBody');
+        const summaryData = {};
+        
+        tbody.querySelectorAll('tr').forEach(row => {
+          const location = row.cells[3].querySelector('.location-select')?.value || 'General';
+          const description = row.cells[3].querySelector('.description-input')?.value || '';
+          const units = row.cells[4].querySelector('select').value;
+          const quantity = parseFloat(row.cells[9].querySelector('input').value) || 0;
+          
+          const key = `${location}|${units}`;
+          if (!summaryData[key]) {
+            summaryData[key] = {
+              location,
+              units,
+              total: 0,
+              items: []
+            };
+          }
+          summaryData[key].total += quantity;
+          if (description) {
+            summaryData[key].items.push(description);
+          }
+        });
+        
+        // Log summary for now (can be displayed in UI later)
+        console.log('Takeoff Summary:', summaryData);
+        
+        // Update any summary displays
+        const summaryDiv = document.getElementById('takeoffSummary');
+        if (summaryDiv) {
+          let html = '<h4>Takeoff Summary</h4>';
+          Object.values(summaryData).forEach(item => {
+            html += `<div>${item.location}: ${item.total.toFixed(2)} ${item.units}</div>`;
+          });
+          summaryDiv.innerHTML = html;
+        }
       }
 
-      // Add building row function
+      // Add enhanced building row with production rates
       function addBuildingRow(building) {
         const tbody = document.getElementById(building + 'Body');
         const rowCount = tbody.rows.length + 1;
         const buildingNum = building.replace('building', '');
         const row = tbody.insertRow();
         row.innerHTML = `
-          <td><input type="text" class="small-input" placeholder="${buildingNum}.${rowCount}"></td>
-          <td><input type="text" placeholder="Work description"></td>
-          <td><input type="text" placeholder="Painting/Flooring/etc"></td>
-          <td><input type="text" placeholder="Material type"></td>
-          <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
-          <td><input type="number" class="small-input" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
-          <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
-          <td class="labor-cost">$0.00</td>
-          <td><input type="number" placeholder="0" onchange="calculateBuildingRow(this, '${building}')"></td>
-          <td class="total">$0.00</td>
+          <td><input type="text" class="small-input" value="${buildingNum}.${rowCount}" style="width: 50px;"></td>
+          <td>
+            <select onchange="updateWorkType(this)" style="width: 100%; margin-bottom: 5px;">
+              <option value="">Select Work Type</option>
+              <option value="surface_prep">Surface Prep - Scraping</option>
+              <option value="prime_coat">Prime Coat</option>
+              <option value="intermediate_coat">Intermediate Coat</option>
+              <option value="finish_coat">Finish Coat</option>
+              <option value="flooring">Flooring Installation</option>
+              <option value="demolition">Demolition</option>
+              <option value="custom">Custom Work</option>
+            </select>
+            <input type="text" placeholder="Additional description" style="width: 100%;">
+          </td>
+          <td>
+            <select style="width: 100%;">
+              <option value="painting">Painting - 099100</option>
+              <option value="flooring">Flooring - 096500</option>
+              <option value="demolition">Demo - 024100</option>
+              <option value="general">General - 010000</option>
+            </select>
+          </td>
+          <td><input type="text" placeholder="Material/Paint type"></td>
+          <td>
+            <input type="number" class="small-input" placeholder="Area" onchange="calculateBuildingRowWithProduction(this, '${building}')" title="Area in Sqft">
+            <select class="production-rate" onchange="calculateBuildingRowWithProduction(this, '${building}')" style="width: 100%; margin-top: 5px;">
+              <option value="200">200 SF/MD</option>
+              <option value="150">150 SF/MD (Detail)</option>
+              <option value="250">250 SF/MD (Simple)</option>
+              <option value="allow">Allowance</option>
+            </select>
+          </td>
+          <td>
+            <input type="number" class="small-input md-field" readonly placeholder="MD" style="background: #f0f0f0;" title="Man-Days">
+            <select class="labor-rate-select" onchange="calculateBuildingRowWithProduction(this, '${building}')" style="width: 100%; margin-top: 5px;">
+              <option value="970">$970 (Reg)</option>
+              <option value="1250">$1,250 (OT)</option>
+            </select>
+          </td>
+          <td>
+            <input type="number" placeholder="Material $" onchange="calculateBuildingRowWithProduction(this, '${building}')">
+            <input type="number" placeholder="Coverage" class="coverage-rate" style="width: 100%; margin-top: 5px;" title="Coverage rate (e.g., 200 for sqft/gal)">
+          </td>
+          <td class="labor-cost" style="font-weight: bold;">$0.00</td>
+          <td><input type="number" placeholder="Equipment $" onchange="calculateBuildingRowWithProduction(this, '${building}')"></td>
+          <td class="total" style="font-weight: bold; color: var(--primary-green);">$0.00</td>
           <td><button onclick="removeRow(this)">❌</button></td>
         `;
       }
+      
+      // Update work type and set default production rates
+      function updateWorkType(select) {
+        const row = select.closest('tr');
+        const workType = select.value;
+        const prodRateSelect = row.cells[4].querySelector('.production-rate');
+        
+        // Set default production rates based on work type
+        switch(workType) {
+          case 'surface_prep':
+            prodRateSelect.value = '150'; // More labor intensive
+            break;
+          case 'prime_coat':
+          case 'intermediate_coat':
+          case 'finish_coat':
+            prodRateSelect.value = '200'; // Standard painting rate
+            break;
+          case 'demolition':
+            prodRateSelect.value = '100'; // Labor intensive
+            break;
+          default:
+            prodRateSelect.value = '200';
+        }
+        
+        // Trigger recalculation
+        const input = row.cells[4].querySelector('input[type="number"]');
+        if (input.value) {
+          calculateBuildingRowWithProduction(input, row.getAttribute('data-building') || 'building1');
+        }
+      }
 
-      // Calculate building row totals
-      function calculateBuildingRow(input, building) {
+      // Calculate building row with production rates
+      function calculateBuildingRowWithProduction(input, building) {
         const row = input.closest('tr');
-        const laborHours = parseFloat(row.cells[4].querySelector('input').value) || 0;
-        const laborRate = parseFloat(row.cells[5].querySelector('input').value) || 0;
-        const materialCost = parseFloat(row.cells[6].querySelector('input').value) || 0;
+        const area = parseFloat(row.cells[4].querySelector('input[type="number"]').value) || 0;
+        const prodRateSelect = row.cells[4].querySelector('.production-rate');
+        const laborRateSelect = row.cells[5].querySelector('.labor-rate-select');
+        const materialCost = parseFloat(row.cells[6].querySelector('input[type="number"]').value) || 0;
         const equipmentCost = parseFloat(row.cells[8].querySelector('input').value) || 0;
         
-        const laborCost = laborHours * laborRate;
+        let manDays = 0;
+        if (prodRateSelect.value === 'allow') {
+          // Direct allowance entry
+          manDays = area; // User enters MD directly
+        } else {
+          const productionRate = parseFloat(prodRateSelect.value) || 200;
+          manDays = area / productionRate;
+        }
+        
+        // Update MD field
+        row.cells[5].querySelector('.md-field').value = manDays.toFixed(2);
+        
+        // Calculate labor cost (MD × Daily Rate)
+        const laborRate = parseFloat(laborRateSelect.value) || 970;
+        const laborCost = manDays * laborRate;
         row.cells[7].textContent = `$${laborCost.toFixed(2)}`;
         
+        // Calculate total
         const total = laborCost + materialCost + equipmentCost;
         row.cells[9].textContent = `$${total.toFixed(2)}`;
         
+        // Update material coverage if needed
+        const coverageRate = parseFloat(row.cells[6].querySelector('.coverage-rate')?.value) || 0;
+        if (coverageRate > 0 && area > 0) {
+          const gallonsNeeded = area / coverageRate;
+          // Could update a gallons field here if needed
+        }
+        
         calculateTotals();
+      }
+      
+      // Keep backward compatibility
+      function calculateBuildingRow(input, building) {
+        calculateBuildingRowWithProduction(input, building);
       }
 
       function addMaterialRow() {
@@ -4037,6 +4280,7 @@
         let totalLabor = 0;
         let totalMaterials = 0;
         let totalEquipment = 0;
+        let totalArea = 0;
         
         // Calculate building totals
         ['building1', 'building2', 'building3'].forEach(building => {
@@ -4047,13 +4291,16 @@
               const total = parseFloat(row.cells[9].textContent.replace('$', '')) || 0;
               buildingTotal += total;
               
-              // Add to category totals
-              const laborHours = parseFloat(row.cells[4].querySelector('input')?.value) || 0;
-              const laborRate = parseFloat(row.cells[5].querySelector('input')?.value) || 0;
-              const materialCost = parseFloat(row.cells[6].querySelector('input')?.value) || 0;
+              // Get area for cost/sqft calculations
+              const area = parseFloat(row.cells[4].querySelector('input[type="number"]')?.value) || 0;
+              totalArea += area;
+              
+              // Get actual labor cost from the labor cost cell
+              const laborCost = parseFloat(row.cells[7].textContent.replace('$', '')) || 0;
+              const materialCost = parseFloat(row.cells[6].querySelector('input[type="number"]')?.value) || 0;
               const equipmentCost = parseFloat(row.cells[8].querySelector('input')?.value) || 0;
               
-              totalLabor += laborHours * laborRate;
+              totalLabor += laborCost;
               totalMaterials += materialCost;
               totalEquipment += equipmentCost;
             });
@@ -4064,6 +4311,20 @@
           }
         });
         
+        // Get total area from takeoff if no building area
+        if (totalArea === 0) {
+          const takeoffBody = document.getElementById('takeoffBody');
+          if (takeoffBody) {
+            takeoffBody.querySelectorAll('tr').forEach(row => {
+              const units = row.cells[4].querySelector('select')?.value || '';
+              if (units.toLowerCase().includes('sqft') || units.toLowerCase() === 'sf') {
+                const quantity = parseFloat(row.cells[9].querySelector('input')?.value) || 0;
+                totalArea += quantity;
+              }
+            });
+          }
+        }
+        
         // Update summary totals
         document.getElementById('totalLabor').textContent = `$${totalLabor.toFixed(2)}`;
         document.getElementById('totalMaterials').textContent = `$${totalMaterials.toFixed(2)}`;
@@ -4072,26 +4333,49 @@
         const directCosts = totalLabor + totalMaterials + totalEquipment;
         document.getElementById('directCosts').textContent = `$${directCosts.toFixed(2)}`;
         document.getElementById('buildingsSubtotal').textContent = `$${directCosts.toFixed(2)}`;
+        document.getElementById('directCostsSummary').textContent = `$${directCosts.toFixed(2)}`;
         
-        // Calculate markups
-        const overheadPercent = parseFloat(document.getElementById('overheadPercent')?.value) || 0;
-        const profitPercent = parseFloat(document.getElementById('profitPercent')?.value) || 0;
-        const contingencyPercent = parseFloat(document.getElementById('contingencyPercent')?.value) || 0;
-        const taxPercent = parseFloat(document.getElementById('taxPercent')?.value) || 0;
+        // Calculate cost per square foot
+        const costPerSqft = totalArea > 0 ? directCosts / totalArea : 0;
+        document.getElementById('costPerSqft').textContent = `$${costPerSqft.toFixed(2)}`;
         
-        const overhead = directCosts * (overheadPercent / 100);
-        const profit = directCosts * (profitPercent / 100);
-        const contingency = directCosts * (contingencyPercent / 100);
+        // Calculate with escalation and surface prep
+        const escalationPercent = parseFloat(document.getElementById('escalationPercent')?.value) || 10;
+        const surfacePrepCost = parseFloat(document.getElementById('surfacePrepCost')?.value) || 500;
         
-        const beforeTax = directCosts + overhead + profit + contingency;
-        const tax = beforeTax * (taxPercent / 100);
-        const grandTotal = beforeTax + tax;
+        const escalation = directCosts * (escalationPercent / 100);
+        document.getElementById('escalationAmount').textContent = `$${escalation.toFixed(2)}`;
         
-        document.getElementById('overheadAmount').textContent = `$${overhead.toFixed(2)}`;
-        document.getElementById('profitAmount').textContent = `$${profit.toFixed(2)}`;
-        document.getElementById('contingencyAmount').textContent = `$${contingency.toFixed(2)}`;
-        document.getElementById('taxAmount').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
+        const totalCost = directCosts + escalation + surfacePrepCost;
+        document.getElementById('totalCost').textContent = `$${totalCost.toFixed(2)}`;
+        
+        const totalCostPerSqft = totalArea > 0 ? totalCost / totalArea : 0;
+        document.getElementById('totalCostPerSqft').textContent = `$${totalCostPerSqft.toFixed(2)}`;
+        
+        // Calculate markup
+        const markupSelect = document.getElementById('markupPercent');
+        let markupPercent = 50; // Default
+        
+        if (markupSelect.value === 'custom') {
+          document.getElementById('customMarkup').style.display = 'block';
+          markupPercent = parseFloat(document.getElementById('customMarkup').value) || 50;
+        } else {
+          document.getElementById('customMarkup').style.display = 'none';
+          markupPercent = parseFloat(markupSelect.value) || 50;
+        }
+        
+        const markupAmount = totalCost * (markupPercent / 100);
+        document.getElementById('markupAmount').textContent = `$${markupAmount.toFixed(2)}`;
+        
+        // Calculate final price
+        const finalPrice = totalCost + markupAmount;
+        document.getElementById('finalPrice').textContent = `$${finalPrice.toFixed(2)}`;
+        
+        const pricePerSqft = totalArea > 0 ? finalPrice / totalArea : 0;
+        document.getElementById('pricePerSqft').textContent = `$${pricePerSqft.toFixed(2)}`;
+        
+        // Update grand total
+        document.getElementById('grandTotal').textContent = `$${finalPrice.toFixed(2)}`;
       }
 
       // Save estimate to project
