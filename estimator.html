@@ -1686,9 +1686,9 @@
           <button class="takeoff-tool-btn" data-tool="line">📏 Measure Line</button>
           <button class="takeoff-tool-btn" data-tool="area">⬜ Measure Area</button>
           <button class="takeoff-tool-btn" data-tool="polygon">⬟ Polygon</button>
-          <button class="takeoff-tool-btn" data-tool="count">🔢 Count</button>
           <button class="takeoff-tool-btn" data-tool="annotation">💬 Annotate</button>
           <button class="takeoff-tool-btn" data-tool="scale">📐 Set Scale</button>
+          <button class="takeoff-tool-btn" data-tool="reset" onclick="resetCanvas()">🔄 Reset</button>
         </div>
         <div class="takeoff-workspace">
           <div class="takeoff-canvas-wrapper" id="pdfCanvasWrapper">
@@ -2074,9 +2074,6 @@
               💾 Save to Project
             </button>
             <button class="export-btn" onclick="exportToExcel()">📥 Export to Excel</button>
-            <button class="export-btn" onclick="exportToPDF()" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #e53935, #c62828); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-              📄 Export to PDF
-            </button>
           </div>
         </div>
       </div>
@@ -3685,9 +3682,23 @@
               name: img.name || `attachment_${Date.now()}.png`,
               mimeType: img.type || 'image/png',
               isDocument: img.type && img.type.includes('pdf'),
-              uploadedUrl: uploadedFileUrls[index]?.url || null  // Include blob storage URL if available
+              uploadedUrl: uploadedFileUrls[index]?.url || null,  // Include blob storage URL if available
+              base64: base64Data,  // Include base64 as separate field
+              metadata: {
+                fileType: img.type || 'image/png',
+                fileName: img.name || 'attachment',
+                fileSize: img.size || 0,
+                uploadedAt: new Date().toISOString()
+              }
             };
           }) : [];
+          
+          // Enhance message with document analysis request if attachments present
+          const enhancedMessage = processedAttachments.length > 0 && !message
+            ? "Please analyze the attached document(s) and provide a summary."
+            : processedAttachments.length > 0
+            ? `${message} [Note: ${processedAttachments.length} document(s) attached for context]`
+            : message;
           
           const response = await fetch(API_CONFIG.chatWebhookUrl, {
             method: "POST",
@@ -3695,14 +3706,17 @@
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              message: message || '[Document Analysis Request]',
+              message: enhancedMessage,
               client: chatContext,
               conversationId: `conv_${chatContext}_${Date.now()}`,
               sessionId: chatContext,
               attachments: processedAttachments,
               hasAttachments: processedAttachments.length > 0,
               attachmentCount: processedAttachments.length,
-              uploadedFiles: uploadedFileUrls  // Send uploaded file URLs separately
+              uploadedFiles: uploadedFileUrls,  // Send uploaded file URLs separately
+              documentAnalysisRequired: processedAttachments.length > 0,  // Flag for document analysis
+              includeInContext: true,  // Ensure documents are included in AI context
+              requestType: 'chat_with_document_context'  // Specific request type for document-aware chat
             })
           });
           
@@ -3994,7 +4008,10 @@
         const selectedProject = document.getElementById('takeoffProjectSelect').value;
         if (!selectedProject) return;
         
-        updateAIStatus('Checking for indexed takeoff data...', '#2196f3');
+        updateAIStatus('Loading project drawings...', '#2196f3');
+        
+        // Load project drawings into dropdown
+        await loadProjectDrawings(selectedProject);
         
         try {
           // First check for indexed takeoff data
@@ -4258,7 +4275,38 @@
               currentPoints = [startPoint];
             }
           } else if (currentTool === 'polygon') {
-            // Add point to polygon
+            // Check if clicking near start point to close polygon
+            if (currentPoints.length >= 3) {
+              const dist = Math.sqrt(Math.pow(x - currentPoints[0].x, 2) + Math.pow(y - currentPoints[0].y, 2));
+              if (dist < 10) {
+                // Close the polygon
+                isDrawing = false;
+                allAnnotations.push({ type: 'polygon', points: [...currentPoints] });
+                
+                // Calculate area
+                const area = calculatePolygonArea(currentPoints);
+                const measurement = {
+                  type: 'Polygon Area',
+                  value: `${Math.round(area * drawingScale * drawingScale / 144)} SF`,
+                  timestamp: new Date().toLocaleTimeString()
+                };
+                measurements.push(measurement);
+                updateMeasurementsList();
+                
+                // Redraw with closed polygon
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                redrawAllAnnotations(ctx);
+                
+                // Reset for next polygon
+                currentPoints = [];
+                startPoint = null;
+                
+                updateAIStatus(`Polygon completed: ${measurement.value}`, '#4caf50');
+                return;
+              }
+            }
+            
+            // Add new point to polygon
             currentPoints.push({ x, y });
             if (currentPoints.length === 1) {
               isDrawing = true;
@@ -4272,18 +4320,31 @@
             // Add a count marker
             addCountMarker(x, y, ctx);
           } else if (currentTool === 'annotation') {
-            // Add text annotation
             const text = prompt('Enter annotation text:');
             if (text) {
               addTextAnnotation(x, y, text, ctx);
             }
           } else if (currentTool === 'scale') {
-            // Set scale
-            const scaleInput = prompt('Enter the scale (e.g., 100 for 1:100, or 50 for 1:50):');
-            if (scaleInput && !isNaN(scaleInput)) {
-              drawingScale = parseFloat(scaleInput);
-              document.getElementById('drawingScale').textContent = `1:${drawingScale}`;
-              addSystemMessage(`✅ Scale set to 1:${drawingScale}`);
+            // Start measuring for scale setting
+            if (!isDrawing) {
+              isDrawing = true;
+              startPoint = { x, y };
+              currentPoints = [startPoint];
+            } else {
+              // Complete scale measurement
+              const endPoint = { x, y };
+              const pixelDistance = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
+              
+              // Show scale setting dialog
+              showScaleDialog(pixelDistance);
+              
+              isDrawing = false;
+              currentPoints = [];
+              startPoint = null;
+              
+              // Clear temporary line
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              redrawAllAnnotations(ctx);
             }
           } else if (currentTool === 'select') {
             // Selection tool - placeholder for future implementation
@@ -4324,6 +4385,23 @@
             ctx.fillRect(midX - 30, midY - 20, 60, 20);
             ctx.fillStyle = '#76ff03';
             ctx.fillText(`${distance.toFixed(1)} ft`, midX - 25, midY - 5);
+          } else if (currentTool === 'scale') {
+            // Draw line for scale measurement
+            ctx.strokeStyle = '#ff9800';
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // Show pixel distance
+            const pixelDistance = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2));
+            const midX = (startPoint.x + x) / 2;
+            const midY = (startPoint.y + y) / 2;
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(midX - 40, midY - 20, 80, 20);
+            ctx.fillStyle = '#ff9800';
+            ctx.fillText(`${Math.round(pixelDistance)} px`, midX - 30, midY - 5);
           } else if (currentTool === 'area') {
             // Draw rectangle with area calculation
             const width = x - startPoint.x;
@@ -4342,6 +4420,29 @@
             ctx.fillRect(centerX - 40, centerY - 20, 80, 20);
             ctx.fillStyle = '#76ff03';
             ctx.fillText(`${area.toFixed(1)} sq ft`, centerX - 35, centerY - 5);
+          } else if (currentTool === 'polygon' && currentPoints.length > 0) {
+            // Draw polygon in progress with preview line to cursor
+            drawPolygon(ctx, currentPoints, false);
+            
+            // Draw preview line from last point to cursor
+            ctx.strokeStyle = 'rgba(118, 255, 3, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(currentPoints[currentPoints.length - 1].x, currentPoints[currentPoints.length - 1].y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // If close to start point, show helper
+            if (currentPoints.length >= 3) {
+              const dist = Math.sqrt(Math.pow(x - currentPoints[0].x, 2) + Math.pow(y - currentPoints[0].y, 2));
+              if (dist < 15) {
+                ctx.fillStyle = '#ff6b35';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('Click to close', currentPoints[0].x + 10, currentPoints[0].y - 10);
+              }
+            }
+            ctx.setLineDash([]);
           }
         });
         
@@ -4418,25 +4519,122 @@
       }
       
       // Draw polygon
-      function drawPolygon(ctx, points, closed = false) {
+      function drawPolygon(ctx, points, isClosed) {
         if (points.length < 2) return;
         
         ctx.strokeStyle = '#76ff03';
         ctx.lineWidth = 2;
-        ctx.fillStyle = 'rgba(118, 255, 3, 0.2)';
-        
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
+        
         for (let i = 1; i < points.length; i++) {
           ctx.lineTo(points[i].x, points[i].y);
         }
-        if (closed) {
+        
+        if (isClosed) {
           ctx.closePath();
+          ctx.fillStyle = 'rgba(118, 255, 3, 0.3)';
           ctx.fill();
         }
         ctx.stroke();
         
-        // Draw points
+        // Draw points as small circles
+        ctx.fillStyle = '#76ff03';
+        points.forEach((point, index) => {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Highlight start point
+          if (index === 0 && !isClosed) {
+            ctx.strokeStyle = '#ff6b35';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+          }
+        });
+      }
+      
+      // Calculate polygon area using shoelace formula
+      function calculatePolygonArea(points) {
+        if (points.length < 3) return 0;
+        
+        let area = 0;
+        for (let i = 0; i < points.length; i++) {
+          const j = (i + 1) % points.length;
+          area += points[i].x * points[j].y;
+          area -= points[j].x * points[i].y;
+        }
+        return Math.abs(area / 2);
+      }
+      
+      // Show scale setting dialog
+      function showScaleDialog(pixelDistance) {
+        // Create modal for scale input
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          z-index: 10001;
+        `;
+        
+        modal.innerHTML = `
+          <h3 style="margin-top: 0; color: var(--concrete-gray);">Set Drawing Scale</h3>
+          <p style="color: #666;">You measured ${Math.round(pixelDistance)} pixels on the drawing.</p>
+          <p style="color: #666;">What is the actual distance this represents?</p>
+          <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <input type="number" id="scaleRealDistance" placeholder="Distance" value="10" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <select id="scaleUnits" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              <option value="feet">Feet</option>
+              <option value="inches">Inches</option>
+              <option value="meters">Meters</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="this.parentElement.parentElement.remove()" style="padding: 8px 16px; background: #ccc; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+            <button id="setScaleBtn" style="padding: 8px 16px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer;">Set Scale</button>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle scale setting
+        document.getElementById('setScaleBtn').onclick = function() {
+          const realDistance = parseFloat(document.getElementById('scaleRealDistance').value);
+          const units = document.getElementById('scaleUnits').value;
+          
+          if (realDistance > 0) {
+            // Calculate scale factor (pixels per unit)
+            let distanceInFeet = realDistance;
+            if (units === 'inches') {
+              distanceInFeet = realDistance / 12;
+            } else if (units === 'meters') {
+              distanceInFeet = realDistance * 3.28084;
+            }
+            
+            drawingScale = pixelDistance / distanceInFeet;
+            
+            // Update display
+            document.getElementById('drawingScale').textContent = `1:${Math.round(distanceInFeet * 100 / (pixelDistance / 100))}`;
+            document.getElementById('drawingUnits').textContent = 'Feet';
+            
+            updateAIStatus(`Scale set: ${realDistance} ${units}`, '#4caf50');
+            addSystemMessage(`✅ Drawing scale set to ${realDistance} ${units} = ${Math.round(pixelDistance)} pixels`);
+          }
+          
+          modal.remove();
+        };
+        
+        // Focus on input
+        document.getElementById('scaleRealDistance').focus();
+      }
         ctx.fillStyle = '#76ff03';
         points.forEach(point => {
           ctx.beginPath();
@@ -4535,6 +4733,28 @@
             ctx.fillText(ann.text, ann.x, ann.y);
           }
         });
+      }
+      
+      // Reset canvas - clear all drawings and measurements
+      function resetCanvas() {
+        const annotationCanvas = document.getElementById('annotationCanvas');
+        if (annotationCanvas) {
+          const ctx = annotationCanvas.getContext('2d');
+          ctx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+        }
+        
+        // Clear all stored annotations and measurements
+        allAnnotations = [];
+        measurements = [];
+        currentPoints = [];
+        isDrawing = false;
+        
+        // Update measurements list
+        updateMeasurementsList();
+        
+        // Update status
+        updateAIStatus('Canvas reset', '#4caf50');
+        addSystemMessage('🔄 Canvas cleared');
       }
       
       // Update cursor based on current tool
@@ -4726,7 +4946,7 @@
           return;
         }
         
-        updateAIStatus('Checking for existing analysis...', '#2196f3');
+        updateAIStatus('Running AI analysis...', '#2196f3');
         
         // First, check if this document has already been processed and indexed
         const fileName = currentDrawingFile.name;
@@ -4764,45 +4984,63 @@
           const base64String = e.target.result.split(',')[1];
           
           try {
-            // Call Azure Form Recognizer / Document Intelligence
+            // Call BlueprintTakeoffUnified Azure Function
             const analysisData = {
               file: base64String,
               fileName: fileName,
               mimeType: currentDrawingFile.type,
               client: selectedProject,
-              analysisType: 'construction-takeoff'
+              project: selectedProject,
+              analysisType: 'full',
+              extractHighlights: true,
+              extractColors: true,
+              detectScale: true
             };
             
-            // Use the chat webhook with special analysis request
-            const response = await fetch(API_CONFIG.chatWebhookUrl, {
+            // Call the Azure Function via config
+            // Function key should be configured in Azure Static Web App settings
+            const functionConfig = await fetch('/api/config');
+            const config = await functionConfig.json();
+            
+            const response = await fetch(`${config.functionBaseUrl}/BlueprintTakeoffUnified`, {
               method: 'POST',
               headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-functions-key': config.functionKey || ''
               },
-              body: JSON.stringify({
-                message: 'ANALYZE_DRAWING',
-                documentData: analysisData,
-                client: selectedProject,
-                conversationId: `takeoff_${Date.now()}`,
-                sessionId: selectedProject
-              })
+              body: JSON.stringify(analysisData)
             });
             
             if (response.ok) {
               const result = await response.json();
               
-              // Parse AI response for takeoff data
-              const aiData = parseAIResponse(result.response || '');
+              // Use the extracted data from the Azure Function
+              const takeoffData = {
+                timestamp: Date.now(),
+                scale: result.extractedData?.scale?.raw || 'Unknown',
+                units: 'Feet',
+                scale_detected: result.extractedData?.scale !== null,
+                detectedAreas: result.extractedData?.areas || [],
+                materials: result.extractedData?.materials || [],
+                dimensions: result.extractedData?.measurements || [],
+                specifications: result.extractedData?.specifications || [],
+                highlights: result.extractedData?.highlights || [],
+                criticalAreas: result.extractedData?.criticalAreas || [],
+                annotations: allAnnotations,
+                measurements: measurements,
+                lineItems: result.lineItems || [],
+                confidence: result.confidence
+              };
               
               // Store the processed data for future use
-              await saveIndexedTakeoffData(selectedProject, indexedDataKey, aiData);
+              await saveIndexedTakeoffData(selectedProject, indexedDataKey, takeoffData);
               
               // Update display with AI results
-              displayAIResults(aiData);
-              currentTakeoffData = aiData;
+              displayAIResults(takeoffData);
+              currentTakeoffData = takeoffData;
               
-              updateAIStatus('AI analysis complete and indexed!', '#4caf50');
-              addSystemMessage('✅ Drawing analyzed and saved to project index');
+              updateAIStatus('AI analysis complete!', '#4caf50');
+              addSystemMessage('✅ Drawing analyzed successfully');
             } else {
               // Handle non-JSON response or error
               const responseText = await response.text();
@@ -5080,9 +5318,28 @@
           const xmlDoc = parser.parseFromString(xmlText, "text/xml");
           const blobs = xmlDoc.getElementsByTagName("Blob");
           
-          const fileSelect = document.getElementById('takeoffFileSelect');
+          // Create or get file select dropdown
+          let fileSelect = document.getElementById('takeoffFileSelect');
+          if (!fileSelect) {
+            // Create select dropdown if it doesn't exist
+            const selectContainer = document.querySelector('.takeoff-header');
+            if (selectContainer) {
+              fileSelect = document.createElement('select');
+              fileSelect.id = 'takeoffFileSelect';
+              fileSelect.style.cssText = 'padding: 0.5rem; border-radius: 4px; background: white; color: var(--concrete-gray);';
+              fileSelect.onchange = function() { handleTakeoffFileSelect(this); };
+              
+              // Insert after project select
+              const projectSelect = document.getElementById('takeoffProjectSelect');
+              if (projectSelect) {
+                projectSelect.parentNode.insertBefore(fileSelect, projectSelect.nextSibling);
+              }
+            }
+          }
+          
           if (fileSelect) {
             fileSelect.innerHTML = '<option value="">Select a drawing</option>';
+            fileSelect.onchange = function() { handleTakeoffFileSelect(this); };
             
             for (let i = 0; i < blobs.length; i++) {
               const nameElement = blobs[i].getElementsByTagName("Name")[0];
@@ -5340,6 +5597,38 @@
           addSystemMessage('❌ Error loading takeoff data');
         }
       }
+      
+      // Handle takeoff file selection from dropdown
+      async function handleTakeoffFileSelect(selectElement) {
+        const filePath = selectElement.value;
+        if (!filePath) return;
+        
+        // Get the file URL
+        const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${filePath}${AZURE_STORAGE.sasToken}`;
+        const fileName = filePath.split('/').pop();
+        
+        updateAIStatus('Loading drawing...', '#2196f3');
+        
+        try {
+          // Fetch the file
+          const response = await fetch(fileUrl);
+          const blob = await response.blob();
+          
+          // Create a File object from the blob
+          const file = new File([blob], fileName, { type: getMimeTypeFromFileName(fileName) });
+          
+          // Display on canvas
+          currentDrawingFile = file;
+          await displayDrawingInCanvas(file);
+          
+          updateAIStatus('Drawing loaded. Ready for AI analysis.', '#4caf50');
+          addSystemMessage(`📄 Loaded: ${fileName}`);
+        } catch (error) {
+          console.error('Error loading drawing:', error);
+          updateAIStatus('Error loading drawing', '#f44336');
+          addSystemMessage(`❌ Failed to load drawing: ${error.message}`);
+        }
+      }
 
       // Professional Estimate Generator Functions
       function openEstimator() {
@@ -5357,8 +5646,24 @@
         });
       }
 
+      // Track estimate changes
+      let estimateHasChanges = false;
+      
       function closeEstimator() {
-        document.getElementById('estimateModal').classList.remove('active');
+        // Check if there are unsaved changes
+        if (estimateHasChanges) {
+          if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
+            document.getElementById('estimateModal').classList.remove('active');
+            estimateHasChanges = false;
+          }
+        } else {
+          document.getElementById('estimateModal').classList.remove('active');
+        }
+      }
+      
+      // Mark estimate as changed when inputs are modified
+      function markEstimateChanged() {
+        estimateHasChanges = true;
       }
 
       // Tab switching
@@ -5426,6 +5731,7 @@
 
       // Calculate takeoff row quantity based on unit type
       function calculateTakeoffRow(input) {
+        markEstimateChanged();
         const row = input.closest('tr');
         const units = row.cells[4].querySelector('select').value;
         const no = parseFloat(row.cells[5].querySelector('input').value) || 1;
@@ -5853,6 +6159,7 @@
           
           if (response.ok) {
             addSystemMessage(`✅ Estimate saved successfully to ${selectedProject} project!`);
+            estimateHasChanges = false; // Reset changes flag
             // Also trigger Excel export
             exportToExcel();
           } else {
