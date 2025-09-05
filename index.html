@@ -446,7 +446,7 @@
             <a href="estimator.html" class="service-card estimating">
                 <span class="service-badge badge-live">Live</span>
                 <div class="service-icon">
-                    <img src="estimator.png" alt="Estimating Assistant">
+                    <img src="Estimate.png" alt="Estimating Assistant">
                 </div>
                 <h2 class="service-title">Estimating Assistant</h2>
                 <p class="service-description">
@@ -536,10 +536,10 @@
             }
         }
         
-        // Function to update document count
+        // Function to update document count - only count original client documents
         async function updateDocumentCount() {
             try {
-                const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list`;
+                const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list&prefix=FCS-OriginalClients/`;
                 
                 const response = await fetch(listUrl);
                 if (response.ok) {
@@ -552,9 +552,19 @@
                     for (let i = 0; i < blobs.length; i++) {
                         const nameElement = blobs[i].getElementsByTagName("Name")[0];
                         if (nameElement) {
-                            const fileName = nameElement.textContent;
-                            if (fileName && !fileName.endsWith('/') && !fileName.startsWith('.')) {
-                                documentCount++;
+                            const fullPath = nameElement.textContent;
+                            // Only count files in FCS-OriginalClients folder
+                            if (fullPath && fullPath.startsWith('FCS-OriginalClients/')) {
+                                const fileName = fullPath.split('/').pop();
+                                // Exclude placeholder.json files and chunk files
+                                if (fileName && 
+                                    !fileName.endsWith('.json') && 
+                                    !fileName.includes('_chunk_') && 
+                                    !fileName.startsWith('.') &&
+                                    fileName !== 'placeholder.json' &&
+                                    fileName.length > 0) {
+                                    documentCount++;
+                                }
                             }
                         }
                     }

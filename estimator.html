@@ -211,7 +211,7 @@
         background: var(--light-green);
       }
 
-      /* Project Selector */
+      /* Project Selector with Create Button */
       .client-selector {
         margin-bottom: 1rem;
         padding: 1rem;
@@ -228,8 +228,13 @@
         font-size: 1rem;
       }
 
+      .select-with-button {
+        display: flex;
+        gap: 0.5rem;
+      }
+
       .client-selector select {
-        width: 100%;
+        flex: 1;
         padding: 0.75rem;
         border: 2px solid var(--medium-gray);
         border-radius: 5px;
@@ -248,6 +253,24 @@
         outline: none;
         border-color: var(--light-green);
         box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+      }
+
+      .create-client-btn {
+        padding: 0.75rem 1rem;
+        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .create-client-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
       }
 
       /* Document Categories */
@@ -352,6 +375,53 @@
         font-weight: 500;
       }
 
+      /* File List Browser */
+      .file-list {
+        margin-top: 1rem;
+        min-height: 200px;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--medium-gray);
+        background: white;
+        border-radius: 4px;
+      }
+
+      .file-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .file-list-header h4 {
+        margin: 0;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .refresh-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+      }
+
+      .refresh-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+      }
+
       .process-button {
         width: 100%;
         background: linear-gradient(135deg, var(--hi-vis-green) 0%, var(--light-green) 100%);
@@ -372,6 +442,11 @@
       .process-button:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(118, 255, 3, 0.4);
+      }
+
+      .process-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       /* Chat Container */
@@ -413,6 +488,33 @@
       .chat-header h2::before {
         content: "📊";
         font-size: 1.8rem;
+      }
+
+      /* Chat Context Selector */
+      .chat-context-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+      }
+
+      .chat-context-selector label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: white;
+      }
+
+      .chat-context-selector select {
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--concrete-gray);
+        font-size: 0.9rem;
+        cursor: pointer;
+        min-width: 150px;
       }
 
       .chat-messages {
@@ -472,6 +574,18 @@
         50% {
           transform: translateY(-10px);
         }
+      }
+
+      .message.user .message-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0.75rem;
+        font-size: 20px;
       }
 
       .message-content {
@@ -617,7 +731,7 @@
         font-size: 1.5rem;
       }
 
-      /* Takeoff Modal */
+      /* Enhanced CAD-style Takeoff Modal */
       .takeoff-modal {
         display: none;
         position: fixed;
@@ -625,9 +739,9 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
+        background: rgba(0, 0, 0, 0.9);
         z-index: 10000;
-        padding: 2rem;
+        padding: 1rem;
       }
 
       .takeoff-modal.active {
@@ -637,61 +751,151 @@
       }
 
       .takeoff-content {
-        background: white;
+        background: #1a1a1a;
         border-radius: 10px;
-        width: 90%;
-        height: 90%;
-        max-width: 1400px;
+        width: 95%;
+        height: 95%;
+        max-width: 1600px;
         display: flex;
         flex-direction: column;
         position: relative;
+        border: 2px solid var(--light-green);
       }
 
       .takeoff-header {
         background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
         color: white;
         padding: 1rem;
-        border-radius: 10px 10px 0 0;
+        border-radius: 8px 8px 0 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
       }
 
+      .takeoff-header h2 {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      /* CAD-style toolbar */
       .takeoff-tools {
         display: flex;
         gap: 0.5rem;
-        padding: 1rem;
-        background: var(--light-gray);
-        border-bottom: 2px solid var(--medium-gray);
+        padding: 0.75rem;
+        background: #2d2d2d;
+        border-bottom: 1px solid #444;
       }
 
       .takeoff-tool-btn {
         padding: 0.5rem 1rem;
-        background: white;
-        border: 2px solid var(--medium-gray);
-        border-radius: 5px;
+        background: #3a3a3a;
+        color: #ddd;
+        border: 1px solid #555;
+        border-radius: 4px;
         cursor: pointer;
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
         gap: 0.25rem;
+        font-size: 0.9rem;
       }
 
       .takeoff-tool-btn:hover {
         background: var(--light-green);
+        color: white;
         border-color: var(--primary-green);
       }
 
       .takeoff-tool-btn.active {
         background: var(--primary-green);
         color: white;
+        border-color: var(--light-green);
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+      }
+
+      /* CAD workspace */
+      .takeoff-workspace {
+        flex: 1;
+        display: flex;
+        background: #0a0a0a;
+        position: relative;
       }
 
       .takeoff-canvas-wrapper {
         flex: 1;
         overflow: auto;
-        background: #f0f0f0;
+        background: #0a0a0a;
+        background-image: 
+          linear-gradient(rgba(76, 175, 80, 0.1) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(76, 175, 80, 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
         position: relative;
+      }
+
+      .takeoff-sidebar {
+        width: 300px;
+        background: #1a1a1a;
+        border-left: 1px solid #444;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .takeoff-info {
+        padding: 1rem;
+        border-bottom: 1px solid #444;
+      }
+
+      .takeoff-info h3 {
+        color: var(--light-green);
+        margin-bottom: 0.5rem;
+      }
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+
+      .info-item .label {
+        color: #888;
+      }
+
+      .info-item .value {
+        color: white;
+        font-weight: 500;
+      }
+
+      .takeoff-measurements {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+      }
+
+      .takeoff-measurements h3 {
+        color: var(--light-green);
+        margin-bottom: 0.75rem;
+      }
+
+      .measurement-item {
+        background: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .measurement-item .type {
+        color: var(--safety-yellow);
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .measurement-item .details {
+        color: white;
+        font-size: 0.9rem;
       }
 
       .close-modal {
@@ -707,7 +911,150 @@
       .close-modal:hover {
         background: #b71c1c;
       }
+
+      /* Progress bar */
+      .progress-bar {
+        display: none;
+        margin: 1rem 0;
+        height: 30px;
+        background: var(--light-gray);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .progress-bar.active {
+        display: block;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        transition: width 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+
+      /* Estimate Generator Modal */
+      .estimate-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        padding: 2rem;
+        overflow-y: auto;
+      }
+
+      .estimate-modal.active {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+      }
+
+      .estimate-content {
+        background: white;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 1200px;
+        margin: 2rem auto;
+      }
+
+      .estimate-header {
+        background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .estimate-body {
+        padding: 2rem;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+
+      .estimate-section {
+        margin-bottom: 2rem;
+        padding: 1rem;
+        border: 1px solid var(--medium-gray);
+        border-radius: 8px;
+      }
+
+      .estimate-section h3 {
+        color: var(--primary-green);
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+      }
+
+      .estimate-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      .estimate-table th {
+        background: var(--light-gray);
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        border: 1px solid var(--medium-gray);
+      }
+
+      .estimate-table td {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--medium-gray);
+      }
+
+      .estimate-table input {
+        width: 100%;
+        padding: 0.25rem;
+        border: 1px solid var(--light-gray);
+        border-radius: 3px;
+      }
+
+      .estimate-footer {
+        padding: 1.5rem;
+        border-top: 2px solid var(--medium-gray);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .estimate-total {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary-green);
+      }
+
+      .export-btn {
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .export-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+      }
     </style>
+
+    <!-- Add XLSX library for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Add PDF.js for PDF viewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   </head>
   <body>
     <header class="header">
@@ -733,10 +1080,13 @@
       <div class="sidebar">
         <div class="card">
           <div class="client-selector">
-            <label for="projectSelect">Select Project:</label>
-            <select id="projectSelect">
-              <option value="">Choose a project...</option>
-            </select>
+            <label for="clientSelect">Upload to Project:</label>
+            <div class="select-with-button">
+              <select id="clientSelect">
+                <option value="">-- Choose a Client --</option>
+              </select>
+              <button class="create-client-btn" id="createClientButton">+ New</button>
+            </div>
           </div>
 
           <div class="document-categories">
@@ -744,17 +1094,49 @@
             <div class="category-group">
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="plans" />
-                  <label for="plans">Plans & Drawings</label>
+                  <input type="checkbox" id="drawings" />
+                  <label for="drawings">Plans & Drawings</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="plansFiles" multiple accept=".pdf,.dwg,.dxf" />
-                    <button class="choose-files-btn" onclick="document.getElementById('plansFiles').click()">
+                    <input type="file" id="drawingsFiles" multiple accept=".pdf,.dwg,.dxf" />
+                    <button class="choose-files-btn" onclick="document.getElementById('drawingsFiles').click()">
                       Choose Files
                     </button>
                   </div>
-                  <span class="file-count">0 files</span>
+                  <span class="file-count" id="drawingsCount">0 files</span>
+                </div>
+              </div>
+
+              <div class="category-item">
+                <div class="category-header">
+                  <input type="checkbox" id="estimates" />
+                  <label for="estimates">Estimates</label>
+                </div>
+                <div class="category-files">
+                  <div class="file-input-wrapper">
+                    <input type="file" id="estimatesFiles" multiple accept=".xlsx,.xls,.csv,.pdf" />
+                    <button class="choose-files-btn" onclick="document.getElementById('estimatesFiles').click()">
+                      Choose Files
+                    </button>
+                  </div>
+                  <span class="file-count" id="estimatesCount">0 files</span>
+                </div>
+              </div>
+
+              <div class="category-item">
+                <div class="category-header">
+                  <input type="checkbox" id="proposals" />
+                  <label for="proposals">Proposals</label>
+                </div>
+                <div class="category-files">
+                  <div class="file-input-wrapper">
+                    <input type="file" id="proposalsFiles" multiple accept=".pdf,.doc,.docx" />
+                    <button class="choose-files-btn" onclick="document.getElementById('proposalsFiles').click()">
+                      Choose Files
+                    </button>
+                  </div>
+                  <span class="file-count" id="proposalsCount">0 files</span>
                 </div>
               </div>
 
@@ -770,29 +1152,27 @@
                       Choose Files
                     </button>
                   </div>
-                  <span class="file-count">0 files</span>
-                </div>
-              </div>
-
-              <div class="category-item">
-                <div class="category-header">
-                  <input type="checkbox" id="boq" />
-                  <label for="boq">Bill of Quantities</label>
-                </div>
-                <div class="category-files">
-                  <div class="file-input-wrapper">
-                    <input type="file" id="boqFiles" multiple accept=".xlsx,.xls,.csv" />
-                    <button class="choose-files-btn" onclick="document.getElementById('boqFiles').click()">
-                      Choose Files
-                    </button>
-                  </div>
-                  <span class="file-count">0 files</span>
+                  <span class="file-count" id="specsCount">0 files</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <button class="process-button" id="processButton">
+          <!-- File List Browser -->
+          <div class="file-list" id="fileList">
+            <div class="file-list-header">
+              <h4>📂 Project Files</h4>
+              <button class="refresh-btn" onclick="refreshFiles()">↻ Refresh</button>
+            </div>
+            <div id="fileListContent"></div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill">0%</div>
+          </div>
+
+          <button class="process-button" id="processButton" disabled>
             Process & Analyze
           </button>
         </div>
@@ -802,6 +1182,13 @@
       <div class="card chat-container">
         <div class="chat-header">
           <h2>Estimating Assistant</h2>
+          <div class="chat-context-selector">
+            <label for="chatClientSelect">Focus on:</label>
+            <select id="chatClientSelect">
+              <option value="general">General Knowledge</option>
+              <option value="all-clients">🌐 All Projects</option>
+            </select>
+          </div>
         </div>
         
         <div class="chat-messages" id="chatMessages">
@@ -816,6 +1203,7 @@
                 <li>Material quantity calculations</li>
                 <li>Labor cost estimates</li>
                 <li>Generate comprehensive estimates</li>
+                <li>Cross-project cost analysis</li>
               </ul>
               <div class="message-time">Just now</div>
             </div>
@@ -829,9 +1217,9 @@
               class="chat-input" 
               id="chatInput"
               placeholder="Ask about your estimate..." 
-              onkeypress="if(event.key === 'Enter') sendMessage()"
+              onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
             />
-            <button class="send-btn" onclick="sendMessage()">
+            <button class="send-btn" id="sendButton" onclick="sendMessage()">
               Send ➤
             </button>
           </div>
@@ -850,182 +1238,1104 @@
             <span>📊</span>
             Estimate Generator
           </button>
-          <button class="tool-btn" onclick="viewHistory()">
-            <span>📋</span>
-            View History
-          </button>
-          <button class="tool-btn" onclick="exportData()">
-            <span>💾</span>
-            Export Data
-          </button>
         </div>
       </div>
     </div>
 
-    <!-- Takeoff Modal -->
+    <!-- Enhanced CAD-style Takeoff Modal -->
     <div class="takeoff-modal" id="takeoffModal">
       <div class="takeoff-content">
         <div class="takeoff-header">
-          <h2>Enhanced Takeoff Tool</h2>
+          <h2>📐 Enhanced Digital Takeoff Tool</h2>
           <button class="close-modal" onclick="closeTakeoff()">Close ✕</button>
         </div>
         <div class="takeoff-tools">
           <button class="takeoff-tool-btn active" data-tool="pan">✋ Pan</button>
           <button class="takeoff-tool-btn" data-tool="select">👆 Select</button>
-          <button class="takeoff-tool-btn" data-tool="line">📏 Line</button>
-          <button class="takeoff-tool-btn" data-tool="area">⬜ Area</button>
+          <button class="takeoff-tool-btn" data-tool="line">📏 Measure Line</button>
+          <button class="takeoff-tool-btn" data-tool="area">⬜ Measure Area</button>
           <button class="takeoff-tool-btn" data-tool="polygon">⬟ Polygon</button>
           <button class="takeoff-tool-btn" data-tool="count">🔢 Count</button>
-          <button class="takeoff-tool-btn" data-tool="annotation">💬 Note</button>
+          <button class="takeoff-tool-btn" data-tool="annotation">💬 Annotate</button>
+          <button class="takeoff-tool-btn" data-tool="scale">📐 Set Scale</button>
         </div>
-        <div class="takeoff-canvas-wrapper" id="pdfCanvasWrapper">
-          <canvas id="pdfCanvas"></canvas>
-          <canvas id="annotationCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+        <div class="takeoff-workspace">
+          <div class="takeoff-canvas-wrapper" id="pdfCanvasWrapper">
+            <canvas id="pdfCanvas"></canvas>
+            <canvas id="annotationCanvas" style="position: absolute; top: 0; left: 0; pointer-events: auto;"></canvas>
+          </div>
+          <div class="takeoff-sidebar">
+            <div class="takeoff-info">
+              <h3>Drawing Info</h3>
+              <div class="info-item">
+                <span class="label">Scale:</span>
+                <span class="value" id="drawingScale">1:100</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Units:</span>
+                <span class="value">Feet</span>
+              </div>
+              <div class="info-item">
+                <span class="label">Page:</span>
+                <span class="value" id="pageInfo">1 of 1</span>
+              </div>
+            </div>
+            <div class="takeoff-measurements">
+              <h3>Measurements</h3>
+              <div id="measurementsList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estimate Generator Modal -->
+    <div class="estimate-modal" id="estimateModal">
+      <div class="estimate-content">
+        <div class="estimate-header">
+          <h2>📊 Construction Estimate Generator</h2>
+          <button class="close-modal" onclick="closeEstimator()">Close ✕</button>
+        </div>
+        <div class="estimate-body">
+          <!-- Project Info Section -->
+          <div class="estimate-section">
+            <h3>Project Information</h3>
+            <table class="estimate-table">
+              <tr>
+                <td><strong>Project Name:</strong></td>
+                <td><input type="text" id="projectName" placeholder="Enter project name"></td>
+                <td><strong>Date:</strong></td>
+                <td><input type="date" id="estimateDate"></td>
+              </tr>
+              <tr>
+                <td><strong>Client:</strong></td>
+                <td><input type="text" id="clientName" placeholder="Client name"></td>
+                <td><strong>Estimator:</strong></td>
+                <td><input type="text" id="estimatorName" placeholder="Your name"></td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Labor Section -->
+          <div class="estimate-section">
+            <h3>Labor Costs</h3>
+            <table class="estimate-table" id="laborTable">
+              <thead>
+                <tr>
+                  <th>Trade</th>
+                  <th>Hours</th>
+                  <th>Rate/Hour</th>
+                  <th>Total</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="laborBody">
+                <tr>
+                  <td><input type="text" placeholder="e.g., Painters"></td>
+                  <td><input type="number" placeholder="0" onchange="calculateLabor(this)"></td>
+                  <td><input type="number" placeholder="0.00" onchange="calculateLabor(this)"></td>
+                  <td class="total">$0.00</td>
+                  <td><button onclick="removeRow(this)">❌</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button onclick="addLaborRow()">+ Add Labor Item</button>
+          </div>
+
+          <!-- Materials Section -->
+          <div class="estimate-section">
+            <h3>Materials</h3>
+            <table class="estimate-table" id="materialsTable">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="materialsBody">
+                <tr>
+                  <td><input type="text" placeholder="Material description"></td>
+                  <td><input type="number" placeholder="0" onchange="calculateMaterial(this)"></td>
+                  <td><input type="text" placeholder="e.g., GAL"></td>
+                  <td><input type="number" placeholder="0.00" onchange="calculateMaterial(this)"></td>
+                  <td class="total">$0.00</td>
+                  <td><button onclick="removeRow(this)">❌</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button onclick="addMaterialRow()">+ Add Material Item</button>
+          </div>
+
+          <!-- Equipment Section -->
+          <div class="estimate-section">
+            <h3>Equipment</h3>
+            <table class="estimate-table" id="equipmentTable">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Days</th>
+                  <th>Rate/Day</th>
+                  <th>Total</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentBody">
+                <tr>
+                  <td><input type="text" placeholder="Equipment description"></td>
+                  <td><input type="number" placeholder="0" onchange="calculateEquipment(this)"></td>
+                  <td><input type="number" placeholder="0.00" onchange="calculateEquipment(this)"></td>
+                  <td class="total">$0.00</td>
+                  <td><button onclick="removeRow(this)">❌</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button onclick="addEquipmentRow()">+ Add Equipment Item</button>
+          </div>
+
+          <!-- Summary Section -->
+          <div class="estimate-section">
+            <h3>Cost Summary</h3>
+            <table class="estimate-table">
+              <tr>
+                <td><strong>Labor Total:</strong></td>
+                <td id="laborTotal">$0.00</td>
+              </tr>
+              <tr>
+                <td><strong>Materials Total:</strong></td>
+                <td id="materialsTotal">$0.00</td>
+              </tr>
+              <tr>
+                <td><strong>Equipment Total:</strong></td>
+                <td id="equipmentTotal">$0.00</td>
+              </tr>
+              <tr>
+                <td><strong>Subtotal:</strong></td>
+                <td id="subtotal">$0.00</td>
+              </tr>
+              <tr>
+                <td><strong>Overhead (%):</strong></td>
+                <td><input type="number" id="overheadPercent" value="10" onchange="calculateTotals()"></td>
+              </tr>
+              <tr>
+                <td><strong>Profit (%):</strong></td>
+                <td><input type="number" id="profitPercent" value="15" onchange="calculateTotals()"></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="estimate-footer">
+          <div class="estimate-total">
+            TOTAL: <span id="grandTotal">$0.00</span>
+          </div>
+          <button class="export-btn" onclick="exportToExcel()">📥 Export to Excel</button>
         </div>
       </div>
     </div>
 
     <script>
-      // Load projects
-      async function loadProjects() {
+      // Azure Blob Storage Configuration
+      const AZURE_STORAGE = {
+        account: "saxtechfcs",
+        container: "fcs-clients",
+        sasToken: "?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D"
+      };
+
+      // API Configuration
+      const API_CONFIG = {
+        chatWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/EstimatorChat",
+        uploadWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/upload",
+        clientsWebhookUrl: "https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list"
+      };
+
+      // File Management
+      let uploadedFiles = {
+        drawings: [],
+        estimates: [],
+        proposals: [],
+        specs: []
+      };
+      
+      let selectedClient = "";
+      let chatContext = "general";
+      let availableClients = [];
+      let currentTool = 'pan';
+      let measurements = [];
+
+      // DOM Elements
+      const fileList = document.getElementById("fileListContent");
+      const processButton = document.getElementById("processButton");
+      const chatInput = document.getElementById("chatInput");
+      const sendButton = document.getElementById("sendButton");
+      const chatMessages = document.getElementById("chatMessages");
+      const progressBar = document.getElementById("progressBar");
+      const progressFill = document.getElementById("progressFill");
+      const clientSelect = document.getElementById("clientSelect");
+      const chatClientSelect = document.getElementById("chatClientSelect");
+      const createClientButton = document.getElementById("createClientButton");
+
+      // Load clients on page load
+      async function loadClients() {
         try {
-          const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/clients/list');
-          const data = await response.json();
+          const clients = [];
+          const clientSet = new Set();
           
-          const projects = Array.isArray(data) ? data : (data.projects || data.clients || []);
+          // Get list from Azure Blob Storage
+          const fcsUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
           
-          const select = document.getElementById('projectSelect');
-          select.innerHTML = '<option value="">Choose a project...</option>';
+          const response = await fetch(fcsUrl);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           
-          if (Array.isArray(projects)) {
-            projects.forEach(project => {
-              const option = document.createElement('option');
-              option.value = project.id || project.name;
-              option.textContent = project.name;
-              select.appendChild(option);
-            });
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+          
+          for (let i = 0; i < prefixes.length; i++) {
+            const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+            if (nameElement) {
+              const fullPath = nameElement.textContent.replace(/\/$/, '');
+              const pathParts = fullPath.split('/');
+              
+              if (pathParts.length >= 2 && pathParts[0] === 'FCS-OriginalClients') {
+                const clientName = pathParts[1];
+                
+                if (!clientSet.has(clientName) && !clientName.startsWith('.') && clientName.length > 0) {
+                  clientSet.add(clientName);
+                  clients.push({
+                    id: clientName,
+                    name: formatClientName(clientName)
+                  });
+                }
+              }
+            }
           }
+          
+          availableClients = clients;
+          updateClientDropdowns(clients);
+          
         } catch (error) {
-          console.error('Error loading projects:', error);
+          console.error('Error loading clients:', error);
+          addSystemMessage("⚠️ Could not load project list. Please check connection.");
         }
+      }
+
+      function formatClientName(name) {
+        // Format client name for display
+        return name
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
+
+      function updateClientDropdowns(clients) {
+        // Update upload dropdown
+        clientSelect.innerHTML = '<option value="">-- Choose a Client --</option>';
+        
+        // Update chat dropdown  
+        chatClientSelect.innerHTML = '';
+        
+        // Add General option
+        const generalOption = document.createElement('option');
+        generalOption.value = 'general';
+        generalOption.textContent = 'General Construction Knowledge';
+        chatClientSelect.appendChild(generalOption);
+        
+        // Add All Clients option
+        const allClientsOption = document.createElement('option');
+        allClientsOption.value = 'all-clients';
+        allClientsOption.textContent = '🌐 All Projects';
+        chatClientSelect.appendChild(allClientsOption);
+        
+        // Add separator
+        const separator = document.createElement('option');
+        separator.disabled = true;
+        separator.textContent = '──────────────';
+        chatClientSelect.appendChild(separator);
+        
+        clients.forEach(client => {
+          // Upload dropdown
+          const uploadOption = document.createElement('option');
+          uploadOption.value = client.id;
+          uploadOption.textContent = client.name;
+          clientSelect.appendChild(uploadOption);
+          
+          // Chat dropdown
+          const chatOption = document.createElement('option');
+          chatOption.value = client.id;
+          chatOption.textContent = client.name;
+          chatClientSelect.appendChild(chatOption);
+        });
+      }
+
+      // Client selection handlers
+      clientSelect.addEventListener("change", async (e) => {
+        selectedClient = e.target.value;
+        if (selectedClient) {
+          await loadClientFiles(selectedClient);
+          updateProcessButton();
+        }
+      });
+
+      chatClientSelect.addEventListener("change", (e) => {
+        chatContext = e.target.value;
+        const contextName = chatClientSelect.options[chatClientSelect.selectedIndex].text;
+        
+        if (chatContext === "general") {
+          addSystemMessage("🌐 Chat context set to General Construction Knowledge.");
+        } else if (chatContext === "all-clients") {
+          addSystemMessage("🔍 Knowledge Graph mode activated! Searching across ALL projects.");
+        } else {
+          addSystemMessage(`🎯 Chat focused on ${contextName} project.`);
+        }
+      });
+
+      // Create client button handler
+      createClientButton.addEventListener("click", () => {
+        openCreateClientModal();
+      });
+
+      function openCreateClientModal() {
+        const modalHTML = `
+          <div id="clientModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+          ">
+            <div style="
+              background: white;
+              padding: 2rem;
+              border-radius: 10px;
+              width: 90%;
+              max-width: 500px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            ">
+              <h2 style="margin-bottom: 1.5rem; color: var(--concrete-gray);">🏗️ Create New Project</h2>
+              
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Project Name *</label>
+                <input type="text" id="clientNameInput" placeholder="e.g. ABC Construction" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                ">
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button onclick="document.getElementById('clientModal').remove()" style="
+                  padding: 0.75rem 1.5rem;
+                  background: var(--medium-gray);
+                  color: var(--dark-gray);
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Cancel</button>
+                <button onclick="createClient()" style="
+                  padding: 0.75rem 1.5rem;
+                  background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+                  color: white;
+                  border: none;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Create Client</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+      }
+
+      async function createClient() {
+        const clientNameInput = document.getElementById('clientNameInput');
+        const clientName = clientNameInput.value.trim();
+        
+        if (!clientName) {
+          alert('Please enter a client name');
+          return;
+        }
+        
+        // Format the client name for folder
+        const folderId = clientName.toLowerCase().replace(/\s+/g, '-');
+        
+        // Create placeholder files in Azure
+        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
+        
+        for (const category of categories) {
+          const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
+          await createPlaceholderFile(placeholderPath);
+        }
+        
+        document.getElementById('clientModal').remove();
+        addSystemMessage(`✅ Created new project: ${clientName}`);
+        
+        // Reload clients
+        await loadClients();
+        clientSelect.value = folderId;
+        selectedClient = folderId;
+      }
+
+      async function createPlaceholderFile(path) {
+        const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${path}${AZURE_STORAGE.sasToken}`;
+        
+        await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ placeholder: true, created: new Date().toISOString() })
+        });
+      }
+
+      // File handling
+      const categories = ["drawings", "estimates", "proposals", "specs"];
+      
+      categories.forEach((category) => {
+        const fileInput = document.getElementById(category + "Files");
+        
+        if (fileInput) {
+          fileInput.addEventListener("change", (e) => {
+            handleCategoryFiles(e.target.files, category);
+          });
+        }
+      });
+
+      function handleCategoryFiles(files, category) {
+        const checkbox = document.getElementById(category);
+        if (checkbox && files.length > 0) {
+          checkbox.checked = true;
+        }
+        
+        for (let file of files) {
+          if (isValidFile(file)) {
+            const fileWithCategory = new File([file], file.name, { type: file.type });
+            fileWithCategory.category = category;
+            uploadedFiles[category].push(fileWithCategory);
+          }
+        }
+        
+        updateFileCounts();
+        updateProcessButton();
+      }
+
+      function isValidFile(file) {
+        const validTypes = [".pdf", ".docx", ".xlsx", ".xls", ".dwg", ".dxf"];
+        const extension = file.name.toLowerCase().substring(file.name.lastIndexOf("."));
+        return validTypes.includes(extension);
+      }
+
+      function updateFileCounts() {
+        document.getElementById("drawingsCount").textContent = `${uploadedFiles.drawings.length} files`;
+        document.getElementById("estimatesCount").textContent = `${uploadedFiles.estimates.length} files`;
+        document.getElementById("proposalsCount").textContent = `${uploadedFiles.proposals.length} files`;
+        document.getElementById("specsCount").textContent = `${uploadedFiles.specs.length} files`;
+      }
+
+      function updateProcessButton() {
+        const hasFiles = Object.values(uploadedFiles).some(arr => arr.length > 0);
+        const hasClient = selectedClient !== "";
+        processButton.disabled = !(hasFiles && hasClient);
+      }
+
+      // Load client files
+      async function loadClientFiles(clientName) {
+        try {
+          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${clientName}/`;
+          
+          const response = await fetch(listUrl);
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          let filesHTML = '<div style="padding: 0.5rem;">';
+          let fileCount = 0;
+          
+          for (let i = 0; i < blobs.length; i++) {
+            const nameElement = blobs[i].getElementsByTagName("Name")[0];
+            if (nameElement) {
+              const fullPath = nameElement.textContent;
+              const fileName = fullPath.split('/').pop();
+              
+              if (fileName && !fileName.startsWith('.') && fileName !== 'placeholder.json') {
+                fileCount++;
+                filesHTML += `
+                  <div style="padding: 0.25rem; border-bottom: 1px solid #eee;">
+                    📄 ${fileName}
+                  </div>
+                `;
+              }
+            }
+          }
+          
+          if (fileCount === 0) {
+            filesHTML += '<div style="color: #999;">No files uploaded yet</div>';
+          }
+          
+          filesHTML += '</div>';
+          fileList.innerHTML = filesHTML;
+          
+        } catch (error) {
+          console.error('Error loading client files:', error);
+          fileList.innerHTML = '<div style="padding: 0.5rem; color: #999;">Could not load files</div>';
+        }
+      }
+
+      // Refresh files
+      function refreshFiles() {
+        if (selectedClient) {
+          loadClientFiles(selectedClient);
+        }
+      }
+
+      // Process button handler
+      processButton.addEventListener("click", async () => {
+        const selectedCategories = categories.filter(cat => 
+          document.getElementById(cat).checked
+        );
+        
+        if (selectedCategories.length === 0) {
+          addSystemMessage("⚠️ Please select at least one category to upload.");
+          return;
+        }
+        
+        const allFiles = [];
+        selectedCategories.forEach(category => {
+          allFiles.push(...uploadedFiles[category]);
+        });
+        
+        if (allFiles.length === 0) {
+          addSystemMessage("⚠️ No files selected for upload.");
+          return;
+        }
+        
+        progressBar.classList.add("active");
+        processButton.disabled = true;
+        
+        let successCount = 0;
+        
+        for (let i = 0; i < allFiles.length; i++) {
+          const file = allFiles[i];
+          const progress = Math.round(((i + 1) / allFiles.length) * 100);
+          updateProgress(progress);
+          
+          try {
+            await processFile(file, file.category);
+            successCount++;
+          } catch (error) {
+            console.error(`Error processing ${file.name}:`, error);
+          }
+        }
+        
+        setTimeout(() => {
+          progressBar.classList.remove("active");
+          
+          selectedCategories.forEach(category => {
+            uploadedFiles[category] = [];
+            document.getElementById(category + "Files").value = '';
+          });
+          
+          updateFileCounts();
+          updateProcessButton();
+          
+          addSystemMessage(`✅ Uploaded ${successCount} documents successfully!`);
+          
+          if (selectedClient) {
+            setTimeout(() => {
+              loadClientFiles(selectedClient);
+            }, 1000);
+          }
+        }, 1000);
+      });
+
+      function updateProgress(percent) {
+        progressFill.style.width = percent + "%";
+        progressFill.textContent = percent + "%";
+      }
+
+      async function processFile(file, category) {
+        const reader = new FileReader();
+        
+        return new Promise((resolve, reject) => {
+          reader.onload = async () => {
+            try {
+              const base64String = reader.result.split(',')[1];
+              
+              const uploadData = {
+                file: base64String,
+                fileName: file.name,
+                mimeType: file.type || 'application/pdf',
+                category: category,
+                client: selectedClient || 'general',
+                clientName: selectedClient || 'General'
+              };
+              
+              const response = await fetch(API_CONFIG.uploadWebhookUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(uploadData)
+              });
+              
+              if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+              
+              resolve(await response.json());
+            } catch (error) {
+              reject(error);
+            }
+          };
+          
+          reader.readAsDataURL(file);
+        });
       }
 
       // Chat functionality
       async function sendMessage() {
-        const input = document.getElementById('chatInput');
-        const message = input.value.trim();
-        
+        const message = chatInput.value.trim();
         if (!message) return;
         
-        const messagesContainer = document.getElementById('chatMessages');
-        
         // Add user message
-        const userMessage = document.createElement('div');
-        userMessage.className = 'message user';
-        userMessage.innerHTML = `
-          <div class="message-content">
-            <div>${message}</div>
-            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-          </div>
-        `;
-        messagesContainer.appendChild(userMessage);
+        addMessage(message, "user");
         
         // Clear input
-        input.value = '';
+        chatInput.value = "";
         
-        // Add typing indicator
-        const typingIndicator = document.createElement('div');
-        typingIndicator.className = 'message assistant';
+        // Show typing indicator
+        const typingIndicator = document.createElement("div");
+        typingIndicator.className = "message assistant";
         typingIndicator.innerHTML = `
           <div class="message-avatar">
             <img src="Estimate.png" alt="AI" />
           </div>
-          <div class="typing-indicator">
-            <span></span>
-            <span></span>
-            <span></span>
+          <div class="message-content">
+            <div style="display: flex; gap: 0.3rem;">
+              <span style="animation: bounce 1.4s infinite;">•</span>
+              <span style="animation: bounce 1.4s infinite 0.2s;">•</span>
+              <span style="animation: bounce 1.4s infinite 0.4s;">•</span>
+            </div>
           </div>
         `;
-        messagesContainer.appendChild(typingIndicator);
-        
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        chatMessages.appendChild(typingIndicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
-          const response = await fetch('https://workflows.saxtechnology.com/webhook/ask-foreman/EstimatorChat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+          const response = await fetch(API_CONFIG.chatWebhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
             body: JSON.stringify({
               message: message,
-              project: document.getElementById('projectSelect').value,
-              timestamp: new Date().toISOString()
+              client: chatContext,
+              conversationId: `conv_${chatContext}_${Date.now()}`,
+              sessionId: chatContext
             })
           });
           
-          let responseText = await response.text();
-          
-          try {
-            const jsonResponse = JSON.parse(responseText);
-            responseText = jsonResponse.response || jsonResponse.message || responseText;
-          } catch (e) {}
+          const data = await response.json();
           
           // Remove typing indicator
           typingIndicator.remove();
           
           // Add assistant response
-          const assistantMessage = document.createElement('div');
-          assistantMessage.className = 'message assistant';
-          assistantMessage.innerHTML = `
+          addMessage(data.response || "I received your message but couldn't generate a response.", "assistant");
+          
+        } catch (error) {
+          typingIndicator.remove();
+          addMessage("Sorry, I encountered an error. Please try again.", "assistant");
+          console.error("Chat error:", error);
+        }
+      }
+
+      function addMessage(content, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+        
+        const time = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        
+        if (sender === "assistant") {
+          messageDiv.innerHTML = `
             <div class="message-avatar">
               <img src="Estimate.png" alt="AI" />
             </div>
             <div class="message-content">
-              <div>${responseText}</div>
-              <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+              <div>${content}</div>
+              <div class="message-time">${time}</div>
             </div>
           `;
-          messagesContainer.appendChild(assistantMessage);
-          
-        } catch (error) {
-          console.error('Error:', error);
-          typingIndicator.remove();
+        } else {
+          messageDiv.innerHTML = `
+            <div class="message-content">
+              <div>${content}</div>
+              <div class="message-time">${time}</div>
+            </div>
+            <div class="message-avatar">👷</div>
+          `;
         }
         
-        // Scroll to bottom
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
       }
 
-      // Toolbox functions
+      function addSystemMessage(content) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message assistant";
+        
+        const time = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+        
+        messageDiv.innerHTML = `
+          <div class="message-avatar">⚠️</div>
+          <div class="message-content" style="background: linear-gradient(135deg, var(--safety-yellow), #f57f17); color: var(--dark-gray);">
+            <div><strong>${content}</strong></div>
+            <div class="message-time">${time}</div>
+          </div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // Takeoff Tool Functions
       function openTakeoff() {
         document.getElementById('takeoffModal').classList.add('active');
+        initializeTakeoff();
       }
 
       function closeTakeoff() {
         document.getElementById('takeoffModal').classList.remove('active');
       }
 
-      function openEstimator() {
-        alert('Opening Estimate Generator...');
-      }
-
-      function viewHistory() {
-        alert('Opening History...');
-      }
-
-      function exportData() {
-        alert('Exporting Data...');
-      }
-
-      // Takeoff tool functionality
-      document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          document.querySelectorAll('.takeoff-tool-btn').forEach(b => b.classList.remove('active'));
-          this.classList.add('active');
+      function initializeTakeoff() {
+        // Initialize PDF.js and canvas for takeoff
+        const canvas = document.getElementById('pdfCanvas');
+        const annotationCanvas = document.getElementById('annotationCanvas');
+        const ctx = canvas.getContext('2d');
+        const annotationCtx = annotationCanvas.getContext('2d');
+        
+        // Setup tool buttons
+        document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            document.querySelectorAll('.takeoff-tool-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTool = this.dataset.tool;
+          });
         });
-      });
+        
+        // Canvas event handlers for drawing
+        let isDrawing = false;
+        let startX, startY;
+        
+        annotationCanvas.addEventListener('mousedown', (e) => {
+          if (currentTool !== 'pan') {
+            isDrawing = true;
+            const rect = annotationCanvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+          }
+        });
+        
+        annotationCanvas.addEventListener('mousemove', (e) => {
+          if (isDrawing && currentTool === 'line') {
+            const rect = annotationCanvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            // Clear and redraw
+            annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+            annotationCtx.strokeStyle = '#76ff03';
+            annotationCtx.lineWidth = 2;
+            annotationCtx.beginPath();
+            annotationCtx.moveTo(startX, startY);
+            annotationCtx.lineTo(currentX, currentY);
+            annotationCtx.stroke();
+          }
+        });
+        
+        annotationCanvas.addEventListener('mouseup', (e) => {
+          if (isDrawing && currentTool === 'line') {
+            const rect = annotationCanvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
+            
+            // Calculate distance
+            const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const scaledDistance = (distance / 10).toFixed(2); // Simple scaling
+            
+            // Add measurement
+            const measurement = {
+              type: 'Line',
+              value: scaledDistance + ' ft',
+              timestamp: new Date().toLocaleTimeString()
+            };
+            measurements.push(measurement);
+            updateMeasurementsList();
+          }
+          isDrawing = false;
+        });
+      }
 
-      // Initialize
-      loadProjects();
+      function updateMeasurementsList() {
+        const list = document.getElementById('measurementsList');
+        list.innerHTML = '';
+        
+        measurements.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'measurement-item';
+          item.innerHTML = `
+            <div class="type">${m.type}</div>
+            <div class="details">${m.value}</div>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      // Estimate Generator Functions
+      function openEstimator() {
+        document.getElementById('estimateModal').classList.add('active');
+        // Set today's date
+        document.getElementById('estimateDate').value = new Date().toISOString().split('T')[0];
+      }
+
+      function closeEstimator() {
+        document.getElementById('estimateModal').classList.remove('active');
+      }
+
+      function addLaborRow() {
+        const tbody = document.getElementById('laborBody');
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><input type="text" placeholder="e.g., Painters"></td>
+          <td><input type="number" placeholder="0" onchange="calculateLabor(this)"></td>
+          <td><input type="number" placeholder="0.00" onchange="calculateLabor(this)"></td>
+          <td class="total">$0.00</td>
+          <td><button onclick="removeRow(this)">❌</button></td>
+        `;
+      }
+
+      function addMaterialRow() {
+        const tbody = document.getElementById('materialsBody');
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><input type="text" placeholder="Material description"></td>
+          <td><input type="number" placeholder="0" onchange="calculateMaterial(this)"></td>
+          <td><input type="text" placeholder="e.g., GAL"></td>
+          <td><input type="number" placeholder="0.00" onchange="calculateMaterial(this)"></td>
+          <td class="total">$0.00</td>
+          <td><button onclick="removeRow(this)">❌</button></td>
+        `;
+      }
+
+      function addEquipmentRow() {
+        const tbody = document.getElementById('equipmentBody');
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td><input type="text" placeholder="Equipment description"></td>
+          <td><input type="number" placeholder="0" onchange="calculateEquipment(this)"></td>
+          <td><input type="number" placeholder="0.00" onchange="calculateEquipment(this)"></td>
+          <td class="total">$0.00</td>
+          <td><button onclick="removeRow(this)">❌</button></td>
+        `;
+      }
+
+      function removeRow(button) {
+        button.closest('tr').remove();
+        calculateTotals();
+      }
+
+      function calculateLabor(input) {
+        const row = input.closest('tr');
+        const hours = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        const rate = parseFloat(row.cells[2].querySelector('input').value) || 0;
+        const total = hours * rate;
+        row.cells[3].textContent = `$${total.toFixed(2)}`;
+        calculateTotals();
+      }
+
+      function calculateMaterial(input) {
+        const row = input.closest('tr');
+        const quantity = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        const unitPrice = parseFloat(row.cells[3].querySelector('input').value) || 0;
+        const total = quantity * unitPrice;
+        row.cells[4].textContent = `$${total.toFixed(2)}`;
+        calculateTotals();
+      }
+
+      function calculateEquipment(input) {
+        const row = input.closest('tr');
+        const days = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        const rate = parseFloat(row.cells[2].querySelector('input').value) || 0;
+        const total = days * rate;
+        row.cells[3].textContent = `$${total.toFixed(2)}`;
+        calculateTotals();
+      }
+
+      function calculateTotals() {
+        // Calculate labor total
+        let laborTotal = 0;
+        document.querySelectorAll('#laborBody tr').forEach(row => {
+          const total = parseFloat(row.cells[3].textContent.replace('$', '')) || 0;
+          laborTotal += total;
+        });
+        document.getElementById('laborTotal').textContent = `$${laborTotal.toFixed(2)}`;
+        
+        // Calculate materials total
+        let materialsTotal = 0;
+        document.querySelectorAll('#materialsBody tr').forEach(row => {
+          const total = parseFloat(row.cells[4].textContent.replace('$', '')) || 0;
+          materialsTotal += total;
+        });
+        document.getElementById('materialsTotal').textContent = `$${materialsTotal.toFixed(2)}`;
+        
+        // Calculate equipment total
+        let equipmentTotal = 0;
+        document.querySelectorAll('#equipmentBody tr').forEach(row => {
+          const total = parseFloat(row.cells[3].textContent.replace('$', '')) || 0;
+          equipmentTotal += total;
+        });
+        document.getElementById('equipmentTotal').textContent = `$${equipmentTotal.toFixed(2)}`;
+        
+        // Calculate subtotal
+        const subtotal = laborTotal + materialsTotal + equipmentTotal;
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        
+        // Calculate with overhead and profit
+        const overheadPercent = parseFloat(document.getElementById('overheadPercent').value) || 0;
+        const profitPercent = parseFloat(document.getElementById('profitPercent').value) || 0;
+        
+        const overhead = subtotal * (overheadPercent / 100);
+        const profit = subtotal * (profitPercent / 100);
+        const grandTotal = subtotal + overhead + profit;
+        
+        document.getElementById('grandTotal').textContent = `$${grandTotal.toFixed(2)}`;
+      }
+
+      function exportToExcel() {
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Project info data
+        const projectData = [
+          ['CONSTRUCTION ESTIMATE'],
+          [],
+          ['Project Name:', document.getElementById('projectName').value],
+          ['Client:', document.getElementById('clientName').value],
+          ['Date:', document.getElementById('estimateDate').value],
+          ['Estimator:', document.getElementById('estimatorName').value],
+          []
+        ];
+        
+        // Labor data
+        const laborData = [['LABOR'], ['Trade', 'Hours', 'Rate/Hour', 'Total']];
+        document.querySelectorAll('#laborBody tr').forEach(row => {
+          laborData.push([
+            row.cells[0].querySelector('input').value,
+            row.cells[1].querySelector('input').value,
+            row.cells[2].querySelector('input').value,
+            row.cells[3].textContent
+          ]);
+        });
+        
+        // Materials data
+        const materialsData = [[], ['MATERIALS'], ['Description', 'Quantity', 'Unit', 'Unit Price', 'Total']];
+        document.querySelectorAll('#materialsBody tr').forEach(row => {
+          materialsData.push([
+            row.cells[0].querySelector('input').value,
+            row.cells[1].querySelector('input').value,
+            row.cells[2].querySelector('input').value,
+            row.cells[3].querySelector('input').value,
+            row.cells[4].textContent
+          ]);
+        });
+        
+        // Equipment data
+        const equipmentData = [[], ['EQUIPMENT'], ['Description', 'Days', 'Rate/Day', 'Total']];
+        document.querySelectorAll('#equipmentBody tr').forEach(row => {
+          equipmentData.push([
+            row.cells[0].querySelector('input').value,
+            row.cells[1].querySelector('input').value,
+            row.cells[2].querySelector('input').value,
+            row.cells[3].textContent
+          ]);
+        });
+        
+        // Summary data
+        const summaryData = [
+          [],
+          ['SUMMARY'],
+          ['Labor Total:', document.getElementById('laborTotal').textContent],
+          ['Materials Total:', document.getElementById('materialsTotal').textContent],
+          ['Equipment Total:', document.getElementById('equipmentTotal').textContent],
+          ['Subtotal:', document.getElementById('subtotal').textContent],
+          ['Overhead (%):', document.getElementById('overheadPercent').value],
+          ['Profit (%):', document.getElementById('profitPercent').value],
+          [],
+          ['GRAND TOTAL:', document.getElementById('grandTotal').textContent]
+        ];
+        
+        // Combine all data
+        const allData = [
+          ...projectData,
+          ...laborData,
+          ...materialsData,
+          ...equipmentData,
+          ...summaryData
+        ];
+        
+        // Create worksheet
+        const ws = XLSX.utils.aoa_to_sheet(allData);
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, "Estimate");
+        
+        // Generate filename
+        const projectName = document.getElementById('projectName').value || 'Estimate';
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `${projectName}_Estimate_${date}.xlsx`;
+        
+        // Save file
+        XLSX.writeFile(wb, filename);
+        
+        addSystemMessage(`✅ Estimate exported to ${filename}`);
+      }
+
+      // Add animation styles
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Initialize on load
+      window.addEventListener("load", () => {
+        loadClients();
+      });
     </script>
   </body>
 </html>
