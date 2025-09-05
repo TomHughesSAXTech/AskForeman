@@ -3425,6 +3425,34 @@
       function processMessageContent(content, attachments) {
         let processedContent = content;
         
+        // Convert URLs to clickable links
+        const urlPattern = /(?:https?:\/\/[^\s<>"]+|www\.[^\s<>"]+|[a-zA-Z0-9.-]+\.(com|org|net|io|gov|edu|co|uk|ca|de|jp|fr|au|us|ru|ch|it|nl|se|no|es|mil)[^\s<>"]*)/gi;
+        processedContent = processedContent.replace(urlPattern, (url) => {
+          // Skip if already part of an HTML tag
+          if (url.indexOf('onclick=') > -1 || url.indexOf('src=') > -1 || url.indexOf('href=') > -1) {
+            return url;
+          }
+          
+          const href = url.startsWith('http') ? url : `https://${url}`;
+          const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+          return `<a href="${href}" target="_blank" style="color: #1976d2; text-decoration: underline; word-break: break-all;">${displayUrl}</a>`;
+        });
+        
+        // Convert markdown-style links [text](url) to HTML links
+        const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+        processedContent = processedContent.replace(markdownLinkPattern, (match, text, url) => {
+          // Skip document references (they're handled separately)
+          if (text.startsWith('Document:')) return match;
+          
+          return `<a href="${url}" target="_blank" style="color: #1976d2; text-decoration: underline; font-weight: 500;">${text}</a>`;
+        });
+        
+        // Handle email addresses
+        const emailPattern = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi;
+        processedContent = processedContent.replace(emailPattern, (email) => {
+          return `<a href="mailto:${email}" style="color: #1976d2; text-decoration: underline;">${email}</a>`;
+        });
+        
         // Handle source references with paperclip icon
         const sourcePattern = /📎\s*Source:\s*\[\[([^\]]+)\]\]\s*-\s*Pages?\s*([\d-]+)/g;
         processedContent = processedContent.replace(sourcePattern, (match, fileName, pages) => {
