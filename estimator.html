@@ -2117,16 +2117,8 @@
       let currentTool = 'pan';
       let measurements = [];
 
-      // DOM Elements
-      const fileList = document.getElementById("fileListContent");
-      const processButton = document.getElementById("processButton");
-      const chatInput = document.getElementById("chatInput");
-      const sendButton = document.getElementById("sendButton");
-      const chatMessages = document.getElementById("chatMessages");
-      const progressBar = document.getElementById("progressBar");
-      const progressFill = document.getElementById("progressFill");
-      const clientSelect = document.getElementById("clientSelect");
-      const chatClientSelect = document.getElementById("chatClientSelect");
+      // DOM Elements - Initialize later to avoid null references
+      let fileList, processButton, chatInput, sendButton, chatMessages, progressBar, progressFill, clientSelect, chatClientSelect;
       
       // Image attachment support variables
       let attachedImages = [];
@@ -2146,9 +2138,11 @@
       
       // Setup image upload functionality
       function setupImageUpload() {
+        const chatInputElement = document.getElementById('chatInput');
+        
         // Add paste event listener for screenshots and documents
-        if (chatInput) {
-          chatInput.addEventListener('paste', async (e) => {
+        if (chatInputElement) {
+          chatInputElement.addEventListener('paste', async (e) => {
             const items = e.clipboardData.items;
             for (let item of items) {
               if (item.type.indexOf('image') !== -1 || item.type.indexOf('application') !== -1) {
@@ -2163,16 +2157,15 @@
         }
         
         // Add image upload button inside the input field
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput && !document.getElementById('imageUploadBtn')) {
+        if (chatInputElement && !document.getElementById('imageUploadBtn')) {
           // Create a wrapper for the input if it doesn't exist
-          let inputWrapper = chatInput.parentElement;
+          let inputWrapper = chatInputElement.parentElement;
           if (!inputWrapper.classList.contains('input-with-button')) {
             const wrapper = document.createElement('div');
             wrapper.className = 'input-with-button';
             wrapper.style.cssText = 'position: relative; flex: 1;';
-            chatInput.parentElement.insertBefore(wrapper, chatInput);
-            wrapper.appendChild(chatInput);
+            chatInputElement.parentElement.insertBefore(wrapper, chatInputElement);
+            wrapper.appendChild(chatInputElement);
             inputWrapper = wrapper;
           }
           
@@ -2433,33 +2426,39 @@
         });
       }
 
-      // Client selection handlers
-      clientSelect.addEventListener("change", async (e) => {
-        if (e.target.value === '__create_new__') {
-          openCreateClientModal();
-          // Reset selection to empty
-          clientSelect.value = '';
-        } else {
-          selectedClient = e.target.value;
-          if (selectedClient) {
-            await loadClientFiles(selectedClient);
-            updateProcessButton();
-          }
+      // Client selection handlers - setup after DOM is loaded
+      function setupClientSelectionHandlers() {
+        if (clientSelect) {
+          clientSelect.addEventListener("change", async (e) => {
+            if (e.target.value === '__create_new__') {
+              openCreateClientModal();
+              // Reset selection to empty
+              clientSelect.value = '';
+            } else {
+              selectedClient = e.target.value;
+              if (selectedClient) {
+                await loadClientFiles(selectedClient);
+                updateProcessButton();
+              }
+            }
+          });
         }
-      });
 
-      chatClientSelect.addEventListener("change", (e) => {
-        chatContext = e.target.value;
-        const contextName = chatClientSelect.options[chatClientSelect.selectedIndex].text;
-        
-        if (chatContext === "general") {
-          addSystemMessage("🌐 Chat context set to General Construction Knowledge.");
-        } else if (chatContext === "all-clients") {
-          addSystemMessage("🔍 Knowledge Graph mode activated! Searching across ALL projects.");
-        } else {
-          addSystemMessage(`🎯 Chat focused on ${contextName} project.`);
+        if (chatClientSelect) {
+          chatClientSelect.addEventListener("change", (e) => {
+            chatContext = e.target.value;
+            const contextName = chatClientSelect.options[chatClientSelect.selectedIndex].text;
+            
+            if (chatContext === "general") {
+              addSystemMessage("🌐 Chat context set to General Construction Knowledge.");
+            } else if (chatContext === "all-clients") {
+              addSystemMessage("🔍 Knowledge Graph mode activated! Searching across ALL projects.");
+            } else {
+              addSystemMessage(`🎯 Chat focused on ${contextName} project.`);
+            }
+          });
         }
-      });
+      }
 
       // Create client handler is now in dropdown change event
 
@@ -5559,9 +5558,22 @@
 
       // Initialize on load
       window.addEventListener("load", () => {
+        // Initialize DOM elements
+        fileList = document.getElementById("fileListContent");
+        processButton = document.getElementById("processButton");
+        chatInput = document.getElementById("chatInput");
+        sendButton = document.getElementById("sendButton");
+        chatMessages = document.getElementById("chatMessages");
+        progressBar = document.getElementById("progressBar");
+        progressFill = document.getElementById("progressFill");
+        clientSelect = document.getElementById("clientSelect");
+        chatClientSelect = document.getElementById("chatClientSelect");
+        
+        // Initialize functions
         initializeFileList();
         loadClients();
         setupImageUpload();
+        setupClientSelectionHandlers();
       });
     </script>
   </body>
