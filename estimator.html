@@ -3502,7 +3502,7 @@
         });
       }
       
-      // Process uploaded takeoff document with AI
+      // Process uploaded takeoff document
       async function processTakeoffDocument(input) {
         const file = input.files[0];
         if (!file) return;
@@ -3510,46 +3510,10 @@
         currentDrawingFile = file;
         updateAIStatus('Processing document...', '#2196f3');
         
-        // Display the document in canvas
-        if (file.type === 'application/pdf') {
-          // Use PDF.js to display PDF
-          const fileReader = new FileReader();
-          fileReader.onload = async function(e) {
-            const typedArray = new Uint8Array(e.target.result);
-            const pdf = await pdfjsLib.getDocument(typedArray).promise;
-            const page = await pdf.getPage(1);
-            const canvas = document.getElementById('pdfCanvas');
-            const context = canvas.getContext('2d');
-            const viewport = page.getViewport({ scale: 1.5 });
-            
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            await page.render({
-              canvasContext: context,
-              viewport: viewport
-            }).promise;
-            
-            updateAIStatus('Document loaded. Click AI Analysis to process.', '#4caf50');
-          };
-          fileReader.readAsArrayBuffer(file);
-        } else {
-          // Display image
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-              const canvas = document.getElementById('pdfCanvas');
-              const context = canvas.getContext('2d');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              context.drawImage(img, 0, 0);
-              updateAIStatus('Drawing loaded. Click AI Analysis to process.', '#4caf50');
-            };
-            img.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        }
+        // Display the document using the enhanced display function
+        await displayDrawingInCanvas(file);
+        
+        updateAIStatus('Document loaded. Click AI Analysis to process.', '#4caf50');
       }
       
       // Run AI Document Intelligence on the drawing
@@ -3644,11 +3608,37 @@
               addSystemMessage('✅ Drawing analyzed and saved to project index');
             } else {
               throw new Error('AI analysis failed');
+            } else {
+              // Handle non-JSON response or error
+              const responseText = await response.text();
+              console.log('API Response:', responseText);
+              
+              // Try to parse as JSON if possible
+              let result;
+              try {
+                result = JSON.parse(responseText);
+              } catch (e) {
+                // If not JSON, create a basic response
+                result = { response: responseText };
+              }
+              
+              // Parse AI response for takeoff data
+              const aiData = parseAIResponse(result.response || responseText || '');
+              
+              // Store the processed data for future use
+              await saveIndexedTakeoffData(selectedProject, indexedDataKey, aiData);
+              
+              // Update display with AI results
+              displayAIResults(aiData);
+              currentTakeoffData = aiData;
+              
+              updateAIStatus('AI analysis complete!', '#4caf50');
+              addSystemMessage('✅ Drawing analyzed successfully');
             }
           } catch (error) {
             console.error('Error running AI analysis:', error);
-            updateAIStatus('AI analysis error', '#f44336');
-            addSystemMessage('❌ Error analyzing drawing. Please try again.');
+            updateAIStatus('AI analysis error: ' + error.message, '#f44336');
+            addSystemMessage(`❌ Error analyzing drawing: ${error.message}`);
           }
         };
         reader.readAsDataURL(currentDrawingFile);
@@ -3779,6 +3769,22 @@
         }
       }
       
+      // Open takeoff modal
+      function openTakeoffModal() {
+        const modal = document.getElementById('takeoffModal');
+        if (modal) {
+          modal.classList.add('active');
+        }
+      }
+      
+      // Close takeoff modal
+      function closeTakeoff() {
+        const modal = document.getElementById('takeoffModal');
+        if (modal) {
+          modal.classList.remove('active');
+        }
+      }
+      
       // Send takeoff data to estimator
       function sendToEstimator() {
         if (!currentTakeoffData) {
@@ -3847,19 +3853,192 @@
         addSystemMessage('✅ Takeoff data transferred to estimate successfully!');
       }
       
-      // Load drawing from URL
+      // Load drawing from URL with enhanced display
       async function loadDrawingFromUrl(url, fileName) {
         try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          currentDrawingFile = new File([blob], fileName, { type: blob.type });
+          updateAIStatus('Loading drawing: ' + fileName, '#2196f3');
           
-          // Process the file
-          const input = { files: [currentDrawingFile] };
-          await processTakeoffDocument(input);
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Failed to load drawing: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const mimeType = blob.type || getMimeTypeFromFileName(fileName);
+          currentDrawingFile = new File([blob], fileName, { type: mimeType });
+          
+          // Display the drawing in canvas
+          await displayDrawingInCanvas(currentDrawingFile);
+          
+          // Show the takeoff modal automatically
+          openTakeoffModal();
+          
+          updateAIStatus('Drawing loaded: ' + fileName, '#4caf50');
+          addSystemMessage(`📄 Loaded drawing: ${fileName}`);
         } catch (error) {
           console.error('Error loading drawing:', error);
-          updateAIStatus('Error loading drawing', '#f44336');
+          updateAIStatus('Error loading drawing: ' + error.message, '#f44336');
+          addSystemMessage(`❌ Failed to load drawing: ${error.message}`);
+        }
+      }
+      
+      // Get MIME type from file extension
+      function getMimeTypeFromFileName(fileName) {
+        const ext = fileName.split('.').pop().toLowerCase();
+        const mimeTypes = {
+          'pdf': 'application/pdf',
+          'png': 'image/png',
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'gif': 'image/gif',
+          'dwg': 'application/dwg',
+          'dxf': 'application/dxf'
+        };
+        return mimeTypes[ext] || 'application/octet-stream';
+      }
+      
+      // Display drawing in canvas with pan/zoom support
+      async function displayDrawingInCanvas(file) {
+        const canvas = document.getElementById('pdfCanvas');
+        const annotationCanvas = document.getElementById('annotationCanvas');
+        
+        if (!canvas) {
+          console.error('Canvas element not found');
+          return;
+        }
+        
+        if (file.type === 'application/pdf') {
+          // Display PDF using PDF.js
+          const fileReader = new FileReader();
+          fileReader.onload = async function(e) {
+            try {
+              const typedArray = new Uint8Array(e.target.result);
+              const pdf = await pdfjsLib.getDocument(typedArray).promise;
+              const page = await pdf.getPage(1);
+              const context = canvas.getContext('2d');
+              const viewport = page.getViewport({ scale: 1.5 });
+              
+              canvas.height = viewport.height;
+              canvas.width = viewport.width;
+              
+              // Match annotation canvas size
+              if (annotationCanvas) {
+                annotationCanvas.height = viewport.height;
+                annotationCanvas.width = viewport.width;
+              }
+              
+              await page.render({
+                canvasContext: context,
+                viewport: viewport
+              }).promise;
+              
+              // Initialize pan/zoom after rendering
+              initializePanZoom(canvas);
+              
+              // Update page info
+              document.getElementById('drawingPage').textContent = `1 of ${pdf.numPages}`;
+              
+            } catch (error) {
+              console.error('Error rendering PDF:', error);
+              updateAIStatus('Error displaying PDF', '#f44336');
+            }
+          };
+          fileReader.readAsArrayBuffer(file);
+          
+        } else if (file.type.startsWith('image/')) {
+          // Display image
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+              const context = canvas.getContext('2d');
+              
+              // Scale image to fit canvas while maintaining aspect ratio
+              const maxWidth = 1200;
+              const maxHeight = 800;
+              let width = img.width;
+              let height = img.height;
+              
+              if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width *= ratio;
+                height *= ratio;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              
+              // Match annotation canvas size
+              if (annotationCanvas) {
+                annotationCanvas.width = width;
+                annotationCanvas.height = height;
+              }
+              
+              context.drawImage(img, 0, 0, width, height);
+              
+              // Initialize pan/zoom after rendering
+              initializePanZoom(canvas);
+              
+              updateAIStatus('Image loaded. Ready for analysis.', '#4caf50');
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // Unsupported file type
+          updateAIStatus(`Unsupported file type: ${file.type}`, '#ff9800');
+          addSystemMessage(`⚠️ File type not directly displayable: ${file.name}`);
+        }
+      }
+      
+      // Initialize pan and zoom functionality
+      function initializePanZoom(canvas) {
+        let scale = 1;
+        let panX = 0;
+        let panY = 0;
+        let isPanning = false;
+        let startX = 0;
+        let startY = 0;
+        
+        // Add zoom controls
+        canvas.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? 0.9 : 1.1;
+          scale *= delta;
+          scale = Math.min(Math.max(0.5, scale), 3);
+          
+          canvas.style.transform = `scale(${scale}) translate(${panX}px, ${panY}px)`;
+          canvas.style.transformOrigin = '0 0';
+        });
+        
+        // Add pan controls
+        canvas.addEventListener('mousedown', (e) => {
+          if (currentTool === 'pan') {
+            isPanning = true;
+            startX = e.clientX - panX;
+            startY = e.clientY - panY;
+            canvas.style.cursor = 'grabbing';
+          }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+          if (isPanning && currentTool === 'pan') {
+            panX = e.clientX - startX;
+            panY = e.clientY - startY;
+            canvas.style.transform = `scale(${scale}) translate(${panX}px, ${panY}px)`;
+          }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+          isPanning = false;
+          if (currentTool === 'pan') {
+            canvas.style.cursor = 'grab';
+          }
+        });
+        
+        // Set initial cursor
+        if (currentTool === 'pan') {
+          canvas.style.cursor = 'grab';
         }
       }
       
