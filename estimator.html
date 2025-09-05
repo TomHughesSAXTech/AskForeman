@@ -3259,37 +3259,75 @@
         const selectedProject = document.getElementById('takeoffProjectSelect').value;
         if (!selectedProject) return;
         
-        updateAIStatus('Loading project takeoff data...', '#2196f3');
+        updateAIStatus('Checking for indexed takeoff data...', '#2196f3');
         
         try {
-          // Search for existing takeoff files in the project
-          const listUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${selectedProject}/drawings/`;
+          // First check for indexed takeoff data
+          const takeoffListUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${selectedProject}/takeoffs/`;
           
-          const response = await fetch(listUrl);
+          const takeoffResponse = await fetch(takeoffListUrl);
+          if (takeoffResponse.ok) {
+            const xmlText = await takeoffResponse.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const takeoffBlobs = xmlDoc.getElementsByTagName("Blob");
+            
+            if (takeoffBlobs.length > 0) {
+              // Found indexed takeoff data - load the most recent
+              const nameElement = takeoffBlobs[takeoffBlobs.length - 1].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const takeoffUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${nameElement.textContent}${AZURE_STORAGE.sasToken}`;
+                const dataResponse = await fetch(takeoffUrl);
+                const takeoffData = await dataResponse.json();
+                
+                displayAIResults(takeoffData);
+                currentTakeoffData = takeoffData;
+                updateAIStatus('Loaded indexed takeoff data', '#4caf50');
+                addSystemMessage('✅ Loaded existing takeoff analysis from project index');
+                return;
+              }
+            }
+          }
+          
+          // No indexed data, search for drawings to process
+          const drawingListUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${selectedProject}/drawings/`;
+          
+          const response = await fetch(drawingListUrl);
           const xmlText = await response.text();
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlText, "text/xml");
           const blobs = xmlDoc.getElementsByTagName("Blob");
           
           if (blobs.length > 0) {
-            // Found existing takeoff files
+            // Found existing drawing files
             updateAIStatus('Found ' + blobs.length + ' drawing(s)', '#4caf50');
             
-            // Load the first PDF/drawing file
+            // Create a selection dialog for multiple drawings
+            let drawingOptions = [];
             for (let i = 0; i < blobs.length; i++) {
               const nameElement = blobs[i].getElementsByTagName("Name")[0];
               if (nameElement) {
                 const fileName = nameElement.textContent.split('/').pop();
-                if (fileName.endsWith('.pdf') || fileName.endsWith('.png') || fileName.endsWith('.jpg')) {
-                  // Load this file
-                  const fileUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${nameElement.textContent}${AZURE_STORAGE.sasToken}`;
-                  await loadDrawingFromUrl(fileUrl, fileName);
-                  break;
+                if (fileName.endsWith('.pdf') || fileName.endsWith('.png') || fileName.endsWith('.jpg') || fileName.endsWith('.dwg')) {
+                  drawingOptions.push({
+                    fileName: fileName,
+                    fileUrl: `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${nameElement.textContent}${AZURE_STORAGE.sasToken}`
+                  });
                 }
+              }
+            }
+            
+            if (drawingOptions.length > 0) {
+              // Load the first drawing or show selection
+              await loadDrawingFromUrl(drawingOptions[0].fileUrl, drawingOptions[0].fileName);
+              
+              if (drawingOptions.length > 1) {
+                addSystemMessage(`📄 Loaded ${drawingOptions[0].fileName}. ${drawingOptions.length - 1} more drawing(s) available in project.`);
               }
             }
           } else {
             updateAIStatus('No takeoff files found. Upload a drawing to begin.', '#ff9800');
+            addSystemMessage('📁 No drawings found in project. Upload a new drawing to create takeoff.');
           }
         } catch (error) {
           console.error('Error loading project takeoff:', error);
@@ -3484,38 +3522,182 @@
           return;
         }
         
-        updateAIStatus('Running AI analysis...', '#ff9800');
+        const selectedProject = document.getElementById('takeoffProjectSelect').value;
+        if (!selectedProject) {
+          alert('Please select a project first.');
+          return;
+        }
         
-        // Simulate AI processing (in production, this would call Azure Form Recognizer / Computer Vision)
-        setTimeout(() => {
-          // Simulated AI results
-          const aiData = {
-            scale: '1:50',
-            units: 'Feet',
-            detectedAreas: [
-              { name: 'Room A', area: '450 SF', dimensions: '15\' x 30\'' },
-              { name: 'Room B', area: '320 SF', dimensions: '16\' x 20\'' },
-              { name: 'Corridor', area: '180 SF', dimensions: '6\' x 30\'' }
-            ],
-            materials: [
-              { type: 'Paint', spec: 'SW-7005', coverage: '950 SF' },
-              { type: 'Flooring', spec: 'VCT-100', coverage: '770 SF' },
-              { type: 'Ceiling', spec: 'ACT-24x24', coverage: '950 SF' }
-            ],
-            dimensions: [
-              { type: 'Wall Height', value: '10 feet' },
-              { type: 'Total Perimeter', value: '280 LF' }
-            ]
-          };
+        updateAIStatus('Checking for existing analysis...', '#2196f3');
+        
+        // First, check if this document has already been processed and indexed
+        const fileName = currentDrawingFile.name;
+        const indexedDataKey = `takeoff_${selectedProject}_${fileName.replace(/[^a-z0-9]/gi, '_')}`;
+        
+        try {
+          // Check for existing indexed takeoff data in Azure
+          const indexUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${selectedProject}/takeoffs/${indexedDataKey}.json${AZURE_STORAGE.sasToken}`;
           
-          // Update display with AI results
-          displayAIResults(aiData);
+          const checkResponse = await fetch(indexUrl, { method: 'HEAD' });
           
-          // Store for transfer to estimator
-          currentTakeoffData = aiData;
+          if (checkResponse.ok) {
+            // Found existing indexed data - retrieve it
+            updateAIStatus('Found indexed data, retrieving...', '#4caf50');
+            const dataResponse = await fetch(indexUrl);
+            const existingData = await dataResponse.json();
+            
+            // Use the existing processed data
+            displayAIResults(existingData);
+            currentTakeoffData = existingData;
+            updateAIStatus('Loaded from index (no AI processing needed)', '#4caf50');
+            addSystemMessage('✅ Using previously analyzed takeoff data from index');
+            return;
+          }
+        } catch (error) {
+          console.log('No indexed data found, proceeding with new analysis');
+        }
+        
+        // No indexed data found - run new AI analysis
+        updateAIStatus('Running new AI analysis...', '#ff9800');
+        
+        // Convert file to base64 for API
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          const base64String = e.target.result.split(',')[1];
           
-          updateAIStatus('AI analysis complete!', '#4caf50');
-        }, 2000);
+          try {
+            // Call Azure Form Recognizer / Document Intelligence
+            const analysisData = {
+              file: base64String,
+              fileName: fileName,
+              mimeType: currentDrawingFile.type,
+              client: selectedProject,
+              analysisType: 'construction-takeoff'
+            };
+            
+            // Use the chat webhook with special analysis request
+            const response = await fetch(API_CONFIG.chatWebhookUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                message: 'ANALYZE_DRAWING',
+                documentData: analysisData,
+                client: selectedProject,
+                conversationId: `takeoff_${Date.now()}`,
+                sessionId: selectedProject
+              })
+            });
+            
+            if (response.ok) {
+              const result = await response.json();
+              
+              // Parse AI response for takeoff data
+              const aiData = parseAIResponse(result.response || '');
+              
+              // Store the processed data for future use
+              await saveIndexedTakeoffData(selectedProject, indexedDataKey, aiData);
+              
+              // Update display with AI results
+              displayAIResults(aiData);
+              currentTakeoffData = aiData;
+              
+              updateAIStatus('AI analysis complete and indexed!', '#4caf50');
+              addSystemMessage('✅ Drawing analyzed and saved to project index');
+            } else {
+              throw new Error('AI analysis failed');
+            }
+          } catch (error) {
+            console.error('Error running AI analysis:', error);
+            updateAIStatus('AI analysis error', '#f44336');
+            addSystemMessage('❌ Error analyzing drawing. Please try again.');
+          }
+        };
+        reader.readAsDataURL(currentDrawingFile);
+      }
+      
+      // Parse AI response into structured takeoff data
+      function parseAIResponse(response) {
+        // Default structure if parsing fails
+        const defaultData = {
+          scale: 'Unknown',
+          units: 'Feet',
+          detectedAreas: [],
+          materials: [],
+          dimensions: [],
+          rawResponse: response
+        };
+        
+        try {
+          // Look for scale patterns in response
+          const scaleMatch = response.match(/scale[:\s]*(1[:\s]*\d+)/i);
+          if (scaleMatch) defaultData.scale = scaleMatch[1];
+          
+          // Look for area/room patterns
+          const areaMatches = response.matchAll(/(room|area|space)[\s\w]*[:\s]*(\d+)[\s]*(sf|sq\s*ft|square\s*feet)/gi);
+          for (const match of areaMatches) {
+            defaultData.detectedAreas.push({
+              name: match[0].split(':')[0].trim(),
+              area: match[2] + ' SF',
+              dimensions: 'Detected'
+            });
+          }
+          
+          // Look for material patterns
+          const materialPatterns = [
+            /paint[:\s]*([\w\-]+)/gi,
+            /flooring[:\s]*([\w\-]+)/gi,
+            /ceiling[:\s]*([\w\-]+)/gi
+          ];
+          
+          materialPatterns.forEach(pattern => {
+            const matches = response.matchAll(pattern);
+            for (const match of matches) {
+              const type = match[0].split(/[:\s]/)[0];
+              defaultData.materials.push({
+                type: type.charAt(0).toUpperCase() + type.slice(1),
+                spec: match[1],
+                coverage: 'As specified'
+              });
+            }
+          });
+          
+          // Look for dimension patterns
+          const dimMatches = response.matchAll(/(\d+)[\s]*(feet|ft|\')[\s]*(x|by)[\s]*(\d+)/gi);
+          for (const match of dimMatches) {
+            defaultData.dimensions.push({
+              type: 'Dimension',
+              value: match[0]
+            });
+          }
+          
+          return defaultData;
+        } catch (error) {
+          console.error('Error parsing AI response:', error);
+          return defaultData;
+        }
+      }
+      
+      // Save indexed takeoff data to Azure
+      async function saveIndexedTakeoffData(project, key, data) {
+        try {
+          const jsonData = JSON.stringify(data, null, 2);
+          const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${project}/takeoffs/${key}.json${AZURE_STORAGE.sasToken}`;
+          
+          await fetch(blobUrl, {
+            method: 'PUT',
+            headers: {
+              'x-ms-blob-type': 'BlockBlob',
+              'Content-Type': 'application/json'
+            },
+            body: jsonData
+          });
+          
+          console.log('Takeoff data indexed successfully');
+        } catch (error) {
+          console.error('Error saving indexed data:', error);
+        }
       }
       
       // Display AI analysis results
