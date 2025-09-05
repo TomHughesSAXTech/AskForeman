@@ -1631,10 +1631,6 @@
               placeholder="Ask about your estimate..." 
               onkeypress="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
             />
-            <input type="file" id="chatFileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="handleChatFileSelect(this)" />
-            <button class="attachment-btn" onclick="document.getElementById('chatFileInput').click()" title="Attach files">
-              📎
-            </button>
             <button class="send-btn" id="sendButton" onclick="sendMessage()">
               Send ➤
             </button>
@@ -2122,6 +2118,7 @@
       
       // Initialize DOM elements when page loads
       document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all DOM elements
         fileList = document.getElementById('fileList');
         processButton = document.getElementById('processButton');
         chatInput = document.getElementById('chatInput');
@@ -2132,16 +2129,68 @@
         clientSelect = document.getElementById('clientSelect');
         chatClientSelect = document.getElementById('chatClientSelect');
         
-        // Set up event handlers after elements are initialized
+        // Initialize helper functions that depend on DOM elements
+        initializeFileList();
+        setupImageUpload();
+
+        // Set up event handlers
         if (processButton) {
           processButton.addEventListener("click", handleProcessButtonClick);
         }
-        
-        // Set up other initialization
-        setupImageUpload();
+
+        // Set up client selection handlers
+        if (clientSelect) {
+          // Handle client selection change
+          clientSelect.addEventListener('change', function(e) {
+            const newClient = e.target.value;
+            if (newClient === '__create_new__') {
+              const projectName = prompt('Enter new project name:');
+              if (projectName) {
+                createNewProject(projectName);
+              } else {
+                e.target.value = selectedClient || '';
+              }
+            } else {
+              selectedClient = newClient;
+              if (chatClientSelect) {
+                chatClientSelect.value = newClient || 'general';
+              }
+              updateProcessButton();
+              updateFileCounts();
+              if (newClient) {
+                loadClientFiles(newClient);
+              } else {
+                initializeFileList(); // Reset file list when no client selected
+              }
+            }
+          });
+          
+          // Update chat context when chat client selection changes
+          if (chatClientSelect) {
+            chatClientSelect.addEventListener('change', function(e) {
+              chatContext = e.target.value;
+              if (chatContext === 'all-clients') {
+                addSystemMessage('🌐 Switched to viewing all project documents');
+              } else if (chatContext === 'general') {
+                addSystemMessage('🤖 Switched to general construction knowledge');
+              } else {
+                addSystemMessage(`📁 Focused on project: ${formatClientName(chatContext)}`);
+              }
+            });
+          }
+        }
+
+        // Load initial data
         loadClients();
         updateFileCounts();
         updateProcessButton();
+        
+        // Re-render file list every few seconds to keep it updated
+        setInterval(() => {
+          if (selectedClient) {
+            loadClientFiles(selectedClient);
+          }
+        }, 5000);
       });
       
       // Image attachment support variables
@@ -2163,6 +2212,7 @@
       // Setup image upload functionality
       function setupImageUpload() {
         const chatInputElement = document.getElementById('chatInput');
+        const chatInputWrapper = document.querySelector('.chat-input-wrapper');
         
         // Add paste event listener for screenshots and documents
         if (chatInputElement) {
@@ -2180,41 +2230,17 @@
           });
         }
         
-        // Add image upload button inside the input field
-        if (chatInputElement && !document.getElementById('imageUploadBtn')) {
-          // Create a wrapper for the input if it doesn't exist
-          let inputWrapper = chatInputElement.parentElement;
-          if (!inputWrapper.classList.contains('input-with-button')) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'input-with-button';
-            wrapper.style.cssText = 'position: relative; flex: 1;';
-            chatInputElement.parentElement.insertBefore(wrapper, chatInputElement);
-            wrapper.appendChild(chatInputElement);
-            inputWrapper = wrapper;
-          }
-          
+        // Add image upload button and file input if they don't exist
+        if (chatInputWrapper && !document.getElementById('imageUploadBtn')) {
+          // Create paperclip button
           const uploadBtn = document.createElement('button');
           uploadBtn.id = 'imageUploadBtn';
+          uploadBtn.className = 'attachment-btn';
           uploadBtn.innerHTML = '📎';
           uploadBtn.title = 'Attach file or image (or paste with Ctrl+V)';
-          uploadBtn.style.cssText = `
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-            z-index: 10;
-          `;
-          uploadBtn.onmouseover = () => uploadBtn.style.opacity = '1';
-          uploadBtn.onmouseout = () => uploadBtn.style.opacity = '0.7';
           uploadBtn.onclick = () => document.getElementById('imageFileInput').click();
           
+          // Create hidden file input
           const fileInput = document.createElement('input');
           fileInput.id = 'imageFileInput';
           fileInput.type = 'file';
@@ -2227,8 +2253,14 @@
             }
           };
           
-          inputWrapper.appendChild(uploadBtn);
-          inputWrapper.appendChild(fileInput);
+          // Insert button before the send button
+          const sendBtn = document.getElementById('sendButton');
+          if (sendBtn) {
+            chatInputWrapper.insertBefore(uploadBtn, sendBtn);
+          } else {
+            chatInputWrapper.appendChild(uploadBtn);
+          }
+          chatInputWrapper.appendChild(fileInput);
         }
       }
       
