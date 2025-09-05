@@ -175,7 +175,7 @@
       .container {
         flex: 1;
         display: grid;
-        grid-template-columns: 350px 1fr 200px;
+        grid-template-columns: 350px 1fr 350px;
         gap: 1.5rem;
         padding: 1.5rem;
         max-width: 1600px;
@@ -989,7 +989,7 @@
         border: 3px solid #5d4037;
         position: relative;
         width: 100%;
-        max-width: 180px;
+        max-width: 350px;
         margin: 0 auto;
         height: auto;
       }
@@ -1414,8 +1414,8 @@
             <div class="category-group">
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="drawings" />
-                  <label for="drawings">Plans & Drawings</label>
+                  <input type="checkbox" id="drawingsCategory" />
+                  <label for="drawingsCategory">Plans & Drawings</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
@@ -1430,8 +1430,8 @@
 
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="estimates" />
-                  <label for="estimates">Estimates</label>
+                  <input type="checkbox" id="estimatesCategory" />
+                  <label for="estimatesCategory">Estimates</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
@@ -1446,8 +1446,8 @@
 
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="proposals" />
-                  <label for="proposals">Proposals</label>
+                  <input type="checkbox" id="proposalsCategory" />
+                  <label for="proposalsCategory">Proposals</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
@@ -1462,8 +1462,8 @@
 
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="specs" />
-                  <label for="specs">Specifications</label>
+                  <input type="checkbox" id="specsCategory" />
+                  <label for="specsCategory">Specifications</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
@@ -1478,8 +1478,8 @@
 
               <div class="category-item">
                 <div class="category-header">
-                  <input type="checkbox" id="signedContracts" />
-                  <label for="signedContracts">Signed Contracts</label>
+                  <input type="checkbox" id="signedContractsCategory" />
+                  <label for="signedContractsCategory">Signed Contracts</label>
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
@@ -2063,7 +2063,7 @@
         const folderId = clientName;
         
         // Create placeholder files in Azure
-        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
+        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signedContracts'];
         
         for (const category of categories) {
           const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
@@ -2747,8 +2747,8 @@
 
       // Process button handler
       processButton.addEventListener("click", async () => {
-        const selectedCategories = categories.filter(cat => 
-          document.getElementById(cat).checked
+        const selectedCategories = ["drawings", "estimates", "proposals", "specs", "signedContracts"].filter(cat => 
+          document.getElementById(cat + "Category").checked
         );
         
         if (selectedCategories.length === 0) {
@@ -2758,7 +2758,11 @@
         
         const allFiles = [];
         selectedCategories.forEach(category => {
-          allFiles.push(...uploadedFiles[category]);
+          const files = uploadedFiles[category] || [];
+          files.forEach(file => {
+            file.category = category;
+            allFiles.push(file);
+          });
         });
         
         if (allFiles.length === 0) {
@@ -2793,7 +2797,8 @@
           
           selectedCategories.forEach(category => {
             uploadedFiles[category] = [];
-            document.getElementById(category + "Files").value = '';
+            const fileInput = document.getElementById(category + "Files");
+            if (fileInput) fileInput.value = '';
           });
           
           updateFileCounts();
