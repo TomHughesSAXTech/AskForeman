@@ -4006,13 +4006,53 @@
       let currentPoints = [];
       let allAnnotations = [];
       
-      function initializeTakeoff() {
+      async function initializeTakeoff() {
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
         // Initialize PDF.js and canvas for takeoff
         const canvas = document.getElementById('pdfCanvas');
         const annotationCanvas = document.getElementById('annotationCanvas');
         const ctx = canvas.getContext('2d');
         const annotationCtx = annotationCanvas.getContext('2d');
         const canvasWrapper = document.getElementById('pdfCanvasWrapper');
+        
+        // Load project drawings into dropdown
+        const projectSelect = document.getElementById('takeoffProjectSelect');
+        if (projectSelect) {
+          try {
+            projectSelect.innerHTML = '<option value="">Select Project</option>';
+            
+            // Get list from Azure Blob Storage
+            const response = await fetch(`https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/`);
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const prefixes = xmlDoc.getElementsByTagName("BlobPrefix");
+            
+            for (let i = 0; i < prefixes.length; i++) {
+              const nameElement = prefixes[i].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const projectName = nameElement.textContent.split('/')[1];
+                if (projectName && projectName !== 'placeholder.json') {
+                  const option = document.createElement('option');
+                  option.value = projectName;
+                  option.textContent = formatClientName(projectName);
+                  projectSelect.appendChild(option);
+                }
+              }
+            }
+            
+            // Set current project if selected
+            if (selectedClient) {
+              projectSelect.value = selectedClient;
+              loadProjectDrawings(selectedClient);
+            }
+          } catch (error) {
+            console.error('Error loading projects:', error);
+            addSystemMessage('⚠️ Error loading project list');
+          }
+        }
         
         // Setup tool buttons
         document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
@@ -4573,7 +4613,7 @@
         
         try {
           // Check for existing indexed takeoff data in Azure
-          const indexUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${selectedProject}/takeoffs/${indexedDataKey}.json${AZURE_STORAGE.sasToken}`;
+        const indexUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${selectedProject}/takeoffs/takeoff-analysis_${Date.now()}.json${AZURE_STORAGE.sasToken}`;
           
           const checkResponse = await fetch(indexUrl, { method: 'HEAD' });
           
@@ -4680,13 +4720,21 @@
       
       // Parse AI response into structured takeoff data
       function parseAIResponse(response) {
-        // Default structure if parsing fails
-        const defaultData = {
+        // Create base takeoff data structure
+        const baseData = {
+          timestamp: Date.now(),
           scale: 'Unknown',
           units: 'Feet',
+          scale_detected: false,
+          page_info: {
+            current: currentPageNum,
+            total: totalPages
+          },
           detectedAreas: [],
           materials: [],
           dimensions: [],
+          annotations: allAnnotations,
+          measurements: measurements,
           rawResponse: response
         };
         
@@ -4733,10 +4781,23 @@
             });
           }
           
-          return defaultData;
+          // Update data with any detected information
+          try {
+            baseData.scale_detected = scaleMatch !== null;
+            baseData.scale = scaleMatch ? scaleMatch[1] : 'Unknown';
+            
+            // Update UI
+            document.getElementById('drawingScale').textContent = `1:${baseData.scale}`;
+            document.getElementById('units').textContent = baseData.units;
+            document.getElementById('pageInfo').textContent = `${baseData.page_info.current} of ${baseData.page_info.total}`;
+          } catch (e) {
+            console.warn('Error updating takeoff UI:', e);
+          }
+          
+          return baseData;
         } catch (error) {
           console.error('Error parsing AI response:', error);
-          return defaultData;
+          return baseData;
         }
       }
       
@@ -4744,7 +4805,7 @@
       async function saveIndexedTakeoffData(project, key, data) {
         try {
           const jsonData = JSON.stringify(data, null, 2);
-          const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${project}/takeoffs/${key}.json${AZURE_STORAGE.sasToken}`;
+        const blobUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/FCS-OriginalClients/${project}/takeoffs/takeoff_${project}_${Date.now()}.json${AZURE_STORAGE.sasToken}`;
           
           await fetch(blobUrl, {
             method: 'PUT',
@@ -4891,6 +4952,7 @@
       async function loadDrawingFromUrl(url, fileName) {
         try {
           updateAIStatus('Loading drawing: ' + fileName, '#2196f3');
+          addSystemMessage('📥 Loading drawing: ' + fileName);
           
           const response = await fetch(url);
           if (!response.ok) {
@@ -4902,13 +4964,28 @@
           currentDrawingFile = new File([blob], fileName, { type: mimeType });
           
           // Display the drawing in canvas
+          updateAIStatus('Processing drawing...', '#ff9800');
           await displayDrawingInCanvas(currentDrawingFile);
           
-          // Show the takeoff modal automatically
-          openTakeoffModal();
+          // Start AI analysis
+          updateAIStatus('Running analysis...', '#2196f3');
+          await runDocumentIntelligence();
           
-          updateAIStatus('Drawing loaded: ' + fileName, '#4caf50');
-          addSystemMessage(`📄 Loaded drawing: ${fileName}`);
+          updateAIStatus('Drawing loaded and analyzed', '#4caf50');
+          addSystemMessage(`✅ Loaded and analyzed: ${fileName}`);
+          
+          // Enable measure tools
+          document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
+            btn.disabled = false;
+          });
+          
+          // Show multipage navigation if needed
+          const nextBtn = document.getElementById('nextPageBtn');
+          const prevBtn = document.getElementById('prevPageBtn');
+          if (nextBtn && prevBtn) {
+            nextBtn.disabled = currentPageNum >= totalPages;
+            prevBtn.disabled = currentPageNum <= 1;
+          }
         } catch (error) {
           console.error('Error loading drawing:', error);
           updateAIStatus('Error loading drawing: ' + error.message, '#f44336');
