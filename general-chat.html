@@ -143,23 +143,26 @@
 
       .nav-btn {
         padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, var(--construction-orange), #e65100);
+        background: linear-gradient(135deg, #d84315, #bf360c);
         color: white;
-        border: none;
+        border: 2px solid #bf360c;
         border-radius: 8px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       .nav-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        background: linear-gradient(135deg, #bf360c, #d84315);
       }
 
       .nav-btn.admin {
@@ -271,12 +274,31 @@
       }
 
       .message.assistant .message-avatar {
-        background: var(--blueprint-blue);
+        background: transparent;
+        width: 50px;
+        height: 50px;
+        animation: bounce 2s infinite;
+      }
+      
+      .message.assistant .message-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
 
       .message.user .message-avatar {
-        background: var(--construction-orange);
+        background: linear-gradient(135deg, #d84315, #bf360c);
         order: 2;
+        font-size: 1.5rem;
+      }
+      
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
       }
 
       .message-content {
@@ -288,7 +310,7 @@
       }
 
       .message.user .message-content {
-        background: linear-gradient(135deg, var(--construction-orange), #e65100);
+        background: linear-gradient(135deg, #d84315, #bf360c);
         color: white;
       }
 
@@ -403,7 +425,7 @@
     <header class="header">
       <div class="logo">
         <div class="logo-icon">
-          <img src="logo.jpeg" alt="Ask Foreman Logo" />
+          <img src="chat.png" alt="Ask Foreman Logo" />
         </div>
         <div class="logo-text">
           <h1>ASK FOREMAN AI</h1>
@@ -428,7 +450,7 @@
         <div class="chat-container">
           <div class="chat-messages" id="chatMessages">
             <div class="message assistant">
-              <div class="message-avatar">AI</div>
+              <div class="message-avatar"><img src="chat.png" alt="AI"></div>
               <div class="message-content">
                 <div>Hello! I'm your construction AI assistant. I can help you with:</div>
                 <ul style="margin: 0.5rem 0 0 1.5rem;">
@@ -475,7 +497,7 @@
         const userMessage = document.createElement('div');
         userMessage.className = 'message user';
         userMessage.innerHTML = `
-          <div class="message-avatar">U</div>
+          <div class="message-avatar">👷</div>
           <div class="message-content">
             <div>${message}</div>
             <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
@@ -490,7 +512,7 @@
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message assistant';
         typingIndicator.innerHTML = `
-          <div class="message-avatar">AI</div>
+          <div class="message-avatar"><img src="chat.png" alt="AI"></div>
           <div class="typing-indicator">
             <span></span>
             <span></span>
@@ -532,7 +554,7 @@
           const assistantMessage = document.createElement('div');
           assistantMessage.className = 'message assistant';
           assistantMessage.innerHTML = `
-            <div class="message-avatar">AI</div>
+            <div class="message-avatar"><img src="chat.png" alt="AI"></div>
             <div class="message-content">
               <div>${responseText}</div>
               <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
@@ -547,7 +569,7 @@
           const errorMessage = document.createElement('div');
           errorMessage.className = 'message assistant';
           errorMessage.innerHTML = `
-            <div class="message-avatar">AI</div>
+            <div class="message-avatar"><img src="chat.png" alt="AI"></div>
             <div class="message-content">
               <div>Sorry, I encountered an error. Please try again.</div>
               <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
