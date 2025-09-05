@@ -1561,18 +1561,22 @@
       </div>
 
       <!-- Right Sidebar - Toolbox -->
-      <div class="toolbox">
-        <h3>ESTIMATOR TOOLBOX</h3>
-        <div class="tool-grid">
-          <button class="tool-btn" onclick="openTakeoff()">
-            <span>📐</span>
-            Enhanced Takeoff
-          </button>
-          <button class="tool-btn" onclick="openEstimator()">
-            <span>📊</span>
-            Estimate Generator
-          </button>
+      <div style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
+        <div class="toolbox">
+          <h3>ESTIMATOR TOOLBOX</h3>
+          <div class="tool-grid">
+            <button class="tool-btn" onclick="openTakeoff()">
+              <span>📐</span>
+              Enhanced Takeoff
+            </button>
+            <button class="tool-btn" onclick="openEstimator()">
+              <span>📊</span>
+              Estimate Generator
+            </button>
+          </div>
         </div>
+        <!-- Empty space below toolbox -->
+        <div style="flex: 1;"></div>
       </div>
     </div>
 
