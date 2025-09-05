@@ -1,0 +1,61 @@
+name: Deploy Azure Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'azure-functions/**'
+      - '.github/workflows/deploy-azure-functions.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_FUNCTIONAPP_NAME: 'SAXTech-DocProcessor'
+  RESOURCE_GROUP: 'SAXTech-AI'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v3
+
+    - name: 'Login to Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Deploy Azure Functions using ZIP deploy'
+      run: |
+        # Package the existing functions
+        cd azure-functions
+        zip -r ../functions.zip . -x "*.md" -x ".git/*"
+        cd ..
+        
+        # Deploy to Azure
+        az functionapp deployment source config-zip \
+          --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --src functions.zip
+        
+        # Update app settings for AI features
+        az functionapp config appsettings set \
+          --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --settings \
+          "FORM_RECOGNIZER_ENDPOINT=https://saxtech-docintelligence.cognitiveservices.azure.com/" \
+          "COMPUTER_VISION_ENDPOINT=https://client-fcs.cognitiveservices.azure.com/" \
+          "AZURE_OPENAI_ENDPOINT=https://saxtechopenai.openai.azure.com/" \
+          "SEARCH_ENDPOINT=https://foremancopilot.search.windows.net" \
+          "EnableAIEnhancements=true" \
+          --output none
+
+    - name: 'Restart Function App'
+      run: |
+        az functionapp restart \
+          --name ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }}
+        
+        echo "✅ Deployment complete!"
+        echo "Function App URL: https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net"
