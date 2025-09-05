@@ -183,8 +183,6 @@
         width: 100%;
         overflow: hidden;
       }
-      }
-
       .sidebar {
         display: flex;
         flex-direction: column;
@@ -3286,23 +3284,33 @@
           `;
         });
         
-        // Also handle simple source patterns
-        const simpleSourcePattern = /Source:\s*([^\n]+)/g;
-        processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
+        // Handle source references with paperclip icon
+        const sourcePattern = /Source:\s*([^\n]+)/g;
+        processedContent = processedContent.replace(sourcePattern, (match, source) => {
           // Extract filename and pages if present
           const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
           if (parts) {
             const [, fileName, pages] = parts;
+            const trimmedName = fileName.trim();
             return `
               <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #e3f2fd; border-left: 3px solid var(--primary-blue); margin: 10px 0; border-radius: 4px;">
-                <span style="font-size: 20px;">📎</span>
+                <span style="font-size: 18px;">📄</span>
                 <div style="flex: 1;">
-                  <strong>Source:</strong> ${fileName.trim()}
-                  <span style="color: #666; margin-left: 10px;">Pages ${pages}</span>
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-weight: 600; color: #1565c0;">${trimmedName}</span>
+                  </div>
+                  <div style="font-size: 0.9em; color: #666;">
+                    <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                  </div>
                 </div>
-                <button onclick="requestDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                  View Document
-                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button onclick="downloadFile('${fileName.trim()}', '${fileName.trim()}')" style="padding: 4px 12px; background: var(--dark-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    📥 Download
+                  </button>
+                  <button onclick="openDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    👁️ View
+                  </button>
+                </div>
               </div>
             `;
           }
@@ -3355,18 +3363,87 @@
           return preview;
         });
         
-        // Handle image attachments
+        // Add canvas drawing helper for image annotations
+        function setupImageCanvas(canvas, img) {
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          ctx.drawImage(img, 0, 0);
+          
+          // Enable drawing on canvas
+          let isDrawing = false;
+          let lastX = 0;
+          let lastY = 0;
+          
+          canvas.addEventListener('mousedown', startDrawing);
+          canvas.addEventListener('mousemove', draw);
+          canvas.addEventListener('mouseup', stopDrawing);
+          canvas.addEventListener('mouseout', stopDrawing);
+          
+          function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+          }
+          
+          function draw(e) {
+            if (!isDrawing) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+          }
+          
+          function stopDrawing() {
+            isDrawing = false;
+          }
+        }
+        
+        // Initialize any image canvases that were added
+        document.querySelectorAll('.image-canvas').forEach(canvas => {
+          const img = canvas.nextElementSibling;
+          if (img && img.complete) {
+            setupImageCanvas(canvas, img);
+          } else if (img) {
+            img.addEventListener('load', () => setupImageCanvas(canvas, img));
+          }
+        });
+        
+        // Handle image attachments with image canvas and source info
         if (attachments && attachments.images) {
+          let imageContent = '<div style="display: flex; flex-direction: column; gap: 10px;">';
           attachments.images.forEach(img => {
-            const imagePreview = `
-              <div class="image-attachment" style="margin: 10px 0;">
-                <img src="${img.url || img}" style="max-width: 100%; max-height: 400px; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
-                     onclick="openImageModal('${img.url || img}')" 
-                     alt="Uploaded image" />
+            const imgUrl = img.url || img;
+            const imgName = img.name || 'Uploaded image';
+            
+            imageContent += `
+              <div class="image-attachment" style="position: relative; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; background: #f5f5f5;">
+                <div style="padding: 8px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #e0e0e0;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">📄</span>
+                    <span style="font-weight: 500; color: #424242;">${imgName}</span>
+                  </div>
+                  <div>
+                    <button onclick="window.open('${imgUrl}', '_blank')" style="padding: 4px 8px; background: transparent; border: 1px solid #1976d2; color: #1976d2; border-radius: 4px; cursor: pointer; margin-left: 8px; font-size: 12px;">
+                      🔍 View Full Size
+                    </button>
+                  </div>
+                </div>
+                <div style="position: relative; width: 100%; max-height: 400px; overflow: hidden;">
+                  <canvas class="image-canvas" data-src="${imgUrl}" style="width: 100%; height: auto;"></canvas>
+                  <img src="${imgUrl}" 
+                       style="max-width: 100%; max-height: 400px; display: block; margin: 0 auto;" 
+                       onload="this.parentElement.querySelector('.image-canvas').getContext('2d').drawImage(this, 0, 0, this.width, this.height);"
+                       onclick="openImageModal('${imgUrl}')"
+                       alt="${imgName}" />
+                </div>
               </div>
             `;
-            processedContent += imagePreview;
           });
+          imageContent += '</div>';
+          processedContent += imageContent;
         }
         
         return processedContent;
@@ -3405,11 +3482,23 @@
       }
       
       // Request document from AI/system
-      function requestDocument(fileName) {
-        // Send a request for the document
-        const message = `Please show me the document: ${fileName}`;
+      function openDocument(fileName) {
+        // Request the document and display it
+        const message = `Please analyze this document: ${fileName}`;
         chatInput.value = message;
         sendMessage();
+      }
+
+      function downloadDocument(fileName) {
+        // Send a request to get the document download URL
+        const message = `Please provide a download link for: ${fileName}`;
+        chatInput.value = message;
+        sendMessage();
+      }
+
+      function requestDocument(fileName) {
+        // For backward compatibility
+        openDocument(fileName);
       }
 
       function addSystemMessage(content) {
