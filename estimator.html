@@ -2113,19 +2113,19 @@
         if (chatInputWrapper && !document.getElementById('imageUploadBtn')) {
           const uploadBtn = document.createElement('button');
           uploadBtn.id = 'imageUploadBtn';
-          uploadBtn.innerHTML = '📷';
-          uploadBtn.title = 'Attach image (or paste with Ctrl+V)';
+          uploadBtn.innerHTML = '📎';
+          uploadBtn.title = 'Attach file or image (or paste with Ctrl+V)';
           uploadBtn.style.cssText = `
             position: absolute;
-            right: 90px;
+            right: 100px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            font-size: 22px;
+            font-size: 24px;
             cursor: pointer;
-            padding: 5px;
-            opacity: 0.7;
+            padding: 5px 10px;
+            opacity: 0.6;
             transition: opacity 0.2s;
           `;
           uploadBtn.onmouseover = () => uploadBtn.style.opacity = '1';
@@ -2135,7 +2135,7 @@
           const fileInput = document.createElement('input');
           fileInput.id = 'imageFileInput';
           fileInput.type = 'file';
-          fileInput.accept = 'image/*';
+          fileInput.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx';
           fileInput.multiple = true;
           fileInput.style.display = 'none';
           fileInput.onchange = async (e) => {
@@ -2150,10 +2150,14 @@
         }
       }
       
-      // Handle image file upload
+      // Handle file upload (images and documents)
       async function handleImageFile(file) {
-        if (!file.type.startsWith('image/')) {
-          addSystemMessage('⚠️ Please select an image file');
+        // Accept images and common document types
+        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
+        const isAccepted = acceptedTypes.some(type => file.type.startsWith(type));
+        
+        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif)$/i)) {
+          addSystemMessage('⚠️ Please select an image or document file');
           return;
         }
         
@@ -2163,10 +2167,18 @@
           const imageObj = { 
             url: imageUrl, 
             file: file,
-            name: file.name || `Screenshot_${Date.now()}.png`
+            name: file.name || `Screenshot_${Date.now()}.png`,
+            type: file.type
           };
           attachedImages.push(imageObj);
           displayAttachedImage(imageObj);
+          
+          // Add system message based on file type
+          if (file.type.startsWith('image/')) {
+            addSystemMessage(`🖼️ Image attached: ${imageObj.name}`);
+          } else {
+            addSystemMessage(`📄 Document attached: ${imageObj.name}`);
+          }
         };
         reader.readAsDataURL(file);
       }
@@ -3413,6 +3425,46 @@
       function processMessageContent(content, attachments) {
         let processedContent = content;
         
+        // Handle source references with paperclip icon
+        const sourcePattern = /📎\s*Source:\s*\[\[([^\]]+)\]\]\s*-\s*Pages?\s*([\d-]+)/g;
+        processedContent = processedContent.replace(sourcePattern, (match, fileName, pages) => {
+          return `
+            <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
+              <span style="font-size: 20px;">📎</span>
+              <div style="flex: 1;">
+                <strong>Source:</strong> ${fileName}
+                <span style="color: #666; margin-left: 10px;">Pages ${pages}</span>
+              </div>
+              <button onclick="requestDocument('${fileName}')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                View Document
+              </button>
+            </div>
+          `;
+        });
+        
+        // Also handle simple source patterns
+        const simpleSourcePattern = /Source:\s*([^\n]+)/g;
+        processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
+          // Extract filename and pages if present
+          const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
+          if (parts) {
+            const [, fileName, pages] = parts;
+            return `
+              <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
+                <span style="font-size: 20px;">📎</span>
+                <div style="flex: 1;">
+                  <strong>Source:</strong> ${fileName.trim()}
+                  <span style="color: #666; margin-left: 10px;">Pages ${pages}</span>
+                </div>
+                <button onclick="requestDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                  View Document
+                </button>
+              </div>
+            `;
+          }
+          return match; // Return original if no match
+        });
+        
         // Check for document references in the message
         const docPattern = /\[Document: ([^\]]+)\]\(([^)]+)\)/g;
         processedContent = processedContent.replace(docPattern, (match, fileName, url) => {
@@ -3506,6 +3558,14 @@
         `;
         modal.onclick = () => modal.remove();
         document.body.appendChild(modal);
+      }
+      
+      // Request document from AI/system
+      function requestDocument(fileName) {
+        // Send a request for the document
+        const message = `Please show me the document: ${fileName}`;
+        chatInput.value = message;
+        sendMessage();
       }
 
       function addSystemMessage(content) {
@@ -3876,8 +3936,6 @@
               
               updateAIStatus('AI analysis complete and indexed!', '#4caf50');
               addSystemMessage('✅ Drawing analyzed and saved to project index');
-            } else {
-              throw new Error('AI analysis failed');
             } else {
               // Handle non-JSON response or error
               const responseText = await response.text();
