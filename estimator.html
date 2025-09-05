@@ -2145,12 +2145,9 @@
           clientSelect.addEventListener('change', function(e) {
             const newClient = e.target.value;
             if (newClient === '__create_new__') {
-              const projectName = prompt('Enter new project name:');
-              if (projectName) {
-                createNewProject(projectName);
-              } else {
-                e.target.value = selectedClient || '';
-              }
+              // Show modal instead of prompt
+              showCreateProjectModal();
+              e.target.value = selectedClient || '';
             } else {
               selectedClient = newClient;
               if (chatClientSelect) {
@@ -2159,7 +2156,8 @@
               updateProcessButton();
               updateFileCounts();
               if (newClient) {
-                loadClientFiles(newClient);
+                // Don't flood chat with status messages
+                loadClientFiles(newClient, true); // Silent mode
               } else {
                 initializeFileList(); // Reset file list when no client selected
               }
@@ -2533,6 +2531,150 @@
         }
       }
 
+      // Show create project modal
+      function showCreateProjectModal() {
+        const modalHTML = `
+          <div id="createProjectModal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+          ">
+            <div style="
+              background: white;
+              padding: 2rem;
+              border-radius: 10px;
+              width: 90%;
+              max-width: 500px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+              border: 2px solid var(--light-green);
+            ">
+              <h2 style="margin-bottom: 1.5rem; color: var(--primary-green);">🏗️ Create New Project</h2>
+              
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Name *</label>
+                <input type="text" id="projectNameInput" placeholder="e.g. ABC Construction - Building 1" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                " />
+              </div>
+              
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Type</label>
+                <select id="projectTypeSelect" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                ">
+                  <option value="Commercial">Commercial</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Industrial">Industrial</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Government">Government</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Mixed-Use">Mixed-Use</option>
+                </select>
+              </div>
+              
+              <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Description</label>
+                <textarea id="projectDescInput" placeholder="Brief description of the project..." style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                  min-height: 80px;
+                  resize: vertical;
+                "></textarea>
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeProjectModal()" style="
+                  padding: 0.75rem 1.5rem;
+                  border: 2px solid var(--medium-gray);
+                  background: white;
+                  color: var(--concrete-gray);
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Cancel</button>
+                <button onclick="createNewProjectFromModal()" style="
+                  padding: 0.75rem 1.5rem;
+                  border: none;
+                  background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+                  color: white;
+                  border-radius: 5px;
+                  cursor: pointer;
+                  font-weight: 600;
+                ">Create Project</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.getElementById('projectNameInput').focus();
+      }
+      
+      function closeProjectModal() {
+        const modal = document.getElementById('createProjectModal');
+        if (modal) {
+          modal.remove();
+        }
+      }
+
+      async function createNewProjectFromModal() {
+        const projectName = document.getElementById('projectNameInput').value.trim();
+        const projectType = document.getElementById('projectTypeSelect')?.value || 'Commercial';
+        const projectDescription = document.getElementById('projectDescInput')?.value.trim() || '';
+        
+        if (!projectName) {
+          alert('Project name is required');
+          return;
+        }
+        
+        await createNewProject(projectName);
+        closeProjectModal();
+      }
+      
+      async function createNewProject(projectName) {
+        // Format the client name for folder - keep original capitalization
+        const folderId = projectName;
+        
+        // Create placeholder files in Azure
+        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signedContracts'];
+        
+        for (const category of categories) {
+          const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
+          await createPlaceholderFile(placeholderPath);
+        }
+        
+        addSystemMessage(`✅ Created new project: ${projectName}`);
+        
+        // Reload clients
+        await loadClients();
+        
+        // Select the new client after reload
+        setTimeout(() => {
+          clientSelect.value = folderId;
+          selectedClient = folderId;
+          loadClientFiles(folderId, true);
+        }, 500);
+      }
+
       // Create client handler is now in dropdown change event
 
       function openCreateClientModal() {
@@ -2638,40 +2780,6 @@
         }
       }
 
-      async function createClient() {
-        const clientName = document.getElementById('clientNameInput').value.trim();
-        const projectType = document.getElementById('projectTypeSelect')?.value || 'Commercial';
-        const projectDescription = document.getElementById('projectDescInput')?.value.trim() || '';
-        
-        if (!clientName) {
-          alert('Project name is required');
-          return;
-        }
-        
-        // Format the client name for folder - keep original capitalization
-        const folderId = clientName;
-        
-        // Create placeholder files in Azure
-        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signedContracts'];
-        
-        for (const category of categories) {
-          const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
-          await createPlaceholderFile(placeholderPath);
-        }
-        
-        closeClientModal();
-        addSystemMessage(`✅ Created new project: ${clientName}`);
-        
-        // Reload clients
-        await loadClients();
-        
-        // Select the new client after reload
-        setTimeout(() => {
-          clientSelect.value = folderId;
-          selectedClient = folderId;
-          loadClientFiles(folderId);
-        }, 500);
-      }
 
       async function createPlaceholderFile(path) {
         const url = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}/${path}${AZURE_STORAGE.sasToken}`;
@@ -2912,61 +3020,71 @@
       
       // Open file preview modal
       function openFilePreview(file) {
-        const modal = document.createElement('div');
-        modal.className = 'file-preview-modal';
-        modal.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.8);
-          z-index: 10000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        `;
+        // Add response-content-disposition=inline to force browser display
+        const previewUrl = file.blobUrl + '&response-content-disposition=' + encodeURIComponent('inline');
         
-        const modalContent = document.createElement('div');
-        modalContent.style.cssText = `
-          background: white;
-          padding: 2rem;
-          border-radius: 8px;
-          max-width: 500px;
-          width: 90%;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        `;
+        // Check if it's a PDF or image that can be previewed
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const canPreview = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(fileExt);
         
-        modalContent.innerHTML = `
-          <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-green);">File Preview</h3>
-          <div style="margin-bottom: 1rem;">
-            <strong>File:</strong> ${file.name}<br>
-            <strong>Size:</strong> ${formatFileSize(file.size)}<br>
-            <strong>Category:</strong> ${file.category || 'General'}
-          </div>
-          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button onclick="window.open('${file.blobUrl}', '_blank'); this.closest('.file-preview-modal').remove();" 
-              style="flex: 1; padding: 0.75rem; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer;">
-              👁️ Preview in Browser
-            </button>
-            <button onclick="downloadFileWithWarning('${file.blobUrl}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
-              style="flex: 1; padding: 0.75rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              📥 Download
-            </button>
-            <button onclick="this.closest('.file-preview-modal').remove();" 
-              style="padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
-              Cancel
-            </button>
-          </div>
-        `;
-        
-        modal.appendChild(modalContent);
-        document.body.appendChild(modal);
-        
-        // Close on background click
-        modal.onclick = (e) => {
-          if (e.target === modal) modal.remove();
-        };
+        if (canPreview) {
+          // Open directly in new tab with inline disposition
+          window.open(previewUrl, '_blank');
+        } else {
+          // For other file types, show modal with download option
+          const modal = document.createElement('div');
+          modal.className = 'file-preview-modal';
+          modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          `;
+          
+          const modalContent = document.createElement('div');
+          modalContent.style.cssText = `
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          `;
+          
+          modalContent.innerHTML = `
+            <h3 style="margin-top: 0; margin-bottom: 1rem; color: var(--primary-green);">File Info</h3>
+            <div style="margin-bottom: 1rem;">
+              <strong>File:</strong> ${file.name}<br>
+              <strong>Size:</strong> ${formatFileSize(file.size)}<br>
+              <strong>Category:</strong> ${file.category || 'General'}<br>
+              <em style="color: #666;">This file type cannot be previewed in browser.</em>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+              <button onclick="downloadFileWithWarning('${file.blobUrl}', '${file.name}'); this.closest('.file-preview-modal').remove();" 
+                style="flex: 1; padding: 0.75rem; background: #0078d4; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                📥 Download
+              </button>
+              <button onclick="this.closest('.file-preview-modal').remove();" 
+                style="padding: 0.75rem 1.5rem; background: #f0f0f0; color: #333; border: 1px solid #ccc; border-radius: 4px; cursor: pointer;">
+                Cancel
+              </button>
+            </div>
+          `;
+          
+          modal.appendChild(modalContent);
+          document.body.appendChild(modal);
+          
+          // Close on background click
+          modal.onclick = (e) => {
+            if (e.target === modal) modal.remove();
+          };
+        }
       }
       
       // Download file with warning
@@ -3262,7 +3380,7 @@
       }
       
       // Load client files with enhanced structure
-      async function loadClientFiles(clientName) {
+      async function loadClientFiles(clientName, silent = false) {
         try {
           const fileList = document.getElementById('fileList');
           
@@ -3321,9 +3439,9 @@
           // Render file browser
           renderFileBrowser();
           
-          // Add file count message
+          // Add file count message (only if not silent)
           const fileCount = clientFiles.length;
-          if (fileCount > 0) {
+          if (fileCount > 0 && !silent) {
             addSystemMessage(`📁 Loaded ${fileCount} file${fileCount !== 1 ? 's' : ''} for ${formatClientName(clientName)}`);
           }
           
@@ -3408,10 +3526,13 @@
             addSystemMessage(`🎉 All ${successCount} files uploaded successfully!`);
           }
           
+          // Refresh file counts and list immediately
+          updateFileCounts();
+          
           if (selectedClient) {
             setTimeout(() => {
-              loadClientFiles(selectedClient);
-            }, 1000);
+              loadClientFiles(selectedClient, true); // Refresh silently
+            }, 500);
           }
         }, 1000);
       }
@@ -4046,7 +4167,7 @@
             // Set current project if selected
             if (selectedClient) {
               projectSelect.value = selectedClient;
-              loadProjectDrawings(selectedClient);
+              // Load project drawings will be implemented below
             }
           } catch (error) {
             console.error('Error loading projects:', error);
@@ -4946,6 +5067,43 @@
         }
         switchTab('takeoff');
         addSystemMessage('✅ Takeoff data transferred to estimate successfully!');
+      }
+      
+      // Load project drawings for takeoff tool
+      async function loadProjectDrawings(projectName) {
+        try {
+          const drawingListUrl = `https://${AZURE_STORAGE.account}.blob.core.windows.net/${AZURE_STORAGE.container}${AZURE_STORAGE.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${projectName}/drawings/`;
+          
+          const response = await fetch(drawingListUrl);
+          const xmlText = await response.text();
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+          const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          const fileSelect = document.getElementById('takeoffFileSelect');
+          if (fileSelect) {
+            fileSelect.innerHTML = '<option value="">Select a drawing</option>';
+            
+            for (let i = 0; i < blobs.length; i++) {
+              const nameElement = blobs[i].getElementsByTagName("Name")[0];
+              if (nameElement) {
+                const fileName = nameElement.textContent.split('/').pop();
+                if (fileName && !fileName.startsWith('.') && fileName !== 'placeholder.json') {
+                  const option = document.createElement('option');
+                  option.value = nameElement.textContent;
+                  option.textContent = fileName;
+                  fileSelect.appendChild(option);
+                }
+              }
+            }
+          }
+          
+          updateAIStatus(`Found ${blobs.length} drawing(s) in project`, '#4caf50');
+          
+        } catch (error) {
+          console.error('Error loading project drawings:', error);
+          updateAIStatus('Error loading project drawings', '#f44336');
+        }
       }
       
       // Load drawing from URL with enhanced display

@@ -3284,9 +3284,9 @@
           `;
         });
         
-        // Handle source references with paperclip icon
-        const sourcePattern = /Source:\s*([^\n]+)/g;
-        processedContent = processedContent.replace(sourcePattern, (match, source) => {
+        // Also handle simple source patterns
+        const simpleSourcePattern = /Source:\s*([^\n]+)/g;
+        processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
           // Extract filename and pages if present
           const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
           if (parts) {
