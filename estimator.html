@@ -2120,6 +2120,30 @@
       // DOM Elements - Initialize later to avoid null references
       let fileList, processButton, chatInput, sendButton, chatMessages, progressBar, progressFill, clientSelect, chatClientSelect;
       
+      // Initialize DOM elements when page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        fileList = document.getElementById('fileList');
+        processButton = document.getElementById('processButton');
+        chatInput = document.getElementById('chatInput');
+        sendButton = document.getElementById('sendButton');
+        chatMessages = document.getElementById('chatMessages');
+        progressBar = document.getElementById('progressBar');
+        progressFill = document.getElementById('progressFill');
+        clientSelect = document.getElementById('clientSelect');
+        chatClientSelect = document.getElementById('chatClientSelect');
+        
+        // Set up event handlers after elements are initialized
+        if (processButton) {
+          processButton.addEventListener("click", handleProcessButtonClick);
+        }
+        
+        // Set up other initialization
+        setupImageUpload();
+        loadClients();
+        updateFileCounts();
+        updateProcessButton();
+      });
+      
       // Image attachment support variables
       let attachedImages = [];
       
@@ -3285,8 +3309,8 @@
         }
       }
 
-      // Process button handler
-      processButton.addEventListener("click", async () => {
+      // Process button handler function
+      async function handleProcessButtonClick() {
         const selectedCategories = ["drawings", "estimates", "proposals", "specs", "signedContracts"].filter(cat => 
           document.getElementById(cat + "Category").checked
         );
@@ -3357,7 +3381,7 @@
             }, 1000);
           }
         }, 1000);
-      });
+      }
 
       function updateProgress(percent) {
         progressFill.style.width = percent + "%";
@@ -3412,7 +3436,15 @@
 
       // Chat functionality with image support
       async function sendMessage() {
-        const message = chatInput.value.trim();
+        // Ensure chatInput is initialized
+        if (!chatInput) {
+          chatInput = document.getElementById('chatInput');
+        }
+        if (!chatMessages) {
+          chatMessages = document.getElementById('chatMessages');
+        }
+        
+        const message = chatInput ? chatInput.value.trim() : '';
         const attachedImages = getAttachedImages();
         
         if (!message && attachedImages.length === 0) return;
@@ -5729,25 +5761,7 @@
       `;
       document.head.appendChild(style);
 
-      // Initialize on load
-      window.addEventListener("load", () => {
-        // Initialize DOM elements
-        fileList = document.getElementById("fileListContent");
-        processButton = document.getElementById("processButton");
-        chatInput = document.getElementById("chatInput");
-        sendButton = document.getElementById("sendButton");
-        chatMessages = document.getElementById("chatMessages");
-        progressBar = document.getElementById("progressBar");
-        progressFill = document.getElementById("progressFill");
-        clientSelect = document.getElementById("clientSelect");
-        chatClientSelect = document.getElementById("chatClientSelect");
-        
-        // Initialize functions
-        initializeFileList();
-        loadClients();
-        setupImageUpload();
-        setupClientSelectionHandlers();
-      });
+      // Note: Initialization is handled in DOMContentLoaded event listener above
     </script>
   </body>
 </html>
