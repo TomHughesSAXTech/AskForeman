@@ -1497,7 +1497,7 @@
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="drawingsFiles" multiple accept=".pdf,.dwg,.dxf" />
+                    <input type="file" id="drawingsFiles" multiple accept=".pdf" />
                     <button class="choose-files-btn" onclick="document.getElementById('drawingsFiles').click()">
                       Choose Files
                     </button>
@@ -1513,7 +1513,7 @@
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="estimatesFiles" multiple accept=".xlsx,.xls,.csv,.pdf" />
+                    <input type="file" id="estimatesFiles" multiple accept=".pdf,.xlsx,.xls,.doc,.docx" />
                     <button class="choose-files-btn" onclick="document.getElementById('estimatesFiles').click()">
                       Choose Files
                     </button>
@@ -1529,7 +1529,7 @@
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="proposalsFiles" multiple accept=".pdf,.doc,.docx" />
+                    <input type="file" id="proposalsFiles" multiple accept=".pdf,.xlsx,.xls,.doc,.docx" />
                     <button class="choose-files-btn" onclick="document.getElementById('proposalsFiles').click()">
                       Choose Files
                     </button>
@@ -1545,7 +1545,7 @@
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="specsFiles" multiple accept=".pdf,.doc,.docx" />
+                    <input type="file" id="specsFiles" multiple accept=".pdf,.xlsx,.xls,.doc,.docx" />
                     <button class="choose-files-btn" onclick="document.getElementById('specsFiles').click()">
                       Choose Files
                     </button>
@@ -1561,7 +1561,7 @@
                 </div>
                 <div class="category-files">
                   <div class="file-input-wrapper">
-                    <input type="file" id="signedContractsFiles" multiple accept=".pdf,.doc,.docx" />
+                    <input type="file" id="signedContractsFiles" multiple accept=".pdf,.xlsx,.xls,.doc,.docx" />
                     <button class="choose-files-btn" onclick="document.getElementById('signedContractsFiles').click()">
                       Choose Files
                     </button>
@@ -4835,7 +4835,7 @@
           const fileReader = new FileReader();
           fileReader.onload = async function(e) {
             try {
-          const typedArray = new Uint8Array(e.target.result);
+              const typedArray = new Uint8Array(e.target.result);
               const pdf = await pdfjsLib.getDocument(typedArray).promise;
               
               // Store PDF reference and page count
@@ -4851,6 +4851,11 @@
                 const nextBtn = document.getElementById('nextPageBtn');
                 if (nextBtn) nextBtn.disabled = false;
               }
+            } catch (error) {
+              console.error('Error loading PDF:', error);
+              updateAIStatus('Error loading PDF: ' + error.message, '#f44336');
+              addSystemMessage(`❌ Failed to load PDF: ${error.message}`);
+            }
           };
           fileReader.readAsArrayBuffer(file);
           
