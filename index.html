@@ -536,7 +536,41 @@
             }
         }
         
-        // Update project count on page load
-        window.addEventListener('load', updateProjectCount);
+        // Function to update document count
+        async function updateDocumentCount() {
+            try {
+                const listUrl = `https://saxtechfcs.blob.core.windows.net/fcs-clients?sp=racwdl&st=2025-08-08T05:00:57Z&se=2030-08-08T13:15:57Z&spr=https&sv=2024-11-04&sr=c&sig=lJKK9jDZ59pJSNkKSgwaQIrCdBaJzx4XPzgEB2%2FrnIg%3D&restype=container&comp=list`;
+                
+                const response = await fetch(listUrl);
+                if (response.ok) {
+                    const xmlText = await response.text();
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                    const blobs = xmlDoc.getElementsByTagName("Blob");
+                    
+                    let documentCount = 0;
+                    for (let i = 0; i < blobs.length; i++) {
+                        const nameElement = blobs[i].getElementsByTagName("Name")[0];
+                        if (nameElement) {
+                            const fileName = nameElement.textContent;
+                            if (fileName && !fileName.endsWith('/') && !fileName.startsWith('.')) {
+                                documentCount++;
+                            }
+                        }
+                    }
+                    
+                    document.getElementById('documentCount').textContent = documentCount.toLocaleString();
+                }
+            } catch (error) {
+                console.error('Error fetching document count:', error);
+                document.getElementById('documentCount').textContent = '0';
+            }
+        }
+        
+        // Update counts on page load
+        window.addEventListener('load', () => {
+            updateProjectCount();
+            updateDocumentCount();
+        });
     </script>
 </html>
