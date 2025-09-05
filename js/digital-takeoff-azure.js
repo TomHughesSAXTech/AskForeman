@@ -6,7 +6,7 @@
 // Azure AI Configuration (uses keys from estimator.html)
 const TAKEOFF_AI_CONFIG = {
   documentIntelligence: {
-    endpoint: "https://saxtechfcs-docintell.cognitiveservices.azure.com/",
+    endpoint: "https://eastus.api.cognitive.microsoft.com/",
     apiKey: "4bb39c8e89144f9c808f2cfaa887e3d6",
     apiVersion: "2023-07-31"
   },
