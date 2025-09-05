@@ -983,31 +983,20 @@
       .toolbox {
         background: linear-gradient(135deg, #8d6e63, #6d4c41);
         border-radius: 10px;
-        padding: 1rem;
+        padding: 0.75rem;
         box-shadow: var(--shadow-lg);
         border: 3px solid #5d4037;
         position: relative;
-        max-width: 250px;
+        max-width: 220px;
         margin: 0 auto;
-      }
-
-      .toolbox::before {
-        content: "🧰";
-        position: absolute;
-        top: -15px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 2rem;
-        background: white;
-        padding: 0 10px;
-        border-radius: 50%;
       }
 
       .toolbox h3 {
         color: white;
         text-align: center;
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 1rem;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
 
@@ -1468,6 +1457,22 @@
                   <span class="file-count" id="specsCount">0 files</span>
                 </div>
               </div>
+
+              <div class="category-item">
+                <div class="category-header">
+                  <input type="checkbox" id="signedContracts" />
+                  <label for="signedContracts">Signed Contracts</label>
+                </div>
+                <div class="category-files">
+                  <div class="file-input-wrapper">
+                    <input type="file" id="signedContractsFiles" multiple accept=".pdf,.doc,.docx" />
+                    <button class="choose-files-btn" onclick="document.getElementById('signedContractsFiles').click()">
+                      Choose Files
+                    </button>
+                  </div>
+                  <span class="file-count" id="signedContractsCount">0 files</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1768,7 +1773,8 @@
         drawings: [],
         estimates: [],
         proposals: [],
-        specs: []
+        specs: [],
+        signedContracts: []
       };
       
       let selectedClient = "";
@@ -2074,7 +2080,7 @@
       }
 
       // File handling
-      const categories = ["drawings", "estimates", "proposals", "specs"];
+      const categories = ["drawings", "estimates", "proposals", "specs", "signedContracts"];
       
       categories.forEach((category) => {
         const fileInput = document.getElementById(category + "Files");
@@ -2115,6 +2121,7 @@
         document.getElementById("estimatesCount").textContent = `${uploadedFiles.estimates.length} files`;
         document.getElementById("proposalsCount").textContent = `${uploadedFiles.proposals.length} files`;
         document.getElementById("specsCount").textContent = `${uploadedFiles.specs.length} files`;
+        document.getElementById("signedContractsCount").textContent = `${uploadedFiles.signedContracts.length} files`;
       }
 
       function updateProcessButton() {
@@ -2802,11 +2809,14 @@
             try {
               const base64String = reader.result.split(',')[1];
               
+              // Convert category name to match folder structure
+              const folderCategory = category === 'signedContracts' ? 'signed-contracts' : category;
+              
               const uploadData = {
                 file: base64String,
                 fileName: file.name,
                 mimeType: file.type || 'application/pdf',
-                category: category,
+                category: folderCategory,
                 client: selectedClient || 'general',
                 clientName: selectedClient || 'General'
               };
@@ -2823,7 +2833,9 @@
                 throw new Error(`HTTP ${response.status}`);
               }
               
-              addSystemMessage(`✅ Uploaded: ${file.name} (${category})`);
+              const displayCategory = category === 'signedContracts' ? 'Signed Contracts' : 
+                                      category.charAt(0).toUpperCase() + category.slice(1);
+              addSystemMessage(`✅ Uploaded: ${file.name} (${displayCategory})`);
               resolve(await response.json());
             } catch (error) {
               addSystemMessage(`❌ Failed to upload ${file.name}: ${error.message}`);
