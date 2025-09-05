@@ -669,7 +669,6 @@
         <div class="card project-list">
           <div class="project-list-header">
             <h2>📁 Projects</h2>
-            <button class="create-project-btn" id="createProjectBtn">+ New</button>
           </div>
           <input type="text" class="project-search" id="projectSearch" placeholder="🔍 Search projects..." />
           <div class="project-items" id="projectItems">
@@ -741,7 +740,7 @@
       // DOM Elements
       const projectItems = document.getElementById('projectItems');
       const projectSearch = document.getElementById('projectSearch');
-      const createProjectBtn = document.getElementById('createProjectBtn');
+      // createProjectBtn removed - now using list item
       const projectHeader = document.getElementById('projectHeader');
       const fileList = document.getElementById('fileList');
       const filesLoadingIndicator = document.getElementById('filesLoadingIndicator');
@@ -817,6 +816,19 @@
           
           projectItems.appendChild(projectItem);
         });
+        
+        // Add Create New Project at the bottom
+        const createProjectItem = document.createElement('div');
+        createProjectItem.className = 'project-item';
+        createProjectItem.style.cssText = 'background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 2px dashed #4caf50;';
+        createProjectItem.onclick = () => openCreateProjectModal();
+        
+        createProjectItem.innerHTML = `
+          <div class="project-name" style="color: #2e7d32; font-weight: bold;">🏗️ Create New Project</div>
+          <div class="project-stats" style="color: #558b2f;">Click to add a new project</div>
+        `;
+        
+        projectItems.appendChild(createProjectItem);
       }
 
       async function selectProject(project) {
@@ -1267,14 +1279,19 @@
           try {
             addSystemMessage(`🗑️ Deleting ${fileName}...`);
             
+            // Extract category from full path
+            const pathParts = fullPath.split('/');
+            const category = pathParts[2] || 'General';
+            
             const response = await fetch(API_CONFIG.deleteWebhookUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                filePath: fullPath,
-                client: selectedProject ? selectedProject.id : null
+                client: selectedProject ? selectedProject.id : null,
+                category: category,
+                fileName: fileName
               })
             });
             
@@ -1297,7 +1314,7 @@
       }
 
       // Create project modal
-      createProjectBtn.addEventListener('click', () => {
+      function openCreateProjectModal() {
         const modalHTML = `
           <div id="projectModal" style="
             position: fixed;
@@ -1329,24 +1346,57 @@
                   border: 2px solid var(--medium-gray);
                   border-radius: 5px;
                   font-size: 1rem;
-                ">
+                " />
               </div>
               
-              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                <button onclick="document.getElementById('projectModal').remove()" style="
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Project Type</label>
+                <select id="projectTypeSelect" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                ">
+                  <option value="Commercial">Commercial</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Industrial">Industrial</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Government">Government</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Mixed-Use">Mixed-Use</option>
+                </select>
+              </div>
+              
+              <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Project Description</label>
+                <textarea id="projectDescInput" placeholder="Brief description of the project..." style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                  min-height: 80px;
+                  resize: vertical;
+                "></textarea>
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeProjectModal()" style="
                   padding: 0.75rem 1.5rem;
-                  background: var(--medium-gray);
+                  border: 2px solid var(--medium-gray);
+                  background: white;
                   color: var(--dark-gray);
-                  border: none;
                   border-radius: 5px;
                   cursor: pointer;
                   font-weight: 600;
                 ">Cancel</button>
                 <button onclick="createProject()" style="
                   padding: 0.75rem 1.5rem;
+                  border: none;
                   background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
                   color: white;
-                  border: none;
                   border-radius: 5px;
                   cursor: pointer;
                   font-weight: 600;
@@ -1357,18 +1407,28 @@
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-      });
+        document.getElementById('projectNameInput').focus();
+      }
+      
+      function closeProjectModal() {
+        const modal = document.getElementById('projectModal');
+        if (modal) {
+          modal.remove();
+        }
+      }
 
       async function createProject() {
-        const projectNameInput = document.getElementById('projectNameInput');
-        const projectName = projectNameInput.value.trim();
+        const projectName = document.getElementById('projectNameInput').value.trim();
+        const projectType = document.getElementById('projectTypeSelect')?.value || 'Commercial';
+        const projectDescription = document.getElementById('projectDescInput')?.value.trim() || '';
         
         if (!projectName) {
-          alert('Please enter a project name');
+          alert('Project name is required');
           return;
         }
         
-        const folderId = projectName.toLowerCase().replace(/\s+/g, '-');
+        // Keep original capitalization for folder name
+        const folderId = projectName;
         const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
         
         for (const category of categories) {
@@ -1376,7 +1436,7 @@
           await createPlaceholderFile(placeholderPath);
         }
         
-        document.getElementById('projectModal').remove();
+        closeProjectModal();
         addSystemMessage(`✅ Created new project: ${projectName}`);
         
         await loadProjects();

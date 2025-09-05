@@ -482,6 +482,7 @@
         overflow-x: auto;
         min-height: 36px;
         white-space: nowrap;
+        max-width: calc(100% - 120px);
       }
       
       .breadcrumb-item {
@@ -578,7 +579,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         min-width: 0;
-        max-width: 250px;
       }
 
       .existing-file-meta {
@@ -1935,54 +1935,96 @@
               <h2 style="margin-bottom: 1.5rem; color: var(--concrete-gray);">🏗️ Create New Project</h2>
               
               <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Project Name *</label>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Name *</label>
                 <input type="text" id="clientNameInput" placeholder="e.g. ABC Construction" style="
                   width: 100%;
                   padding: 0.75rem;
                   border: 2px solid var(--medium-gray);
                   border-radius: 5px;
                   font-size: 1rem;
-                ">
+                " />
               </div>
               
-              <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
-                <button onclick="document.getElementById('clientModal').remove()" style="
+              <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Type</label>
+                <select id="projectTypeSelect" style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                ">
+                  <option value="Commercial">Commercial</option>
+                  <option value="Residential">Residential</option>
+                  <option value="Industrial">Industrial</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Educational">Educational</option>
+                  <option value="Government">Government</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Mixed-Use">Mixed-Use</option>
+                </select>
+              </div>
+              
+              <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--concrete-gray);">Project Description</label>
+                <textarea id="projectDescInput" placeholder="Brief description of the project..." style="
+                  width: 100%;
+                  padding: 0.75rem;
+                  border: 2px solid var(--medium-gray);
+                  border-radius: 5px;
+                  font-size: 1rem;
+                  min-height: 80px;
+                  resize: vertical;
+                "></textarea>
+              </div>
+              
+              <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button onclick="closeClientModal()" style="
                   padding: 0.75rem 1.5rem;
-                  background: var(--medium-gray);
-                  color: var(--dark-gray);
-                  border: none;
+                  border: 2px solid var(--medium-gray);
+                  background: white;
+                  color: var(--concrete-gray);
                   border-radius: 5px;
                   cursor: pointer;
                   font-weight: 600;
                 ">Cancel</button>
                 <button onclick="createClient()" style="
                   padding: 0.75rem 1.5rem;
-                  background: linear-gradient(135deg, var(--light-green), var(--primary-green));
-                  color: white;
                   border: none;
+                  background: linear-gradient(135deg, var(--safety-yellow), #f57f17);
+                  color: var(--dark-gray);
                   border-radius: 5px;
                   cursor: pointer;
                   font-weight: 600;
-                ">Create Client</button>
+                ">Create Project</button>
               </div>
             </div>
           </div>
         `;
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.getElementById('clientNameInput').focus();
+      }
+      
+      function closeClientModal() {
+        const modal = document.getElementById('clientModal');
+        if (modal) {
+          modal.remove();
+        }
       }
 
       async function createClient() {
-        const clientNameInput = document.getElementById('clientNameInput');
-        const clientName = clientNameInput.value.trim();
+        const clientName = document.getElementById('clientNameInput').value.trim();
+        const projectType = document.getElementById('projectTypeSelect')?.value || 'Commercial';
+        const projectDescription = document.getElementById('projectDescInput')?.value.trim() || '';
         
         if (!clientName) {
-          alert('Please enter a client name');
+          alert('Project name is required');
           return;
         }
         
-        // Format the client name for folder
-        const folderId = clientName.toLowerCase().replace(/\s+/g, '-');
+        // Format the client name for folder - keep original capitalization
+        const folderId = clientName;
         
         // Create placeholder files in Azure
         const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signed-contracts'];
@@ -1992,7 +2034,7 @@
           await createPlaceholderFile(placeholderPath);
         }
         
-        document.getElementById('clientModal').remove();
+        closeClientModal();
         addSystemMessage(`✅ Created new project: ${clientName}`);
         
         // Reload clients
@@ -2359,15 +2401,20 @@
           try {
             addSystemMessage(`🗑️ Deleting ${fileName}...`);
             
-            // Call the delete webhook
+            // Extract category from full path (e.g., FCS-OriginalClients/client-name/category/file.pdf)
+            const pathParts = fullPath.split('/');
+            const category = pathParts[2] || 'General';
+            
+            // Call the delete webhook with required fields
             const response = await fetch(API_CONFIG.deleteWebhookUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                filePath: fullPath,
-                client: selectedClient
+                client: selectedClient,
+                category: category,
+                fileName: fileName
               })
             });
             
@@ -2494,11 +2541,6 @@
               <span class="breadcrumb-item" onclick="navigateToPath(${index + 1})">${folder}</span>
             `).join('')}
           </div>
-          <button class="nav-button" onclick="refreshFiles()" title="Refresh">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
-              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-            </svg>
-          </button>
         `;
         
         fileList.appendChild(navBar);
