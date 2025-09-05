@@ -175,7 +175,7 @@
       .container {
         flex: 1;
         display: grid;
-        grid-template-columns: 350px 1fr 200px;
+        grid-template-columns: 350px 1fr 250px;
         gap: 1.5rem;
         padding: 1.5rem;
         max-width: 1600px;
@@ -217,7 +217,7 @@
         padding: 1rem;
         background: linear-gradient(135deg, var(--light-gray) 0%, var(--white) 100%);
         border-radius: 8px;
-        border: 2px solid var(--light-green);
+        border: 2px solid var(--light-blue);
       }
 
       .client-selector label {
@@ -257,7 +257,7 @@
 
       .create-client-btn {
         padding: 0.75rem 1rem;
-        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
         color: white;
         border: none;
         border-radius: 5px;
@@ -270,7 +270,7 @@
 
       .create-client-btn:hover {
         transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
       }
 
       /* Document Categories */
@@ -308,9 +308,9 @@
       }
 
       .category-item:hover {
-        border-color: var(--light-green);
+        border-color: var(--light-blue);
         transform: translateX(5px);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.2);
       }
 
       .category-header {
@@ -324,7 +324,7 @@
         width: 20px;
         height: 20px;
         cursor: pointer;
-        accent-color: var(--light-green);
+        accent-color: var(--light-blue);
       }
 
       .category-header label {
@@ -353,7 +353,7 @@
       }
 
       .choose-files-btn {
-        background: linear-gradient(135deg, var(--light-green) 0%, var(--primary-green) 100%);
+        background: linear-gradient(135deg, var(--light-blue) 0%, var(--primary-blue) 100%);
         color: white;
         border: none;
         padding: 0.5rem 1rem;
@@ -366,7 +366,7 @@
 
       .choose-files-btn:hover {
         transform: scale(1.05);
-        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
       }
 
       .file-count {
@@ -392,7 +392,7 @@
         align-items: center;
         margin-bottom: 1rem;
         padding: 0.75rem;
-        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
         color: white;
         border-radius: 8px;
         position: sticky;
@@ -737,7 +737,7 @@
 
       .process-button {
         width: 100%;
-        background: linear-gradient(135deg, var(--hi-vis-green) 0%, var(--light-green) 100%);
+        background: linear-gradient(135deg, var(--hi-vis-green) 0%, var(--light-blue) 100%);
         color: var(--dark-gray);
         border: none;
         padding: 1rem;
@@ -766,7 +766,7 @@
       .chat-container {
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 150px);
+        height: calc(100vh - 250px);
         position: relative;
       }
 
@@ -777,18 +777,18 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: var(--light-green);
+        background: var(--light-blue);
       }
 
       .chat-header {
-        background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
         color: white;
         padding: 1.5rem;
         border-radius: 10px 10px 0 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 4px solid var(--light-green);
+        border-bottom: 4px solid var(--light-blue);
       }
 
       .chat-header h2 {
@@ -799,7 +799,7 @@
       }
 
       .chat-header h2::before {
-        content: "📊";
+        content: "📋";
         font-size: 1.8rem;
       }
 
@@ -892,7 +892,7 @@
       .message.user .message-avatar {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -910,7 +910,7 @@
       }
 
       .message.user .message-content {
-        background: linear-gradient(135deg, #81c784 0%, #4caf50 100%);
+        background: linear-gradient(135deg, #64b5f6 0%, #2196f3 100%);
         color: white;
         border-bottom-right-radius: 3px;
       }
@@ -956,13 +956,13 @@
 
       .chat-input:focus {
         outline: none;
-        border-color: var(--light-green);
-        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        border-color: var(--light-blue);
+        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
       }
 
       .send-btn {
         padding: 0.75rem 1.5rem;
-        background: linear-gradient(135deg, var(--light-green), var(--primary-green));
+        background: linear-gradient(135deg, var(--light-blue), var(--primary-blue));
         color: white;
         border: none;
         border-radius: 25px;
@@ -976,20 +976,20 @@
 
       .send-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+        box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
       }
 
       /* Toolbox Styles */
       .toolbox {
         background: linear-gradient(135deg, #8d6e63, #6d4c41);
         border-radius: 10px;
-        padding: 0.75rem;
-        padding-top: 1.75rem;
+        padding: 1rem;
+        padding-top: 2rem;
         box-shadow: var(--shadow-lg);
         border: 3px solid #5d4037;
         position: relative;
         width: 100%;
-        max-width: 180px;
+        max-width: 250px;
         margin: 0 auto;
         height: auto;
       }
@@ -1081,11 +1081,11 @@
         display: flex;
         flex-direction: column;
         position: relative;
-        border: 2px solid var(--light-green);
+        border: 2px solid var(--light-blue);
       }
 
       .takeoff-header {
-        background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+        background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
         color: white;
         padding: 1rem;
         border-radius: 8px 8px 0 0;
@@ -1507,7 +1507,7 @@
           </div>
 
           <button class="process-button" id="processButton" disabled>
-            Process & Analyze
+            Process & Sync
           </button>
         </div>
       </div>
@@ -1581,13 +1581,13 @@
         </div>
         <div class="takeoff-tools">
           <button class="takeoff-tool-btn view-only">👁️ View Mode</button>
-          <button class="takeoff-tool-btn" data-tool="select">👆 Select</button>
-          <button class="takeoff-tool-btn" data-tool="line">📏 Measure Line</button>
-          <button class="takeoff-tool-btn" data-tool="area">⬜ Measure Area</button>
-          <button class="takeoff-tool-btn" data-tool="polygon">⬟ Polygon</button>
-          <button class="takeoff-tool-btn" data-tool="count">🔢 Count</button>
-          <button class="takeoff-tool-btn" data-tool="annotation">💬 Annotate</button>
-          <button class="takeoff-tool-btn" data-tool="scale">📐 Set Scale</button>
+          <button class="takeoff-tool-btn" disabled>✋ Pan</button>
+          <button class="takeoff-tool-btn" disabled>👆 Select</button>
+          <button class="takeoff-tool-btn" disabled>📏 Measure</button>
+          <button class="takeoff-tool-btn" disabled>⬜ Area</button>
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: rgba(255, 193, 7, 0.2); color: var(--safety-yellow); border: 1px solid var(--safety-yellow); border-radius: 4px; font-weight: 600;">
+            ⚠️ READ-ONLY MODE - For editing, use Estimator page
+          </div>
         </div>
         <div class="takeoff-workspace">
           <div class="takeoff-canvas-wrapper" id="pdfCanvasWrapper">
