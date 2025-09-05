@@ -1854,7 +1854,7 @@
           uploadBtn.title = 'Attach file or image (or paste with Ctrl+V)';
           uploadBtn.style.cssText = `
             position: absolute;
-            right: 15px;
+            right: 140px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -1890,12 +1890,20 @@
       
       // Handle file upload (images and documents)
       async function handleImageFile(file) {
+        // Check file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+          addSystemMessage(`⚠️ File "${file.name}" is too large. Maximum size is 10MB.`);
+          return;
+        }
+        
         // Accept images and common document types
-        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
+        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel', 
+                               'application/vnd.openxmlformats-officedocument'];
         const isAccepted = acceptedTypes.some(type => file.type.startsWith(type));
         
-        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif)$/i)) {
-          addSystemMessage('⚠️ Please select an image or document file');
+        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif|bmp|tiff|webp)$/i)) {
+          addSystemMessage('⚠️ Please select an image or document file (PDF, Word, Excel, or image formats)');
           return;
         }
         
@@ -1905,17 +1913,25 @@
           const imageObj = { 
             url: imageUrl, 
             file: file,
-            name: file.name || `Screenshot_${Date.now()}.png`,
-            type: file.type
+            name: file.name || `attachment_${Date.now()}.${file.type.split('/').pop()}`,
+            type: file.type || 'application/octet-stream',
+            size: file.size
           };
           attachedImages.push(imageObj);
           displayAttachedImage(imageObj);
           
           // Add system message based on file type
+          const fileSize = (file.size / 1024).toFixed(1);
           if (file.type.startsWith('image/')) {
-            addSystemMessage(`🖼️ Image attached: ${imageObj.name}`);
+            addSystemMessage(`🖼️ Image attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('pdf')) {
+            addSystemMessage(`📄 PDF attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('word') || file.name.match(/\.docx?$/i)) {
+            addSystemMessage(`📝 Word document attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('excel') || file.name.match(/\.xlsx?$/i)) {
+            addSystemMessage(`📊 Excel document attached: ${imageObj.name} (${fileSize} KB)`);
           } else {
-            addSystemMessage(`📄 Document attached: ${imageObj.name}`);
+            addSystemMessage(`📎 Document attached: ${imageObj.name} (${fileSize} KB)`);
           }
         };
         reader.readAsDataURL(file);
@@ -3062,7 +3078,7 @@
         
         // Add user message with attachments
         const attachments = attachedImages.length > 0 ? { images: attachedImages } : null;
-        addMessage(message || "[Image attached]", "user", attachments);
+        addMessage(message || "What does this document say?", "user", attachments);
         
         // Clear input and attachments
         chatInput.value = "";
@@ -3087,17 +3103,33 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
+          // Process attachments - extract base64 data without the data URL prefix
+          const processedAttachments = attachedImages ? attachedImages.map(img => {
+            // Extract base64 data from data URL
+            const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
+            
+            return {
+              type: img.type || 'image/png',
+              data: base64Data,  // Send only the base64 string without the data URL prefix
+              name: img.name || `attachment_${Date.now()}.png`,
+              mimeType: img.type || 'image/png',
+              isDocument: img.type && img.type.includes('pdf') // Flag PDF documents
+            };
+          }) : [];
+          
           const response = await fetch(API_CONFIG.chatWebhookUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              message: message,
+              message: message || '[Document Analysis Request]',
               client: chatContext,
               conversationId: `conv_${chatContext}_${Date.now()}`,
               sessionId: chatContext,
-              attachments: attachedImages.map(img => ({ type: 'image', data: img.url }))
+              attachments: processedAttachments,
+              hasAttachments: processedAttachments.length > 0,
+              attachmentCount: processedAttachments.length
             })
           });
           

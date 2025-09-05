@@ -1111,9 +1111,9 @@
       .takeoff-content {
         background: #1a1a1a;
         border-radius: 10px;
-        width: 95%;
-        height: 95%;
-        max-width: 1600px;
+        width: 98%;
+        height: 98%;
+        max-width: 1920px;
         display: flex;
         flex-direction: column;
         position: relative;
@@ -2210,12 +2210,20 @@
       
       // Handle file upload (images and documents)
       async function handleImageFile(file) {
+        // Check file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+          addSystemMessage(`⚠️ File "${file.name}" is too large. Maximum size is 10MB.`);
+          return;
+        }
+        
         // Accept images and common document types
-        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'];
+        const acceptedTypes = ['image/', 'application/pdf', 'application/msword', 'application/vnd.ms-excel', 
+                               'application/vnd.openxmlformats-officedocument'];
         const isAccepted = acceptedTypes.some(type => file.type.startsWith(type));
         
-        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif)$/i)) {
-          addSystemMessage('⚠️ Please select an image or document file');
+        if (!isAccepted && !file.name.match(/\.(pdf|doc|docx|xls|xlsx|png|jpg|jpeg|gif|bmp|tiff|webp)$/i)) {
+          addSystemMessage('⚠️ Please select an image or document file (PDF, Word, Excel, or image formats)');
           return;
         }
         
@@ -2225,17 +2233,25 @@
           const imageObj = { 
             url: imageUrl, 
             file: file,
-            name: file.name || `Screenshot_${Date.now()}.png`,
-            type: file.type
+            name: file.name || `attachment_${Date.now()}.${file.type.split('/').pop()}`,
+            type: file.type || 'application/octet-stream',
+            size: file.size
           };
           attachedImages.push(imageObj);
           displayAttachedImage(imageObj);
           
           // Add system message based on file type
+          const fileSize = (file.size / 1024).toFixed(1);
           if (file.type.startsWith('image/')) {
-            addSystemMessage(`🖼️ Image attached: ${imageObj.name}`);
+            addSystemMessage(`🖼️ Image attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('pdf')) {
+            addSystemMessage(`📄 PDF attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('word') || file.name.match(/\.docx?$/i)) {
+            addSystemMessage(`📝 Word document attached: ${imageObj.name} (${fileSize} KB)`);
+          } else if (file.type.includes('excel') || file.name.match(/\.xlsx?$/i)) {
+            addSystemMessage(`📊 Excel document attached: ${imageObj.name} (${fileSize} KB)`);
           } else {
-            addSystemMessage(`📄 Document attached: ${imageObj.name}`);
+            addSystemMessage(`📎 Document attached: ${imageObj.name} (${fileSize} KB)`);
           }
         };
         reader.readAsDataURL(file);
@@ -3403,7 +3419,7 @@
         
         // Add user message with attachments
         const attachments = attachedImages.length > 0 ? { images: attachedImages } : null;
-        addMessage(message || "what does this say", "user", attachments);
+        addMessage(message || "What does this document say?", "user", attachments);
         
         // Clear input and attachments
         chatInput.value = "";
@@ -3428,21 +3444,33 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
         
         try {
+          // Process attachments - extract base64 data without the data URL prefix
+          const processedAttachments = attachments ? attachments.images.map(img => {
+            // Extract base64 data from data URL
+            const base64Data = img.url.includes(',') ? img.url.split(',')[1] : img.url;
+            
+            return {
+              type: img.type || 'image/png',
+              data: base64Data,  // Send only the base64 string without the data URL prefix
+              name: img.name || `attachment_${Date.now()}.png`,
+              mimeType: img.type || 'image/png',
+              isDocument: img.type && img.type.includes('pdf') // Flag PDF documents
+            };
+          }) : [];
+          
           const response = await fetch(API_CONFIG.chatWebhookUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              message: message || '[Image Analysis Request]',
+              message: message || '[Document Analysis Request]',
               client: chatContext,
               conversationId: `conv_${chatContext}_${Date.now()}`,
               sessionId: chatContext,
-              attachments: attachments ? attachments.images.map(img => ({ 
-                type: 'image', 
-                data: img.url,
-                name: img.name 
-              })) : []
+              attachments: processedAttachments,
+              hasAttachments: processedAttachments.length > 0,
+              attachmentCount: processedAttachments.length
             })
           });
           
@@ -3902,7 +3930,7 @@
         let panStart = { x: 0, y: 0 };
         let currentPan = { x: 0, y: 0 };
         
-        // Mouse wheel zoom
+        // Mouse wheel zoom with passive event listener
         wrapper.addEventListener('wheel', (e) => {
           e.preventDefault();
           const delta = e.deltaY < 0 ? 1.1 : 0.9;
@@ -3910,7 +3938,7 @@
           
           canvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
           annotationCanvas.style.transform = `scale(${currentZoom}) translate(${currentPan.x}px, ${currentPan.y}px)`;
-        });
+        }, { passive: false });
         
         // Pan functionality
         wrapper.addEventListener('mousedown', (e) => {
@@ -3951,12 +3979,23 @@
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
           
-          if (currentTool === 'line' || currentTool === 'area' || currentTool === 'polygon') {
+          if (currentTool === 'line' || currentTool === 'area') {
             if (!isDrawing) {
               isDrawing = true;
               startPoint = { x, y };
               currentPoints = [startPoint];
             }
+          } else if (currentTool === 'polygon') {
+            // Add point to polygon
+            currentPoints.push({ x, y });
+            if (currentPoints.length === 1) {
+              isDrawing = true;
+              startPoint = { x, y };
+            }
+            // Redraw polygon with new point
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            redrawAllAnnotations(ctx);
+            drawPolygon(ctx, currentPoints, false);
           } else if (currentTool === 'count') {
             // Add a count marker
             addCountMarker(x, y, ctx);
@@ -3966,6 +4005,17 @@
             if (text) {
               addTextAnnotation(x, y, text, ctx);
             }
+          } else if (currentTool === 'scale') {
+            // Set scale
+            const scaleInput = prompt('Enter the scale (e.g., 100 for 1:100, or 50 for 1:50):');
+            if (scaleInput && !isNaN(scaleInput)) {
+              drawingScale = parseFloat(scaleInput);
+              document.getElementById('drawingScale').textContent = `1:${drawingScale}`;
+              addSystemMessage(`✅ Scale set to 1:${drawingScale}`);
+            }
+          } else if (currentTool === 'select') {
+            // Selection tool - placeholder for future implementation
+            addSystemMessage('ℹ️ Select tool: Click on measurements to select them');
           }
         });
         
@@ -4070,8 +4120,11 @@
             allAnnotations.push({ type: 'polygon', points: [...currentPoints], measurement: area });
             updateMeasurementsList();
             
+            // Clear and redraw
             currentPoints = [];
             isDrawing = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            redrawAllAnnotations(ctx);
           }
         });
       }
@@ -4092,8 +4145,38 @@
         return realWidth * realHeight;
       }
       
+      // Draw polygon
+      function drawPolygon(ctx, points, closed = false) {
+        if (points.length < 2) return;
+        
+        ctx.strokeStyle = '#76ff03';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(118, 255, 3, 0.2)';
+        
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        if (closed) {
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.stroke();
+        
+        // Draw points
+        ctx.fillStyle = '#76ff03';
+        points.forEach(point => {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+      }
+      
       // Calculate polygon area using shoelace formula
       function calculatePolygonArea(points) {
+        if (points.length < 3) return 0;
+        
         let area = 0;
         for (let i = 0; i < points.length; i++) {
           const j = (i + 1) % points.length;
@@ -4101,7 +4184,10 @@
           area -= points[j].x * points[i].y;
         }
         area = Math.abs(area) / 2;
-        return calculateRealArea(area, 1);
+        
+        // Convert pixel area to real-world area
+        const realArea = (area * drawingScale * drawingScale) / 10000;
+        return realArea;
       }
       
       // Add count marker
@@ -4158,6 +4244,8 @@
             ctx.strokeRect(ann.start.x, ann.start.y, width, height);
             ctx.fillStyle = 'rgba(118, 255, 3, 0.2)';
             ctx.fillRect(ann.start.x, ann.start.y, width, height);
+          } else if (ann.type === 'polygon') {
+            drawPolygon(ctx, ann.points, true);
           } else if (ann.type === 'count') {
             ctx.fillStyle = '#ff6b35';
             ctx.beginPath();
@@ -4201,11 +4289,27 @@
         }
       }
       
-      // Add page navigation buttons
+      // Add page navigation and zoom buttons
       function addPageNavigationButtons() {
         const infoDiv = document.querySelector('.takeoff-info');
         if (!infoDiv) return;
         
+        // Add zoom controls
+        const zoomDiv = document.createElement('div');
+        zoomDiv.style.cssText = 'display: flex; gap: 10px; margin-top: 10px;';
+        zoomDiv.innerHTML = `
+          <button onclick="zoomIn()" style="flex: 1; padding: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            🔍+
+          </button>
+          <button onclick="zoomOut()" style="flex: 1; padding: 5px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            🔍-
+          </button>
+          <button onclick="resetZoom()" style="flex: 1; padding: 5px; background: #666; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Reset
+          </button>
+        `;
+        
+        // Add page navigation
         const navDiv = document.createElement('div');
         navDiv.style.cssText = 'display: flex; gap: 10px; margin-top: 10px;';
         navDiv.innerHTML = `
@@ -4219,7 +4323,40 @@
         
         const pageInfoElement = document.getElementById('pageInfo');
         if (pageInfoElement && pageInfoElement.parentNode) {
+          pageInfoElement.parentNode.parentNode.appendChild(zoomDiv);
           pageInfoElement.parentNode.parentNode.appendChild(navDiv);
+        }
+      }
+      
+      // Global zoom variable
+      let globalZoom = 1;
+      
+      // Zoom functions
+      function zoomIn() {
+        globalZoom = Math.min(globalZoom * 1.2, 3);
+        applyZoom();
+      }
+      
+      function zoomOut() {
+        globalZoom = Math.max(globalZoom * 0.8, 0.5);
+        applyZoom();
+      }
+      
+      function resetZoom() {
+        globalZoom = 1;
+        applyZoom();
+      }
+      
+      function applyZoom() {
+        const canvas = document.getElementById('pdfCanvas');
+        const annotationCanvas = document.getElementById('annotationCanvas');
+        if (canvas) {
+          canvas.style.transform = `scale(${globalZoom})`;
+          canvas.style.transformOrigin = '0 0';
+        }
+        if (annotationCanvas) {
+          annotationCanvas.style.transform = `scale(${globalZoom})`;
+          annotationCanvas.style.transformOrigin = '0 0';
         }
       }
       
@@ -4264,8 +4401,10 @@
         document.getElementById('pageInfo').textContent = `${pageNum} of ${totalPages}`;
         
         // Update navigation buttons
-        document.getElementById('prevPageBtn').disabled = pageNum === 1;
-        document.getElementById('nextPageBtn').disabled = pageNum === totalPages;
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        if (prevBtn) prevBtn.disabled = pageNum === 1;
+        if (nextBtn) nextBtn.disabled = pageNum === totalPages;
         
         // Clear annotations for new page
         allAnnotations = [];
@@ -4709,24 +4848,9 @@
               
               // Enable page navigation if multiple pages
               if (totalPages > 1) {
-                document.getElementById('nextPageBtn').disabled = false;
+                const nextBtn = document.getElementById('nextPageBtn');
+                if (nextBtn) nextBtn.disabled = false;
               }
-              
-              await page.render({
-                canvasContext: context,
-                viewport: viewport
-              }).promise;
-              
-              // Initialize pan/zoom after rendering
-              initializePanZoom(canvas);
-              
-              // Update page info
-              document.getElementById('drawingPage').textContent = `1 of ${pdf.numPages}`;
-              
-            } catch (error) {
-              console.error('Error rendering PDF:', error);
-              updateAIStatus('Error displaying PDF', '#f44336');
-            }
           };
           fileReader.readAsArrayBuffer(file);
           
