@@ -25,13 +25,35 @@
         try {
             console.log('Starting unified document upload:', file.name);
             
+            // Check file size for chunking (5MB threshold for PDFs)
+            const needsChunking = file.type === 'application/pdf' && file.size > 5 * 1024 * 1024;
+            
+            if (needsChunking) {
+                console.log('Large PDF detected, using chunking process');
+                return await processLargePDF(file, metadata);
+            }
+            
+            // Validate file type
+            if (!isValidFileType(file)) {
+                throw new Error(`Unsupported file type: ${file.type || file.name}`);
+            }
+            
             // Step 1: Read file as base64
             const base64Data = await readFileAsBase64(file);
             
-            // Step 2: Determine if this is a blueprint/drawing
+            // Step 2: Check for duplicates via hash
+            const fileHash = await calculateFileHash(base64Data);
+            const isDuplicate = await checkDuplicate(fileHash, metadata);
+            
+            if (isDuplicate) {
+                console.log('Duplicate file detected, linking to existing document');
+                return await handleDuplicate(isDuplicate, metadata);
+            }
+            
+            // Step 3: Determine if this is a blueprint/drawing
             const isBlueprint = checkIfBlueprint(file.name, metadata.category);
             
-            // Step 3: Prepare upload data
+            // Step 4: Prepare upload data with all necessary fields
             const uploadData = {
                 file: base64Data,
                 fileName: file.name,
@@ -45,6 +67,11 @@
                 extractRoomNumbers: isBlueprint,
                 extractMaterials: isBlueprint,
                 extractSpecifications: isBlueprint,
+                fileHash: fileHash,
+                fileExtension: getFileExtension(file.name),
+                enableOCR: shouldEnableOCR(file),
+                generateEmbeddings: true,
+                updateVectorIndex: true,
                 // Add metadata for indexing
                 metadata: {
                     uploadDate: new Date().toISOString(),
@@ -56,10 +83,8 @@
                 }
             };
             
-            // Step 4: Send to Azure Function for processing
-            const functionUrl = isBlueprint ? 
-                `${CONFIG.functionAppUrl}/BlueprintTakeoffUnified` : 
-                `${CONFIG.functionAppUrl}/ConvertDocumentJson`;
+            // Step 5: Send to Azure Function for processing
+            const functionUrl = determineAzureFunction(file, isBlueprint);
             
             console.log(`Sending to Azure Function: ${functionUrl}`);
             
@@ -81,18 +106,25 @@
             const result = await functionResponse.json();
             console.log('Azure Function processing result:', result);
             
-            // Step 5: Upload to Blob Storage
-            const blobUrl = await uploadToBlobStorage(file, metadata);
+            // Step 6: Upload to Blob Storage (with deduplication)
+            const blobUrl = await uploadToBlobStorage(file, metadata, fileHash);
             result.blobUrl = blobUrl;
+            result.fileHash = fileHash;
             
-            // Step 6: Index the document
+            // Step 7: Index the document in Azure Cognitive Search
             await indexDocument(result, metadata);
             
-            // Step 7: Generate embeddings
-            await generateEmbeddings(result, metadata);
+            // Step 8: Generate and store embeddings for vector search
+            const embeddings = await generateEmbeddings(result, metadata);
+            result.embeddings = embeddings;
             
-            // Step 8: Update knowledge graph if needed
-            if (metadata.updateKnowledgeGraph) {
+            // Step 9: Update vector index with embeddings
+            if (embeddings && embeddings.success) {
+                await updateVectorIndex(result, embeddings.vectors);
+            }
+            
+            // Step 10: Update knowledge graph if needed
+            if (metadata.updateKnowledgeGraph !== false) {
                 await updateKnowledgeGraph(result, metadata);
             }
             
@@ -131,18 +163,188 @@
         );
     }
     
-    // Upload to Azure Blob Storage
-    async function uploadToBlobStorage(file, metadata) {
+    // Validate file type
+    function isValidFileType(file) {
+        const validTypes = [
+            'application/pdf',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv',
+            'text/plain',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'image/png',
+            'image/jpeg',
+            'image/jpg',
+            'image/gif',
+            'image/bmp',
+            'image/tiff'
+        ];
+        
+        const validExtensions = [
+            '.pdf', '.xls', '.xlsx', '.csv', '.txt', '.doc', '.docx',
+            '.ppt', '.pptx', '.png', '.jpg', '.jpeg', '.gif', '.bmp',
+            '.tiff', '.dwg', '.dxf'
+        ];
+        
+        const extension = '.' + file.name.split('.').pop().toLowerCase();
+        return validTypes.includes(file.type) || validExtensions.includes(extension);
+    }
+    
+    // Get file extension
+    function getFileExtension(fileName) {
+        return fileName.split('.').pop().toLowerCase();
+    }
+    
+    // Determine if OCR should be enabled
+    function shouldEnableOCR(file) {
+        const ocrTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/tiff'];
+        return ocrTypes.includes(file.type) || file.type === 'application/pdf';
+    }
+    
+    // Determine which Azure Function to use
+    function determineAzureFunction(file, isBlueprint) {
+        if (isBlueprint) {
+            return `${CONFIG.functionAppUrl}/BlueprintTakeoffUnified`;
+        }
+        
+        // Large PDFs use special processor
+        if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {
+            return `${CONFIG.functionAppUrl}/ProcessLargePDF`;
+        }
+        
+        // Everything else uses ConvertDocumentJson
+        return `${CONFIG.functionAppUrl}/ConvertDocumentJson`;
+    }
+    
+    // Calculate file hash for deduplication
+    async function calculateFileHash(base64Data) {
+        try {
+            const msgBuffer = new TextEncoder().encode(base64Data);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        } catch (error) {
+            console.warn('Could not calculate file hash:', error);
+            return null;
+        }
+    }
+    
+    // Check for duplicate files
+    async function checkDuplicate(fileHash, metadata) {
+        if (!fileHash) return false;
+        
+        try {
+            // Query Azure Cognitive Search for existing hash
+            const searchUrl = `${CONFIG.webhooks.search || '/api/search'}`;
+            const response = await fetch(searchUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    search: fileHash,
+                    searchFields: 'fileHash',
+                    select: 'id,fileName,blobUrl,client'
+                })
+            });
+            
+            if (response.ok) {
+                const results = await response.json();
+                return results.value && results.value.length > 0 ? results.value[0] : false;
+            }
+        } catch (error) {
+            console.warn('Duplicate check failed:', error);
+        }
+        return false;
+    }
+    
+    // Handle duplicate file
+    async function handleDuplicate(existingDoc, metadata) {
+        console.log('Handling duplicate, creating reference to existing document');
+        
+        // Create a reference/link instead of re-uploading
+        const reference = {
+            ...existingDoc,
+            linkedClient: metadata.client,
+            linkedCategory: metadata.category,
+            linkedDate: new Date().toISOString(),
+            isDuplicate: true
+        };
+        
+        // Update index with the new reference
+        await indexDocument(reference, metadata);
+        
+        return reference;
+    }
+    
+    // Process large PDF with chunking
+    async function processLargePDF(file, metadata) {
+        console.log('Processing large PDF with chunking:', file.name);
+        
+        const base64Data = await readFileAsBase64(file);
+        const fileHash = await calculateFileHash(base64Data);
+        
+        const chunkData = {
+            file: base64Data,
+            fileName: file.name,
+            mimeType: 'application/pdf',
+            client: metadata.client || 'general',
+            category: metadata.category || 'documents',
+            fileHash: fileHash,
+            chunkSize: 2, // Pages per chunk
+            generateEmbeddings: true,
+            metadata: {
+                ...metadata,
+                originalSize: file.size,
+                processingType: 'large-pdf-chunked'
+            }
+        };
+        
+        // Send to ProcessLargePDF function
+        const response = await fetch(`${CONFIG.functionAppUrl}/ProcessLargePDF`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-functions-key': CONFIG.functionKey
+            },
+            body: JSON.stringify(chunkData)
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Large PDF processing failed: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Process each chunk for embeddings
+        if (result.chunks && result.chunks.length > 0) {
+            for (const chunk of result.chunks) {
+                await generateEmbeddings(chunk, metadata);
+            }
+        }
+        
+        return result;
+    }
+    
+    // Upload to Azure Blob Storage with deduplication
+    async function uploadToBlobStorage(file, metadata, fileHash) {
         const { account, container, sasToken } = CONFIG.blobStorage;
-        const blobName = `${metadata.client || 'general'}/${metadata.category || 'documents'}/${Date.now()}_${file.name}`;
+        // Include hash in blob name for deduplication
+        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const blobName = `${metadata.client || 'general'}/${metadata.category || 'documents'}/${Date.now()}_${fileHash ? fileHash.substring(0, 8) + '_' : ''}${sanitizedFileName}`;
         const url = `https://${account}.blob.core.windows.net/${container}/${blobName}${sasToken}`;
         
         try {
             const response = await fetch(url, {
                 method: 'PUT',
                 headers: {
-                    'x-ms-blob-type': 'BlockBlob',
-                    'Content-Type': file.type || 'application/octet-stream'
+                'x-ms-blob-type': 'BlockBlob',
+                'Content-Type': file.type || 'application/octet-stream',
+                'x-ms-meta-filehash': fileHash || '',
+                'x-ms-meta-client': metadata.client || 'general',
+                'x-ms-meta-category': metadata.category || 'documents'
                 },
                 body: file
             });
@@ -216,32 +418,130 @@
         }
     }
     
-    // Generate embeddings for vector search
+    // Generate embeddings for vector search with enhanced error handling
     async function generateEmbeddings(documentData, metadata) {
         try {
-            const embeddingData = {
-                documentId: documentData.id || `doc_${Date.now()}`,
-                content: documentData.extractedText || '',
-                fileName: documentData.fileName,
-                metadata: metadata
+            const textContent = documentData.extractedText || documentData.content || '';
+            
+            if (!textContent || textContent.length < 10) {
+                console.warn('Insufficient text content for embeddings');
+                return { success: false, reason: 'Insufficient content' };
+            }
+            
+            // Chunk text if too long (max 8000 tokens ~ 32000 characters)
+            const maxChunkSize = 30000;
+            const chunks = [];
+            
+            if (textContent.length > maxChunkSize) {
+                for (let i = 0; i < textContent.length; i += maxChunkSize) {
+                    chunks.push(textContent.substring(i, i + maxChunkSize));
+                }
+            } else {
+                chunks.push(textContent);
+            }
+            
+            const embeddingResults = [];
+            
+            for (let i = 0; i < chunks.length; i++) {
+                const embeddingData = {
+                    documentId: `${documentData.id || `doc_${Date.now()}`}_chunk_${i}`,
+                    content: chunks[i],
+                    fileName: documentData.fileName,
+                    chunkIndex: i,
+                    totalChunks: chunks.length,
+                    metadata: {
+                        ...metadata,
+                        fileHash: documentData.fileHash,
+                        processingDate: new Date().toISOString()
+                    }
+                };
+                
+                const response = await fetch(CONFIG.webhooks.embeddings || '/api/embeddings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(embeddingData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    embeddingResults.push(result);
+                    console.log(`Embeddings generated for chunk ${i + 1}/${chunks.length}`);
+                } else {
+                    const errorText = await response.text();
+                    console.warn(`Embedding generation failed for chunk ${i + 1}:`, errorText);
+                    
+                    // Try Azure OpenAI directly as fallback
+                    const fallbackResult = await generateEmbeddingsViaAzureOpenAI(embeddingData);
+                    if (fallbackResult) {
+                        embeddingResults.push(fallbackResult);
+                    }
+                }
+            }
+            
+            return {
+                success: embeddingResults.length > 0,
+                vectors: embeddingResults,
+                chunks: chunks.length
             };
             
-            const response = await fetch(CONFIG.webhooks.embeddings, {
+        } catch (error) {
+            console.error('Error generating embeddings:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    // Fallback: Generate embeddings via Azure OpenAI directly
+    async function generateEmbeddingsViaAzureOpenAI(embeddingData) {
+        try {
+            // This would need Azure OpenAI credentials configured
+            const response = await fetch('/api/azure-openai-embeddings', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(embeddingData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    input: embeddingData.content,
+                    model: 'text-embedding-ada-002'
+                })
             });
             
             if (response.ok) {
-                console.log('Embeddings generated successfully');
-            } else {
-                console.warn('Embedding generation failed:', await response.text());
+                return await response.json();
             }
         } catch (error) {
-            console.error('Error generating embeddings:', error);
-            // Don't throw - embedding failure shouldn't stop the upload
+            console.error('Azure OpenAI fallback failed:', error);
+        }
+        return null;
+    }
+    
+    // Update vector index with embeddings
+    async function updateVectorIndex(documentData, vectors) {
+        try {
+            const indexData = {
+                documentId: documentData.id,
+                fileName: documentData.fileName,
+                vectors: vectors,
+                metadata: {
+                    client: documentData.client,
+                    category: documentData.category,
+                    fileHash: documentData.fileHash,
+                    timestamp: new Date().toISOString()
+                }
+            };
+            
+            const response = await fetch('/api/vector-index/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(indexData)
+            });
+            
+            if (response.ok) {
+                console.log('Vector index updated successfully');
+            } else {
+                console.warn('Vector index update failed:', await response.text());
+            }
+        } catch (error) {
+            console.error('Error updating vector index:', error);
         }
     }
     
