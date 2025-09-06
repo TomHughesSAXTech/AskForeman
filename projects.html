@@ -3284,9 +3284,9 @@
           `;
         });
         
-        // Handle source references with paperclip icon
-        const sourcePattern = /Source:\s*([^\n]+)/g;
-        processedContent = processedContent.replace(sourcePattern, (match, source) => {
+        // Handle simple source references
+        const simpleSourcePattern = /Source:\s*([^\n]+)/g;
+        processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
           // Extract filename and pages if present
           const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
           if (parts) {
@@ -3842,5 +3842,8 @@
         setupImageUpload();
       });
     </script>
+    <!-- Chat attachment and search formatting fixes -->
+    <script src="js/fix-chat-attachments.js"></script>
+    <script src="js/fix-search-formatting.js"></script>
   </body>
 </html>
