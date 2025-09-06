@@ -863,7 +863,19 @@
               hasAttachments: attachedImages.length > 0,
               attachmentCount: attachedImages.length,
               uploadedFiles: uploadedFileUrls,  // Send uploaded file URLs separately
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              localTime: new Date().toLocaleString('en-US', { 
+                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  second: 'numeric',
+                  timeZoneName: 'short'
+              }),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
             })
           });
           

@@ -381,7 +381,20 @@
                         client: 'general',
                         conversationId: `mobile_${Date.now()}`,
                         sessionId: 'mobile_general',
-                        source: 'mobile-minimal'
+                        source: 'mobile-minimal',
+                        timestamp: new Date().toISOString(),
+                        localTime: new Date().toLocaleString('en-US', { 
+                            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: 'numeric',
+                            second: 'numeric',
+                            timeZoneName: 'short'
+                        }),
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                     })
                 });
                 
