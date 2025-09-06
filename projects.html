@@ -1389,8 +1389,11 @@
 
     <!-- Add XLSX library for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Add PDF.js for PDF viewing -->
+    <!-- PDF.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Admin config and unified upload handler for blueprint processing -->
+    <script src="admin-config.js"></script>
+    <script src="js/unified-upload-handler.js"></script>
   </head>
   <body>
     <header class="header">
@@ -1889,10 +1892,55 @@
       
       // Handle file upload (images and documents)
       async function handleImageFile(file) {
-        // Check file size (10MB limit)
+        // Check if this is a blueprint PDF that should be processed
+        const isBlueprint = file.type === 'application/pdf' && 
+                           (file.name.toLowerCase().includes('blueprint') || 
+                            file.name.toLowerCase().includes('drawing') ||
+                            file.name.toLowerCase().includes('plan'));
+        
+        // For blueprint PDFs, offer to use enhanced processing
+        if (isBlueprint && window.UnifiedUploadHandler) {
+          const useEnhanced = confirm(`Detected blueprint/drawing PDF: ${file.name}\n\nWould you like to use enhanced AI processing for takeoff and measurements?\n\nClick OK for enhanced processing, or Cancel for standard attachment.`);
+          
+          if (useEnhanced) {
+            // Use the unified upload handler for blueprint processing
+            const handler = new window.UnifiedUploadHandler();
+            const clientName = selectedClient || 'default';
+            const category = 'blueprints';
+            
+            try {
+              addSystemMessage(`🔄 Processing blueprint with AI: ${file.name}...`);
+              const result = await handler.uploadFiles([file], clientName, category, 'BlueprintTakeoffUnified');
+              
+              if (result.success) {
+                addSystemMessage(`✅ Blueprint processed successfully! Extracted measurements, materials, and specifications.`);
+                // The processed data is now available in Azure storage
+                // You can optionally add it to the chat context
+                attachedImages.push({ 
+                  url: URL.createObjectURL(file), 
+                  file: file,
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  processed: true,
+                  processingResult: result
+                });
+                displayAttachedImage(attachedImages[attachedImages.length - 1]);
+                return;
+              } else {
+                addSystemMessage(`⚠️ Blueprint processing failed. Using standard attachment instead.`);
+              }
+            } catch (error) {
+              console.error('Blueprint processing error:', error);
+              addSystemMessage(`⚠️ Error processing blueprint. Using standard attachment instead.`);
+            }
+          }
+        }
+        
+        // Check file size (10MB limit for standard attachments)
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-          addSystemMessage(`⚠️ File "${file.name}" is too large. Maximum size is 10MB.`);
+          addSystemMessage(`⚠️ File "${file.name}" is too large. Maximum size is 10MB for standard attachments.`);
           return;
         }
         
