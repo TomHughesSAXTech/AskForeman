@@ -663,18 +663,35 @@
         try {
             const response = await fetch('/api/config');
             if (response.ok) {
-                const apiConfig = await response.json();
-                CONFIG.functionAppUrl = apiConfig.docProcessorUrl || CONFIG.functionAppUrl;
-                // Only update key if API provides one
-                if (apiConfig.docProcessorKey || apiConfig.functionKey) {
-                    CONFIG.functionKey = apiConfig.docProcessorKey || apiConfig.functionKey;
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const apiConfig = await response.json();
+                    CONFIG.functionAppUrl = apiConfig.docProcessorUrl || CONFIG.functionAppUrl;
+                    // Only update key if API provides one
+                    if (apiConfig.docProcessorKey || apiConfig.functionKey) {
+                        CONFIG.functionKey = apiConfig.docProcessorKey || apiConfig.functionKey;
+                    }
+                    console.log('Configuration loaded from API, function key:', CONFIG.functionKey ? 'present' : 'missing');
+                } else {
+                    // Response is not JSON (likely HTML 404 page)
+                    console.log('Config endpoint returned non-JSON response, using hardcoded defaults');
                 }
-                console.log('Configuration loaded from API, function key:', CONFIG.functionKey ? 'present' : 'missing');
             } else {
-                console.log('Config API not available, using hardcoded defaults');
+                // Don't log as error if it's just a 404 - the endpoint doesn't exist yet
+                if (response.status === 404) {
+                    console.log('Config API endpoint not found (/api/config), using hardcoded defaults');
+                } else {
+                    console.log(`Config API returned ${response.status}, using hardcoded defaults`);
+                }
             }
         } catch (error) {
-            console.warn('Failed to load config from API, using defaults:', error);
+            // Network errors or other issues
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                console.log('Config API not reachable, using hardcoded defaults');
+            } else {
+                console.warn('Error loading config from API, using defaults:', error.message);
+            }
         }
     }
     
