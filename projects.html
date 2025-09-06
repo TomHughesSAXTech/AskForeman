@@ -3368,32 +3368,85 @@
         // Handle simple source references
         const simpleSourcePattern = /Source:\s*([^\n]+)/g;
         processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
-          // Extract filename and pages if present
-          const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
-          if (parts) {
-            const [, fileName, pages] = parts;
-            const trimmedName = fileName.trim();
+          // Check if this is a URL source reference
+          const urlMatch = source.match(/(https?:\/\/[^\s]+)/i);
+          if (urlMatch) {
+            const url = urlMatch[1];
+            const displayText = source.replace(url, '').trim();
             return `
               <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #e3f2fd; border-left: 3px solid var(--primary-blue); margin: 10px 0; border-radius: 4px;">
-                <span style="font-size: 18px;">📄</span>
+                <span style="font-size: 18px;">🔗</span>
                 <div style="flex: 1;">
                   <div style="margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #1565c0;">${trimmedName}</span>
+                    <span style="font-weight: 600; color: #333;">Source:</span>
+                    ${displayText ? `<span style="margin-left: 8px;">${displayText}</span>` : ''}
                   </div>
-                  <div style="font-size: 0.9em; color: #666;">
-                    <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                  <div style="font-size: 0.9em;">
+                    <a href="${url}" target="_blank" style="color: #1565c0; text-decoration: none; word-break: break-all; hover: text-decoration: underline;">
+                      ${url}
+                    </a>
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                  <button onclick="downloadFile('${fileName.trim()}', '${fileName.trim()}')" style="padding: 4px 12px; background: var(--dark-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    📥 Download
-                  </button>
-                  <button onclick="openDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    👁️ View
+                  <button onclick="window.open('${url}', '_blank')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🔍 Preview
                   </button>
                 </div>
               </div>
             `;
+          }
+          
+          // Extract filename and pages if present (for document sources)
+          const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
+          if (parts) {
+            const [, fileName, pages] = parts;
+            const trimmedName = fileName.trim();
+            // Check if fileName looks like a URL
+            if (trimmedName.startsWith('http://') || trimmedName.startsWith('https://')) {
+              return `
+                <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #e3f2fd; border-left: 3px solid var(--primary-blue); margin: 10px 0; border-radius: 4px;">
+                  <span style="font-size: 18px;">🔗</span>
+                  <div style="flex: 1;">
+                    <div style="margin-bottom: 4px;">
+                      <a href="${trimmedName}" target="_blank" style="color: #1565c0; text-decoration: none; font-weight: 600; word-break: break-all;">
+                        ${trimmedName}
+                      </a>
+                    </div>
+                    <div style="font-size: 0.9em; color: #666;">
+                      <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="window.open('${trimmedName}', '_blank')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      🔍 Preview
+                    </button>
+                  </div>
+                </div>
+              `;
+            } else {
+              // Regular file reference
+              return `
+                <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #e3f2fd; border-left: 3px solid var(--primary-blue); margin: 10px 0; border-radius: 4px;">
+                  <span style="font-size: 18px;">📄</span>
+                  <div style="flex: 1;">
+                    <div style="margin-bottom: 4px;">
+                      <span style="font-weight: 600; color: #1565c0;">${trimmedName}</span>
+                    </div>
+                    <div style="font-size: 0.9em; color: #666;">
+                      <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="downloadFile('${fileName.trim()}', '${fileName.trim()}')" style="padding: 4px 12px; background: var(--dark-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      📥 Download
+                    </button>
+                    <button onclick="openDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      👁️ View
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
           }
           return match; // Return original if no match
         });
