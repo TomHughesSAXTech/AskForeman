@@ -2170,13 +2170,7 @@
           if (chatClientSelect) {
             chatClientSelect.addEventListener('change', function(e) {
               chatContext = e.target.value;
-              if (chatContext === 'all-clients') {
-                addSystemMessage('🌐 Switched to viewing all project documents');
-              } else if (chatContext === 'general') {
-                addSystemMessage('🤖 Switched to general construction knowledge');
-              } else {
-                addSystemMessage(`📁 Focused on project: ${formatClientName(chatContext)}`);
-              }
+              // Removed flooding messages on project selection
             });
           }
         }
@@ -2533,7 +2527,44 @@
         }
       }
 
-      // Create client handler is now in dropdown change event
+      // Create new project function
+      async function createNewProject(projectName) {
+        if (!projectName || projectName.trim() === '') {
+          alert('Project name is required');
+          return;
+        }
+        
+        const folderId = projectName.trim();
+        
+        // Create placeholder files in Azure
+        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signedContracts'];
+        
+        try {
+          addSystemMessage(`🆕 Creating new project: ${projectName}...`);
+          
+          for (const category of categories) {
+            const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
+            await createPlaceholderFile(placeholderPath);
+          }
+          
+          addSystemMessage(`✅ Created new project: ${projectName}`);
+          
+          // Reload clients
+          await loadClients();
+          
+          // Select the new client after reload
+          setTimeout(() => {
+            if (clientSelect) {
+              clientSelect.value = folderId;
+              selectedClient = folderId;
+              loadClientFiles(folderId);
+            }
+          }, 500);
+        } catch (error) {
+          console.error('Error creating project:', error);
+          addSystemMessage(`❌ Failed to create project: ${error.message}`);
+        }
+      }
 
       function openCreateClientModal() {
         const modalHTML = `
@@ -2945,7 +2976,7 @@
             <strong>Category:</strong> ${file.category || 'General'}
           </div>
           <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <button onclick="window.open('${file.blobUrl}', '_blank'); this.closest('.file-preview-modal').remove();" 
+            <button onclick="previewFile('${file.blobUrl}', '${file.name}', '${file.type || 'application/pdf'}'); this.closest('.file-preview-modal').remove();" 
               style="flex: 1; padding: 0.75rem; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer;">
               👁️ Preview in Browser
             </button>
@@ -2967,6 +2998,30 @@
         modal.onclick = (e) => {
           if (e.target === modal) modal.remove();
         };
+      }
+      
+      // Preview file in browser without downloading
+      function previewFile(blobUrl, fileName, fileType) {
+        // For PDFs and images, open directly in new tab
+        if (fileType && (fileType.includes('pdf') || fileType.includes('image'))) {
+          // Create a new window/tab with the blob URL
+          const newWindow = window.open('', '_blank');
+          if (newWindow) {
+            // Set the location to the blob URL
+            newWindow.location.href = blobUrl;
+            // Set a meaningful title
+            setTimeout(() => {
+              try {
+                newWindow.document.title = fileName;
+              } catch (e) {
+                // Cross-origin restriction, ignore
+              }
+            }, 100);
+          }
+        } else {
+          // For other file types, just open normally
+          window.open(blobUrl, '_blank');
+        }
       }
       
       // Download file with warning
@@ -3456,6 +3511,14 @@
               const displayCategory = category === 'signedContracts' ? 'Signed Contracts' : 
                                       category.charAt(0).toUpperCase() + category.slice(1);
               addSystemMessage(`✅ Uploaded: ${file.name} (${displayCategory})`);
+              
+              // Refresh the file list after successful upload
+              if (window.selectedClient) {
+                setTimeout(() => {
+                  loadClientFiles(window.selectedClient);
+                }, 500);
+              }
+              
               resolve(await response.json());
             } catch (error) {
               addSystemMessage(`❌ Failed to upload ${file.name}: ${error.message}`);
@@ -4973,7 +5036,6 @@
       async function loadDrawingFromUrl(url, fileName) {
         try {
           updateAIStatus('Loading drawing: ' + fileName, '#2196f3');
-          addSystemMessage('📥 Loading drawing: ' + fileName);
           
           const response = await fetch(url);
           if (!response.ok) {
@@ -4993,7 +5055,6 @@
           await runDocumentIntelligence();
           
           updateAIStatus('Drawing loaded and analyzed', '#4caf50');
-          addSystemMessage(`✅ Loaded and analyzed: ${fileName}`);
           
           // Enable measure tools
           document.querySelectorAll('.takeoff-tool-btn').forEach(btn => {
@@ -5063,7 +5124,6 @@
             } catch (error) {
               console.error('Error loading PDF:', error);
               updateAIStatus('Error loading PDF: ' + error.message, '#f44336');
-              addSystemMessage(`❌ Failed to load PDF: ${error.message}`);
             }
           };
           fileReader.readAsArrayBuffer(file);
@@ -5110,7 +5170,6 @@
         } else {
           // Unsupported file type
           updateAIStatus(`Unsupported file type: ${file.type}`, '#ff9800');
-          addSystemMessage(`⚠️ File type not directly displayable: ${file.name}`);
         }
       }
       
