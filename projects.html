@@ -2121,7 +2121,7 @@
 
       function updateClientDropdowns(clients) {
         // Update upload dropdown
-        clientSelect.innerHTML = '<option value="">-- Choose a Client --</option>';
+        clientSelect.innerHTML = '<option value="">-- Choose a Project --</option>';
         
         // Add all client options
         clients.forEach(client => {
@@ -3320,8 +3320,8 @@
           }
         );
         
-        // Convert URLs to clickable links
-        const urlPattern = /(?:https?:\/\/[^\s<>"]+|www\.[^\s<>"]+|[a-zA-Z0-9.-]+\.(com|org|net|io|gov|edu|co|uk|ca|de|jp|fr|au|us|ru|ch|it|nl|se|no|es|mil)[^\s<>"]*)/gi;
+        // Convert URLs to clickable links (including blob storage URLs)
+        const urlPattern = /(?:https?:\/\/[^\s<>"]+)/gi;
         processedContent = processedContent.replace(urlPattern, (url) => {
           // Skip if already part of an HTML tag
           if (url.indexOf('onclick=') > -1 || url.indexOf('src=') > -1 || url.indexOf('href=') > -1) {
@@ -3617,10 +3617,36 @@
       
       // Request document from AI/system
       function openDocument(fileName) {
-        // Request the document and display it
-        const message = `Please analyze this document: ${fileName}`;
-        chatInput.value = message;
-        sendMessage();
+        // If it's a URL, open directly with proper handling for blob storage
+        if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+          // For blob storage URLs, try to open in a way that allows preview
+          if (fileName.includes('blob.core.windows.net')) {
+            // Create an iframe preview window for blob storage files
+            const previewWindow = window.open('', '_blank');
+            previewWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Document Preview</title>
+                <style>
+                  body { margin: 0; padding: 0; overflow: hidden; }
+                  iframe { width: 100vw; height: 100vh; border: none; }
+                </style>
+              </head>
+              <body>
+                <iframe src="${fileName}" allowfullscreen></iframe>
+              </body>
+              </html>
+            `);
+          } else {
+            window.open(fileName, '_blank');
+          }
+        } else {
+          // Request the document and display it
+          const message = `Please analyze this document: ${fileName}`;
+          chatInput.value = message;
+          sendMessage();
+        }
       }
 
       function downloadDocument(fileName) {
