@@ -2145,12 +2145,10 @@
           clientSelect.addEventListener('change', function(e) {
             const newClient = e.target.value;
             if (newClient === '__create_new__') {
-              const projectName = prompt('Enter new project name:');
-              if (projectName) {
-                createNewProject(projectName);
-              } else {
-                e.target.value = selectedClient || '';
-              }
+              // Open the modal instead of using prompt
+              openCreateClientModal();
+              // Reset the select to previous value until project is created
+              e.target.value = selectedClient || '';
             } else {
               selectedClient = newClient;
               if (chatClientSelect) {
@@ -2527,43 +2525,11 @@
         }
       }
 
-      // Create new project function
-      async function createNewProject(projectName) {
-        if (!projectName || projectName.trim() === '') {
-          alert('Project name is required');
-          return;
-        }
-        
-        const folderId = projectName.trim();
-        
-        // Create placeholder files in Azure
-        const categories = ['drawings', 'estimates', 'proposals', 'specs', 'signedContracts'];
-        
-        try {
-          addSystemMessage(`🆕 Creating new project: ${projectName}...`);
-          
-          for (const category of categories) {
-            const placeholderPath = `FCS-OriginalClients/${folderId}/${category}/placeholder.json`;
-            await createPlaceholderFile(placeholderPath);
-          }
-          
-          addSystemMessage(`✅ Created new project: ${projectName}`);
-          
-          // Reload clients
-          await loadClients();
-          
-          // Select the new client after reload
-          setTimeout(() => {
-            if (clientSelect) {
-              clientSelect.value = folderId;
-              selectedClient = folderId;
-              loadClientFiles(folderId);
-            }
-          }, 500);
-        } catch (error) {
-          console.error('Error creating project:', error);
-          addSystemMessage(`❌ Failed to create project: ${error.message}`);
-        }
+      // Create new project function - now just opens the modal
+      function createNewProject(projectName) {
+        // This function is no longer needed as we use the modal directly
+        // Keeping it for backward compatibility but it just opens the modal
+        openCreateClientModal();
       }
 
       function openCreateClientModal() {
