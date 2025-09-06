@@ -7,7 +7,7 @@
     // Configuration - will be updated from API
     let CONFIG = {
         functionAppUrl: 'https://saxtech-docprocessor.azurewebsites.net/api',
-        functionKey: '', // Will be loaded from config API
+        functionKey: window.AdminConfig?.AZURE_FUNCTION_KEY || '', // Use AdminConfig from deployment
         blobStorage: {
             account: 'saxtechfcs',
             container: 'fcs-clients',
