@@ -83,46 +83,12 @@
                 }
             };
             
-            // Step 5: Send to Azure Function for processing
-            const functionUrl = determineAzureFunction(file, isBlueprint, metadata);
+            // Step 5: Send to n8n webhook which will handle Azure Function calls
+            // The n8n workflow has proper authentication and routing logic
+            console.log(`Processing ${isBlueprint ? 'blueprint' : 'document'} via n8n webhook`);
             
-            console.log(`Sending to Azure Function: ${functionUrl}`);
-            
-            console.log(`Calling Azure Function with key: ${CONFIG.functionKey ? 'Key present' : 'No key'}`);
-            
-            let functionResponse;
-            try {
-                functionResponse = await fetch(functionUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                        // Removed auth headers - functions configured for anonymous access
-                    },
-                    body: JSON.stringify(uploadData)
-                });
-            } catch (fetchError) {
-                console.error('Azure Function fetch error:', fetchError);
-                if (fetchError.name === 'TypeError' && fetchError.message.includes('Failed to fetch')) {
-                    console.error('Network error - possible causes:');
-                    console.error('1. CORS not configured on Azure Function');
-                    console.error('2. Function App not running');
-                    console.error('3. Network connectivity issue');
-                    console.error('Attempted URL:', functionUrl);
-                    console.error('Function key present:', !!CONFIG.functionKey);
-                }
-                console.warn('Trying webhook fallback due to network error...');
-                return await uploadViaWebhook(uploadData);
-            }
-            
-            if (!functionResponse.ok) {
-                const errorText = await functionResponse.text();
-                console.warn(`Azure Function failed (${functionResponse.status}): ${errorText}`);
-                console.warn('Trying webhook fallback...');
-                return await uploadViaWebhook(uploadData);
-            }
-            
-            const result = await functionResponse.json();
-            console.log('Azure Function processing result:', result);
+            const result = await uploadViaWebhook(uploadData);
+            console.log('Document processing result:', result);
             
             // Step 6: Upload to Blob Storage (with deduplication)
             const blobUrl = await uploadToBlobStorage(file, metadata, fileHash);
@@ -399,7 +365,7 @@
         }
     }
     
-    // Fallback upload via webhook
+    // Upload via n8n webhook
     async function uploadViaWebhook(uploadData) {
         try {
             console.log('Attempting webhook upload to:', CONFIG.webhooks.upload);
@@ -412,6 +378,7 @@
                 body: JSON.stringify(uploadData)
             });
             
+            // Check response status
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Webhook upload failed:', errorText);
@@ -429,7 +396,42 @@
                 };
             }
             
-            return await response.json();
+            // Try to parse JSON response
+            const contentType = response.headers.get('content-type');
+            const responseText = await response.text();
+            
+            // If response is empty or not JSON, treat as success
+            if (!responseText || responseText.trim() === '') {
+                console.log('Webhook returned empty response - treating as success');
+                return {
+                    success: true,
+                    fileName: uploadData.fileName,
+                    fileHash: uploadData.fileHash,
+                    category: uploadData.category,
+                    client: uploadData.client,
+                    message: 'Upload completed via webhook',
+                    extractedText: '',
+                    webhookMode: true
+                };
+            }
+            
+            // Try to parse as JSON
+            try {
+                return JSON.parse(responseText);
+            } catch (parseError) {
+                console.warn('Webhook response is not JSON:', responseText.substring(0, 200));
+                // If not JSON but successful, return basic success
+                return {
+                    success: true,
+                    fileName: uploadData.fileName,
+                    fileHash: uploadData.fileHash,
+                    category: uploadData.category,
+                    client: uploadData.client,
+                    message: 'Upload completed (non-JSON response)',
+                    rawResponse: responseText.substring(0, 500),
+                    webhookMode: true
+                };
+            }
         } catch (error) {
             console.error('Webhook error:', error);
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
