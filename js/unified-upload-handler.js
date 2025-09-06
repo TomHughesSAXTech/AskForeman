@@ -90,27 +90,25 @@
             const result = await uploadViaWebhook(uploadData);
             console.log('Document processing result:', result);
             
-            // Step 6: Upload to Blob Storage (with deduplication)
-            const blobUrl = await uploadToBlobStorage(file, metadata, fileHash);
-            result.blobUrl = blobUrl;
-            result.fileHash = fileHash;
-            
-            // Step 7: Index the document in Azure Cognitive Search
-            await indexDocument(result, metadata);
-            
-            // Step 8: Generate and store embeddings for vector search
-            const embeddings = await generateEmbeddings(result, metadata);
-            result.embeddings = embeddings;
-            
-            // Step 9: Update vector index with embeddings
-            if (embeddings && embeddings.success) {
-                await updateVectorIndex(result, embeddings.vectors);
+            // Step 6: Upload to Blob Storage (only if webhook didn't handle it)
+            // Check if webhook already uploaded to blob
+            if (!result.blobUrl && !result.webhookMode) {
+                const blobUrl = await uploadToBlobStorage(file, metadata, fileHash);
+                result.blobUrl = blobUrl;
+                result.fileHash = fileHash;
             }
             
-            // Step 10: Update knowledge graph if needed
-            if (metadata.updateKnowledgeGraph !== false) {
-                await updateKnowledgeGraph(result, metadata);
-            }
+            // Optional steps - don't fail if these don't work
+            // These should be handled by the Azure Functions, not the frontend
+            
+            // Skip indexing - should be done by Azure Function
+            // await indexDocument(result, metadata);
+            
+            // Skip embeddings - should be done by Azure Function
+            // const embeddings = await generateEmbeddings(result, metadata);
+            
+            // Skip knowledge graph - should be done by Azure Function
+            // await updateKnowledgeGraph(result, metadata);
             
             console.log('Document upload and processing complete:', result);
             return result;
