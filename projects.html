@@ -3071,13 +3071,7 @@
       }
 
       async function processFile(file, category) {
-        const reader = new FileReader();
-        
-        return new Promise((resolve, reject) => {
-          reader.onload = async () => {
         try {
-          const base64String = reader.result.split(',')[1];
-          
           // Convert category name to match folder structure
           const folderCategory = category === 'signedContracts' ? 'signed-contracts' : category;
           
@@ -3085,41 +3079,32 @@
           const fileSize = (file.size / 1024).toFixed(1);
           addSystemMessage(`📋 Processing ${file.name} (${fileSize} KB) for ${folderCategory}...`);
           
-          const uploadData = {
-            file: base64String,
-            fileName: file.name,
-            mimeType: file.type || 'application/pdf',
+          // Use unified upload handler with metadata
+          const metadata = {
             category: folderCategory,
             client: selectedClient || 'general',
-            clientName: selectedClient || 'General'
+            clientName: selectedClient || 'General',
+            updateKnowledgeGraph: true
           };
           
+          // Add category to file object for unified handler
+          file.category = folderCategory;
+          
+          console.log(`Using unified upload handler for: ${file.name}`);
           addSystemMessage(`📤 Uploading ${file.name} to project storage...`);
           
-          const response = await fetch(API_CONFIG.uploadWebhookUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(uploadData)
-          });
-              
-              if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-              }
-              
-              const displayCategory = category === 'signedContracts' ? 'Signed Contracts' : 
-                                      category.charAt(0).toUpperCase() + category.slice(1);
-              addSystemMessage(`✅ Uploaded: ${file.name} (${displayCategory})`);
-              resolve(await response.json());
-            } catch (error) {
-              addSystemMessage(`❌ Failed to upload ${file.name}: ${error.message}`);
-              reject(error);
-            }
-          };
+          // Use the unified upload handler
+          const result = await window.uploadDocumentWithProcessing(file, metadata);
           
-          reader.readAsDataURL(file);
-        });
+          const displayCategory = category === 'signedContracts' ? 'Signed Contracts' : 
+                                  category.charAt(0).toUpperCase() + category.slice(1);
+          addSystemMessage(`✅ Uploaded: ${file.name} (${displayCategory})`);
+          
+          return result;
+        } catch (error) {
+          addSystemMessage(`❌ Failed to upload ${file.name}: ${error.message}`);
+          throw error;
+        }
       }
 
       // Chat functionality with image support
