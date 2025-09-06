@@ -88,23 +88,50 @@
                 // Update project selector behavior
                 const originalOnChange = projectSelect.onchange;
                 projectSelect.onchange = async function(e) {
-                    if (originalOnChange) originalOnChange.call(this, e);
-                    
                     const projectId = e.target.value;
+                    
                     if (projectId) {
                         fileSelector.style.display = 'inline-block';
-                        await loadProjectDrawings(projectId, fileSelector);
+                        
+                        // Check if it's a demo project
+                        if (projectId.startsWith('demo-')) {
+                            // Load mock drawings
+                            if (window.loadMockDrawings) {
+                                window.loadMockDrawings(projectId, fileSelector);
+                            }
+                        } else {
+                            // Load real project drawings
+                            await loadProjectDrawings(projectId, fileSelector);
+                        }
                     } else {
                         fileSelector.style.display = 'none';
                     }
+                    
+                    // Call original handler if exists
+                    if (originalOnChange) originalOnChange.call(this, e);
                 };
                 
                 // File selector change handler
                 fileSelector.onchange = function(e) {
                     const fileUrl = e.target.value;
                     const fileName = e.target.options[e.target.selectedIndex].text;
-                    if (fileUrl && window.loadDrawingFromUrl) {
-                        window.loadDrawingFromUrl(fileUrl, fileName);
+                    const projectId = projectSelect.value;
+                    
+                    if (fileUrl) {
+                        // Check if it's mock data
+                        if (fileUrl.startsWith('data:')) {
+                            // Load mock drawing
+                            if (window.createMockDrawing) {
+                                window.createMockDrawing();
+                            }
+                            if (window.loadMockTakeoffData) {
+                                window.loadMockTakeoffData(projectId);
+                            }
+                            window.addSystemMessage && window.addSystemMessage('✅ Mock drawing loaded');
+                        } else if (window.loadDrawingFromUrl) {
+                            // Load real drawing
+                            window.loadDrawingFromUrl(fileUrl, fileName);
+                        }
                     }
                 };
             }

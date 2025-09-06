@@ -149,10 +149,8 @@
         if (unitsElement) unitsElement.textContent = data.units;
         
         // Load measurements
-        if (window.measurements) {
-            window.measurements = data.measurements;
-            updateMeasurementsList();
-        }
+        window.measurements = data.measurements || [];
+        updateMeasurementsList();
         
         // Load AI analysis
         if (data.aiAnalysis) {

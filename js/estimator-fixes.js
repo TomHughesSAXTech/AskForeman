@@ -122,18 +122,33 @@
         `;
         
         // Insert building controls into the estimate form
-        // Try multiple possible locations
-        let insertLocation = document.querySelector('.estimate-form') || 
-                           document.querySelector('.estimate-body') || 
-                           document.querySelector('#projectInfo');
+        // Find the tab content area for buildings
+        const buildingTabContent = document.querySelector('#building1') || 
+                                  document.querySelector('.tab-content');
         
-        if (insertLocation && !document.getElementById('buildingControls')) {
-            // If it's the project info section, insert after it
-            if (insertLocation.id === 'projectInfo') {
-                insertLocation.parentNode.insertBefore(buildingControls, insertLocation.nextSibling);
+        if (buildingTabContent && !document.getElementById('buildingControls')) {
+            // Insert at the top of the building tab
+            if (buildingTabContent.id === 'building1') {
+                // Insert before the first element in building1 tab
+                buildingTabContent.insertBefore(buildingControls, buildingTabContent.firstChild);
             } else {
-                insertLocation.insertBefore(buildingControls, insertLocation.firstChild);
+                // Insert after the tab buttons
+                const tabButtons = document.querySelector('.tabs');
+                if (tabButtons) {
+                    tabButtons.parentNode.insertBefore(buildingControls, tabButtons.nextSibling);
+                }
             }
+            
+            // Also show the controls when switching to building tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const controls = document.getElementById('buildingControls');
+                    if (controls) {
+                        const tabName = btn.textContent.toLowerCase();
+                        controls.style.display = tabName.includes('building') ? 'flex' : 'none';
+                    }
+                });
+            });
         }
         
         // Building management functions
