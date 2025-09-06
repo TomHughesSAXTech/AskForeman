@@ -48,6 +48,8 @@ if (isListRequest && !wantsFullContent) {
   console.log('📋 DOCUMENT LIST REQUEST - Fast mode');
   
   try {
+    const startTime = Date.now(); // Define startTime
+    
     // Only get metadata, not content
     const searchRequest = {
       search: "*",
@@ -171,7 +173,6 @@ if (chatInput && chatInput.trim() !== '' && !isListRequest) {
       search: chatInput,
       queryType: "semantic", // Use semantic search for better results
       semanticConfiguration: "construction-semantic-config",
-      queryLanguage: "en-US",
       searchMode: "all",
       filter: filters.join(' and '),
       top: 5, // Only top 5 results
@@ -191,7 +192,6 @@ if (chatInput && chatInput.trim() !== '' && !isListRequest) {
         // Fallback to simple search
         searchRequest.queryType = "simple";
         delete searchRequest.semanticConfiguration;
-        delete searchRequest.queryLanguage;
         delete searchRequest.captions;
         delete searchRequest.answers;
         searchRequest.top = 10;

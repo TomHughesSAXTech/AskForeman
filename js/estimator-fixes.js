@@ -7,10 +7,17 @@
     // Fix 1: Remove PDF export and fix Excel export
     function fixExportButtons() {
         // Remove PDF export button if it exists
-        const pdfExportBtn = document.querySelector('[onclick*="exportPDF"]');
+        const pdfExportBtn = document.querySelector('button[onclick*="exportToPDF"]');
         if (pdfExportBtn) {
             pdfExportBtn.remove();
         }
+        
+        // Also check for any other PDF export buttons
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.textContent.includes('PDF') || btn.onclick?.toString().includes('exportToPDF')) {
+                btn.remove();
+            }
+        })
         
         // Fix Excel export function
         window.exportToExcel = function() {
@@ -115,9 +122,18 @@
         `;
         
         // Insert building controls into the estimate form
-        const estimateForm = document.querySelector('.estimate-form');
-        if (estimateForm) {
-            estimateForm.insertBefore(buildingControls, estimateForm.firstChild);
+        // Try multiple possible locations
+        let insertLocation = document.querySelector('.estimate-form') || 
+                           document.querySelector('.estimate-body') || 
+                           document.querySelector('#projectInfo');
+        
+        if (insertLocation && !document.getElementById('buildingControls')) {
+            // If it's the project info section, insert after it
+            if (insertLocation.id === 'projectInfo') {
+                insertLocation.parentNode.insertBefore(buildingControls, insertLocation.nextSibling);
+            } else {
+                insertLocation.insertBefore(buildingControls, insertLocation.firstChild);
+            }
         }
         
         // Building management functions
