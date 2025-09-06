@@ -41,14 +41,8 @@
             // Step 1: Read file as base64
             const base64Data = await readFileAsBase64(file);
             
-            // Step 2: Check for duplicates via hash
+            // Step 2: Calculate file hash for backend deduplication
             const fileHash = await calculateFileHash(base64Data);
-            const isDuplicate = await checkDuplicate(fileHash, metadata);
-            
-            if (isDuplicate) {
-                console.log('Duplicate file detected, linking to existing document');
-                return await handleDuplicate(isDuplicate, metadata);
-            }
             
             // Step 3: Determine if this is a blueprint/drawing
             const isBlueprint = checkIfBlueprint(file.name, metadata.category);
@@ -72,6 +66,10 @@
                 enableOCR: shouldEnableOCR(file),
                 generateEmbeddings: true,
                 updateVectorIndex: true,
+                // Deduplication strategy for backend
+                deduplicationStrategy: 'overwrite', // 'overwrite' | 'version' | 'skip'
+                overwriteExisting: true, // Tell backend to replace existing files
+                updateIndex: true, // Update search index with new content
                 // Add metadata for indexing
                 metadata: {
                     uploadDate: new Date().toISOString(),
@@ -79,7 +77,9 @@
                     originalName: file.name,
                     category: metadata.category,
                     client: metadata.client,
-                    processingType: isBlueprint ? 'blueprint' : 'document'
+                    processingType: isBlueprint ? 'blueprint' : 'document',
+                    fileHash: fileHash,
+                    version: new Date().getTime() // Version timestamp for tracking updates
                 }
             };
             
@@ -218,70 +218,9 @@
         }
     }
     
-    // Check for duplicate files
-    async function checkDuplicate(fileHash, metadata) {
-        if (!fileHash) return false;
-        
-        try {
-            // Query Azure Cognitive Search for existing hash
-            const searchEndpoint = CONFIG.searchEndpoint || 'https://fcssearchservice.search.windows.net';
-            const searchApiKey = CONFIG.searchApiKey;
-            const indexName = CONFIG.searchIndexName || 'fcs-construction-docs-index-v2';
-            
-            // Skip if search API key not configured
-            if (!searchApiKey) {
-                console.log('Search API key not configured. Skipping duplicate check.');
-                return false;
-            }
-            
-            // Use Azure Cognitive Search REST API directly
-            const searchUrl = `${searchEndpoint}/indexes/${indexName}/docs/search?api-version=2021-04-30-Preview`;
-            
-            const response = await fetch(searchUrl, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'api-key': searchApiKey
-                },
-                body: JSON.stringify({
-                    search: fileHash,
-                    searchFields: 'fileHash',
-                    select: 'id,fileName,blobUrl,client',
-                    top: 1
-                })
-            });
-            
-            if (response.ok) {
-                const results = await response.json();
-                return results.value && results.value.length > 0 ? results.value[0] : false;
-            } else if (response.status === 403 || response.status === 401) {
-                console.warn('Search API key not configured or invalid. Skipping duplicate check.');
-                return false;
-            }
-        } catch (error) {
-            console.warn('Duplicate check failed:', error);
-        }
-        return false;
-    }
-    
-    // Handle duplicate file
-    async function handleDuplicate(existingDoc, metadata) {
-        console.log('Handling duplicate, creating reference to existing document');
-        
-        // Create a reference/link instead of re-uploading
-        const reference = {
-            ...existingDoc,
-            linkedClient: metadata.client,
-            linkedCategory: metadata.category,
-            linkedDate: new Date().toISOString(),
-            isDuplicate: true
-        };
-        
-        // Update index with the new reference
-        await indexDocument(reference, metadata);
-        
-        return reference;
-    }
+    // Note: Duplicate checking is now handled by Azure Functions
+    // The backend will automatically overwrite existing files with the same name/hash
+    // and update the search index accordingly
     
     // Process large PDF with chunking
     async function processLargePDF(file, metadata) {
