@@ -1,5 +1,6 @@
 // Unified Upload Handler - Routes documents through proper Azure Functions
-// Handles: Blob storage, Vector indexing, Embeddings, Knowledge graph
+// Version: 2.0.1 - Simplified version with backend-only processing
+// Last Updated: 2025-09-06
 
 (function() {
     'use strict';
@@ -90,25 +91,15 @@
             const result = await uploadViaWebhook(uploadData);
             console.log('Document processing result:', result);
             
-            // Step 6: Upload to Blob Storage (only if webhook didn't handle it)
-            // Check if webhook already uploaded to blob
-            if (!result.blobUrl && !result.webhookMode) {
-                const blobUrl = await uploadToBlobStorage(file, metadata, fileHash);
-                result.blobUrl = blobUrl;
-                result.fileHash = fileHash;
-            }
-            
-            // Optional steps - don't fail if these don't work
-            // These should be handled by the Azure Functions, not the frontend
-            
-            // Skip indexing - should be done by Azure Function
-            // await indexDocument(result, metadata);
-            
-            // Skip embeddings - should be done by Azure Function
-            // const embeddings = await generateEmbeddings(result, metadata);
-            
-            // Skip knowledge graph - should be done by Azure Function
-            // await updateKnowledgeGraph(result, metadata);
+            // Backend handles everything - no need for frontend processing
+            // The n8n webhook and Azure Functions handle:
+            // - Blob storage upload
+            // - Search indexing  
+            // - Embeddings generation
+            // - Knowledge graph updates
+            // - OCR for images/drawings
+            // - Text extraction for regular content
+            // - Chunking for large files
             
             console.log('Document upload and processing complete:', result);
             return result;
