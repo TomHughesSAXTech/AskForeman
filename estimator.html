@@ -2143,7 +2143,6 @@
         loadClients();
         updateFileCounts();
         updateProcessButton();
-        setupClientSelectionHandlers();
         
         // Re-render file list every few seconds to keep it updated
         setInterval(() => {
@@ -2393,6 +2392,7 @@
           
           availableClients = clients;
           updateClientDropdowns(clients);
+          setupClientSelectionHandlers();
           
         } catch (error) {
           console.error('Error loading clients:', error);
