@@ -9,7 +9,6 @@ import sys
 import json
 import requests
 import time
-import numpy as np
 from typing import List, Dict, Any
 
 # Configuration
@@ -350,15 +349,33 @@ def create_suggesters(index_def: Dict[str, Any]) -> Dict[str, Any]:
     if 'suggesters' not in index_def:
         index_def['suggesters'] = []
     
-    existing_suggesters = {s.get('name') for s in index_def['suggesters']}
+    # Check for existing analyzingInfixMatching suggesters
+    has_infix_suggester = False
+    for suggester in index_def['suggesters']:
+        if suggester.get('searchMode') == 'analyzingInfixMatching':
+            has_infix_suggester = True
+            # Add blueprint fields to existing suggester if not already present
+            source_fields = suggester.get('sourceFields', [])
+            blueprint_fields = ["materials", "specifications", "drawingType", "sheetNumber"]
+            
+            for field in blueprint_fields:
+                if field not in source_fields and field in {f['name'] for f in index_def.get('fields', [])}:
+                    source_fields.append(field)
+                    print(f"  Added {field} to existing suggester: {suggester.get('name')}")
+            
+            suggester['sourceFields'] = source_fields
+            break
     
-    if 'blueprint-suggester' not in existing_suggesters:
-        index_def['suggesters'].append({
-            "name": "blueprint-suggester",
-            "searchMode": "analyzingInfixMatching",
-            "sourceFields": ["materials", "specifications", "drawingType", "sheetNumber"]
-        })
-        print("  Added blueprint-suggester for autocomplete")
+    # Only create new suggester if no infix suggester exists
+    if not has_infix_suggester:
+        existing_suggesters = {s.get('name') for s in index_def['suggesters']}
+        if 'blueprint-suggester' not in existing_suggesters:
+            index_def['suggesters'].append({
+                "name": "blueprint-suggester",
+                "searchMode": "analyzingInfixMatching",
+                "sourceFields": ["materials", "specifications", "drawingType", "sheetNumber"]
+            })
+            print("  Added blueprint-suggester for autocomplete")
     
     return index_def
 

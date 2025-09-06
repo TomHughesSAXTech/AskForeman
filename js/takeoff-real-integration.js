@@ -333,8 +333,11 @@
             const ctx = canvas.getContext('2d');
             
             if (drawing.type === 'pdf') {
-                // Load PDF
-                if (typeof pdfjsLib !== 'undefined') {
+                // Load PDF with layer support
+                if (window.loadPDFWithLayers) {
+                    await window.loadPDFWithLayers(drawing.url, canvas.id);
+                } else if (typeof pdfjsLib !== 'undefined') {
+                    // Fallback to standard loading
                     const loadingTask = pdfjsLib.getDocument(drawing.url);
                     const pdf = await loadingTask.promise;
                     const page = await pdf.getPage(1);
