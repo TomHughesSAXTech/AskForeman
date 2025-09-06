@@ -467,9 +467,21 @@
             // Check if unified handler is loaded
             if (window.uploadDocumentWithProcessing) {
                 addResult('✅ Unified upload handler loaded successfully', 'success');
+                
+                // Check configuration
+                setTimeout(() => {
+                    if (window.CONFIG) {
+                        addResult(`📋 Config: Function URL: ${window.CONFIG.functionAppUrl}`, 'info');
+                        addResult(`🔑 Function Key: ${window.CONFIG.functionKey ? 'Configured' : 'Missing'}`, 
+                                 window.CONFIG.functionKey ? 'success' : 'warning');
+                    }
+                }, 1000);
             } else {
                 addResult('❌ Unified upload handler not found!', 'error');
             }
+            
+            // Add note about CORS
+            addResult('ℹ️ Note: If uploads fail with "Failed to fetch", Azure Functions may need CORS configuration or you may need to test from deployed site', 'info');
         });
     </script>
 </body>
