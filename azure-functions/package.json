@@ -1,0 +1,16 @@
+{
+  "name": "saxtech-docprocessor-functions",
+  "version": "1.0.0",
+  "description": "Azure Functions for SAXTech Document Processing",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests configured\"",
+    "deploy": "func azure functionapp publish SAXTech-DocProcessor --javascript"
+  },
+  "dependencies": {
+    "axios": "^1.4.0"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.x"
+  }
+}
