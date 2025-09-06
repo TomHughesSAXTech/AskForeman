@@ -208,6 +208,7 @@
             margin-top: 5px;
         }
     </style>
+    <script src="local-test-config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -475,6 +476,13 @@
         
         // Load configuration
         async function loadConfig() {
+            // Check for local test config first
+            if (window.TEST_CONFIG && window.TEST_CONFIG.functionKey) {
+                FUNCTION_KEY = window.TEST_CONFIG.functionKey;
+                addResult('Using local test configuration', 'success');
+                return;
+            }
+            
             try {
                 const response = await fetch('/api/config');
                 if (response.ok) {

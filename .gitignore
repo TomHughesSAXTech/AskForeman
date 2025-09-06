@@ -36,3 +36,4 @@ n8n-workflow-*.json
 creds.json
 *-credentials.json
 
+local-test-config.js
