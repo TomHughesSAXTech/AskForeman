@@ -4,8 +4,6 @@
 (function() {
     'use strict';
     
-    console.log('🔧 Initializing real takeoff integration...');
-    
     // Azure Configuration
     const AZURE_CONFIG = {
         storage: {
@@ -55,8 +53,6 @@
         
         // Setup AI analysis
         setupAIAnalysis();
-        
-        console.log('✅ Real takeoff integration initialized');
     }
     
     // Remove mock data handlers
@@ -75,8 +71,6 @@
         delete window.loadMockDrawings;
         delete window.loadMockTakeoffData;
         delete window.createMockDrawing;
-        
-        console.log('✅ Mock data removed');
     }
     
     // Setup real project loading from Azure
@@ -116,7 +110,8 @@
     // Load real projects from Azure
     async function loadRealProjects(selectElement) {
         try {
-            const listUrl = `https://${AZURE_CONFIG.storage.account}.blob.core.windows.net/${AZURE_CONFIG.storage.container}${AZURE_CONFIG.storage.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/&delimiter=/`;
+            // Fix: Use correct prefix without FCS-OriginalClients
+            const listUrl = `https://${AZURE_CONFIG.storage.account}.blob.core.windows.net/${AZURE_CONFIG.storage.container}${AZURE_CONFIG.storage.sasToken}&restype=container&comp=list&delimiter=/`;
             
             const response = await fetch(listUrl);
             if (!response.ok) throw new Error('Failed to load projects');
@@ -132,9 +127,9 @@
                 const nameElement = prefixes[i].getElementsByTagName("Name")[0];
                 if (nameElement) {
                     const fullPath = nameElement.textContent.replace(/\/$/, '');
-                    const projectName = fullPath.split('/')[1];
+                    const projectName = fullPath.split('/')[0]; // Get first part as project name
                     
-                    if (projectName && projectName !== 'placeholder.json') {
+                    if (projectName && projectName !== 'placeholder.json' && !projectName.startsWith('.')) {
                         const option = document.createElement('option');
                         option.value = projectName;
                         option.textContent = formatProjectName(projectName);
@@ -142,8 +137,6 @@
                     }
                 }
             }
-            
-            console.log(`✅ Loaded ${selectElement.options.length - 1} real projects`);
             
         } catch (error) {
             console.error('Error loading projects:', error);
@@ -180,8 +173,8 @@
                 fileSelector.innerHTML = '<option value="">Loading drawings...</option>';
                 fileSelector.style.display = 'inline-block';
                 
-                // Load drawings from Azure
-                const drawingsUrl = `https://${AZURE_CONFIG.storage.account}.blob.core.windows.net/${AZURE_CONFIG.storage.container}${AZURE_CONFIG.storage.sasToken}&restype=container&comp=list&prefix=FCS-OriginalClients/${projectId}/drawings/`;
+                // Load drawings from Azure - fix path
+                const drawingsUrl = `https://${AZURE_CONFIG.storage.account}.blob.core.windows.net/${AZURE_CONFIG.storage.container}${AZURE_CONFIG.storage.sasToken}&restype=container&comp=list&prefix=${projectId}/`;
                 
                 const response = await fetch(drawingsUrl);
                 if (!response.ok) throw new Error('Failed to load drawings');

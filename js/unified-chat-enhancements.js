@@ -427,8 +427,6 @@
     
     // 6. Initialize on DOM ready
     function initialize() {
-        console.log('🚀 Initializing unified chat enhancements...');
-        
         // Add animation styles
         addAnimationStyles();
         
@@ -454,15 +452,6 @@
         
         // Make addSystemMessage globally available if not already
         window.addSystemMessage = window.addSystemMessage || addSystemMessage;
-        
-        console.log('✅ Chat enhancements initialized successfully');
-        
-        // Show initialization message
-        if (window.location.pathname.includes('projects')) {
-            setTimeout(() => {
-                addSystemMessage('🚀 Project Management Ready', 'success');
-            }, 500);
-        }
     }
     
     // Initialize when DOM is ready

@@ -4,8 +4,6 @@
 (function() {
     'use strict';
     
-    console.log('🏢 Initializing dynamic building management...');
-    
     // Global state for buildings
     window.estimatorState = window.estimatorState || {
         buildings: [
@@ -33,10 +31,10 @@
         // Setup project integration
         setupProjectIntegration();
         
-        // Initialize first building
-        activateBuilding('building-1');
-        
-        console.log('✅ Dynamic building management initialized');
+        // Initialize first building only on estimator page
+        if (document.getElementById('estimatorForm')) {
+            activateBuilding('building-1');
+        }
     }
     
     // Setup building tabs
@@ -260,7 +258,10 @@
             }
         });
         
-        window.addSystemMessage && window.addSystemMessage(`🏢 Switched to ${building.name}`, 'info');
+        // Only show message on estimator page
+        if (document.getElementById('estimatorForm')) {
+            window.addSystemMessage && window.addSystemMessage(`🏢 Switched to ${building.name}`, 'info');
+        }
     }
     
     // Save current building data
@@ -711,15 +712,19 @@
         }
     }
     
-    // Initialize when DOM is ready
+    // Initialize when DOM is ready - only on estimator page
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            loadEstimatorState();
-            initialize();
+            if (document.getElementById('estimatorForm') || document.querySelector('.estimator-tool')) {
+                loadEstimatorState();
+                initialize();
+            }
         });
     } else {
-        loadEstimatorState();
-        initialize();
+        if (document.getElementById('estimatorForm') || document.querySelector('.estimator-tool')) {
+            loadEstimatorState();
+            initialize();
+        }
     }
     
     // Export functions
