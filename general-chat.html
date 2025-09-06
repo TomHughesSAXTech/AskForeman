@@ -932,6 +932,19 @@
       function processMessageContent(content) {
         let processedContent = content;
         
+        // Remove markdown code block markers (```html, ```, etc.)
+        processedContent = processedContent.replace(/```html\s*/gi, '');
+        processedContent = processedContent.replace(/```\s*/g, '');
+        
+        // Convert markdown bold **text** to HTML
+        processedContent = processedContent.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        
+        // Convert markdown lists to HTML
+        processedContent = processedContent.replace(/^\* (.+)$/gm, '<li>$1</li>');
+        processedContent = processedContent.replace(/(<li>.*<\/li>\s*)+/gs, function(match) {
+            return '<ul>' + match + '</ul>';
+        });
+        
         // Check if the text appears to be HTML (contains HTML tags) from AI
         // If it's HTML from the AI, render it directly with basic sanitization
         if (content.includes('<') && content.includes('>') && 
@@ -940,10 +953,11 @@
              content.includes('<br') || content.includes('<li>') || content.includes('<table'))) {
             // This appears to be HTML content from the AI - render it directly
             // Only do basic safety sanitization
-            return content
+            processedContent = processedContent
                 .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
                 .replace(/on\w+="[^"]*"/gi, '') // Remove onclick, onload, etc.
                 .replace(/javascript:/gi, ''); // Remove javascript: protocols
+            return processedContent;
         }
         
         // Otherwise treat as plain text and unescape HTML entities for display

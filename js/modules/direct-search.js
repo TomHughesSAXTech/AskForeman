@@ -102,11 +102,16 @@
             searchRequest.orderby = orderBy;
         }
 
-        // Select fields to return
+        // Select fields to return (including blueprint fields)
         searchRequest.select = [
             'id', 'fileName', 'client', 'projectName', 'category',
             'content', 'uploadedAt', 'blobPath', 'metadata',
-            'documentType', 'pageCount', 'tags'
+            'documentType', 'pageCount', 'tags',
+            // Blueprint-specific fields
+            'dimensions', 'materials', 'specifications', 'roomNumbers',
+            'measurements', 'drawingScale', 'sheetNumber', 'drawingType',
+            'revision', 'standardsCodes', 'fireRatings', 'structuralMembers',
+            'ocrConfidence', 'hasHandwrittenText'
         ].join(',');
 
         // Perform search
@@ -279,6 +284,66 @@
     }
 
     /**
+     * Blueprint-specific search functions
+     */
+    async function searchBlueprints(options = {}) {
+        const blueprintOptions = {
+            ...options,
+            searchFields: 'fileName,sheetNumber,drawingType,materials,specifications,dimensions',
+            facets: ['drawingType,count:10', 'materials,count:20', 'standardsCodes,count:10']
+        };
+        
+        // Add drawing/blueprint category filter
+        const filters = [];
+        if (options.filter) filters.push(options.filter);
+        filters.push("(category eq 'drawings' or category eq 'blueprints' or drawingType ne null)");
+        blueprintOptions.filter = filters.join(' and ');
+        
+        return search(blueprintOptions);
+    }
+    
+    async function searchByMaterial(material, options = {}) {
+        return search({
+            ...options,
+            query: '*',
+            filter: `materials/any(m: m eq '${material}')`
+        });
+    }
+    
+    async function searchBySheetNumber(sheetNumber, options = {}) {
+        return search({
+            ...options,
+            query: sheetNumber,
+            searchFields: 'sheetNumber,fileName'
+        });
+    }
+    
+    async function searchByDrawingType(drawingType, options = {}) {
+        return search({
+            ...options,
+            query: '*',
+            filter: `drawingType eq '${drawingType}'`
+        });
+    }
+    
+    async function searchByStandard(standardCode, options = {}) {
+        return search({
+            ...options,
+            query: standardCode,
+            searchFields: 'standardsCodes,specifications'
+        });
+    }
+    
+    async function searchHandwrittenDocs(options = {}) {
+        return search({
+            ...options,
+            query: '*',
+            filter: 'hasHandwrittenText eq true',
+            orderBy: 'ocrConfidence desc'
+        });
+    }
+
+    /**
      * Export search functions to window
      */
     window.DirectSearch = {
@@ -292,6 +357,33 @@
         quickSearch: (query, client) => search({ query, client, searchType: 'simple', top: 10 }),
         semanticSearch: (query, client) => search({ query, client, searchType: 'semantic', top: 10 }),
         projectSearch: (projectName) => search({ projectName, searchType: 'simple', top: 100 }),
+        
+        // Blueprint-specific methods
+        searchBlueprints,
+        searchByMaterial,
+        searchBySheetNumber,
+        searchByDrawingType,
+        searchByStandard,
+        searchHandwrittenDocs,
+        
+        // Blueprint filters
+        getDrawingTypes: async () => {
+            const results = await search({
+                query: '*',
+                facets: ['drawingType,count:50'],
+                top: 0
+            });
+            return results.facets.drawingType || [];
+        },
+        
+        getMaterials: async () => {
+            const results = await search({
+                query: '*',
+                facets: ['materials,count:100'],
+                top: 0
+            });
+            return results.facets.materials || [];
+        },
         
         // Performance test
         testPerformance: async () => {
