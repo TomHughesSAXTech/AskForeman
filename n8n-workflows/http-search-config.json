@@ -1,0 +1,235 @@
+{
+  "name": "Direct Azure Search - HTTP Request Node Configuration",
+  "description": "Use this configuration in an n8n HTTP Request node for fastest search performance",
+  "node_type": "n8n-nodes-base.httpRequest",
+  "configurations": [
+    {
+      "name": "List Documents (Fast)",
+      "description": "Lists documents without fetching content",
+      "settings": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/search?api-version=2023-11-01",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "UsSBLISH5UsbNGeUkBeCa1YZJ0SJPfRJwXBrAWY7kSAzSeABQBCv"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "*"
+            },
+            {
+              "name": "queryType",
+              "value": "simple"
+            },
+            {
+              "name": "filter",
+              "value": "={{`client eq '${$json.client || 'general'}'`}}"
+            },
+            {
+              "name": "top",
+              "value": 20
+            },
+            {
+              "name": "select",
+              "value": "id,fileName,category,uploadedAt,projectName,documentType,pageCount"
+            },
+            {
+              "name": "count",
+              "value": true
+            },
+            {
+              "name": "orderby",
+              "value": "uploadedAt desc"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Semantic Search (Smart)",
+      "description": "Performs semantic search with AI ranking",
+      "settings": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/search?api-version=2023-11-01",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "UsSBLISH5UsbNGeUkBeCa1YZJ0SJPfRJwXBrAWY7kSAzSeABQBCv"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{$json.query || $json.chatInput}}"
+            },
+            {
+              "name": "queryType",
+              "value": "semantic"
+            },
+            {
+              "name": "semanticConfiguration",
+              "value": "construction-semantic-config"
+            },
+            {
+              "name": "filter",
+              "value": "={{`client eq '${$json.client || 'general'}'`}}"
+            },
+            {
+              "name": "top",
+              "value": 5
+            },
+            {
+              "name": "select",
+              "value": "id,fileName,category,content,projectName"
+            },
+            {
+              "name": "captions",
+              "value": "extractive|highlight-true"
+            },
+            {
+              "name": "answers",
+              "value": "extractive|count-3"
+            },
+            {
+              "name": "count",
+              "value": true
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Simple Keyword Search",
+      "description": "Basic keyword search - fastest option",
+      "settings": {
+        "method": "POST",
+        "url": "https://fcssearchservice.search.windows.net/indexes/fcs-construction-docs-index-v2/docs/search?api-version=2023-11-01",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "api-key",
+              "value": "UsSBLISH5UsbNGeUkBeCa1YZJ0SJPfRJwXBrAWY7kSAzSeABQBCv"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "search",
+              "value": "={{$json.query || $json.chatInput}}"
+            },
+            {
+              "name": "queryType",
+              "value": "simple"
+            },
+            {
+              "name": "searchMode",
+              "value": "all"
+            },
+            {
+              "name": "filter",
+              "value": "={{`client eq '${$json.client || 'general'}'`}}"
+            },
+            {
+              "name": "top",
+              "value": 10
+            },
+            {
+              "name": "select",
+              "value": "id,fileName,category,uploadedAt,projectName"
+            },
+            {
+              "name": "highlight",
+              "value": "content"
+            },
+            {
+              "name": "highlightPreTag",
+              "value": "**"
+            },
+            {
+              "name": "highlightPostTag",
+              "value": "**"
+            },
+            {
+              "name": "count",
+              "value": true
+            }
+          ]
+        },
+        "options": {
+          "timeout": 3000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "performance_tips": [
+    "Use HTTP Request node instead of Code node for 50% faster performance",
+    "Set timeout to 3-5 seconds max",
+    "Only fetch 'content' field when specifically needed",
+    "Use 'select' to limit fields returned",
+    "Use 'top' to limit result count (5-20 is usually enough)",
+    "Enable caching in n8n for repeated queries",
+    "Use semantic search only for natural language queries",
+    "Use simple search for keyword/filter queries"
+  ],
+  "workflow_optimization": {
+    "parallel_processing": "Use Split In Batches node for multiple searches",
+    "caching": "Use Set node to cache common queries for 5 minutes",
+    "error_handling": "Add IF node to check for empty results",
+    "response_formatting": "Use Code node ONLY for formatting results, not searching"
+  }
+}
