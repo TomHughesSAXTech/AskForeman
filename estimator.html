@@ -2157,7 +2157,7 @@
               updateProcessButton();
               updateFileCounts();
               if (newClient) {
-                loadClientFiles(newClient);
+                loadClientFiles(newClient, true); // Show message on manual selection
               } else {
                 initializeFileList(); // Reset file list when no client selected
               }
@@ -2181,7 +2181,7 @@
         // Re-render file list every few seconds to keep it updated
         setInterval(() => {
           if (selectedClient) {
-            loadClientFiles(selectedClient);
+            loadClientFiles(selectedClient, false); // Don't show message on auto-refresh
           }
         }, 5000);
       });
@@ -2502,7 +2502,7 @@
             } else {
               selectedClient = e.target.value;
               if (selectedClient) {
-                await loadClientFiles(selectedClient);
+                await loadClientFiles(selectedClient, true); // Show message on dropdown selection
                 updateProcessButton();
               }
             }
@@ -3089,7 +3089,7 @@
             // Reload files
             if (selectedClient) {
               setTimeout(() => {
-                loadClientFiles(selectedClient);
+                loadClientFiles(selectedClient, false); // Don't show message on delete refresh
               }, 500);
             }
           } catch (error) {
@@ -3283,7 +3283,7 @@
       }
       
       // Load client files with enhanced structure
-      async function loadClientFiles(clientName) {
+      async function loadClientFiles(clientName, showMessage = false) {
         try {
           const fileList = document.getElementById('fileList');
           
@@ -3300,6 +3300,9 @@
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(xmlText, "text/xml");
           const blobs = xmlDoc.getElementsByTagName("Blob");
+          
+          // Store previous file count to detect changes
+          const previousFileCount = clientFiles ? clientFiles.length : -1;
           
           clientFiles = [];
           
@@ -3342,10 +3345,19 @@
           // Render file browser
           renderFileBrowser();
           
-          // Add file count message
+          // Only show message on initial load or when explicitly requested or when file count changes
           const fileCount = clientFiles.length;
-          if (fileCount > 0) {
-            addSystemMessage(`📁 Loaded ${fileCount} file${fileCount !== 1 ? 's' : ''} for ${formatClientName(clientName)}`);
+          if (showMessage || previousFileCount === -1) {
+            if (fileCount > 0) {
+              addSystemMessage(`📁 Loaded ${fileCount} file${fileCount !== 1 ? 's' : ''} for ${formatClientName(clientName)}`);
+            }
+          } else if (previousFileCount !== fileCount && previousFileCount !== -1) {
+            // Only show message if file count actually changed
+            if (fileCount > previousFileCount) {
+              addSystemMessage(`📥 New files detected: ${fileCount - previousFileCount} file${(fileCount - previousFileCount) !== 1 ? 's' : ''} added`);
+            } else if (fileCount < previousFileCount) {
+              addSystemMessage(`📤 Files removed: ${previousFileCount - fileCount} file${(previousFileCount - fileCount) !== 1 ? 's' : ''} deleted`);
+            }
           }
           
         } catch (error) {
@@ -3359,7 +3371,7 @@
       function refreshFiles() {
         if (selectedClient) {
           addSystemMessage('🔄 Refreshing file list...');
-          loadClientFiles(selectedClient);
+          loadClientFiles(selectedClient, false); // Don't show loaded message after refresh message
         }
       }
 
@@ -3431,7 +3443,7 @@
           
           if (selectedClient) {
             setTimeout(() => {
-              loadClientFiles(selectedClient);
+              loadClientFiles(selectedClient, false); // Don't show message after upload complete
             }, 1000);
           }
         }, 1000);
@@ -3481,7 +3493,7 @@
               // Refresh the file list after successful upload
               if (window.selectedClient) {
                 setTimeout(() => {
-                  loadClientFiles(window.selectedClient);
+                  loadClientFiles(window.selectedClient, false); // Don't show message after individual file upload
                 }, 500);
               }
               

@@ -84,7 +84,7 @@
             };
             
             // Step 5: Send to Azure Function for processing
-            const functionUrl = determineAzureFunction(file, isBlueprint);
+            const functionUrl = determineAzureFunction(file, isBlueprint, metadata);
             
             console.log(`Sending to Azure Function: ${functionUrl}`);
             
@@ -95,9 +95,8 @@
                 functionResponse = await fetch(functionUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'x-functions-key': CONFIG.functionKey || '',
-                        'Authorization': CONFIG.functionKey ? `Bearer ${CONFIG.functionKey}` : undefined
+                        'Content-Type': 'application/json'
+                        // Removed auth headers - functions configured for anonymous access
                     },
                     body: JSON.stringify(uploadData)
                 });
@@ -224,10 +223,11 @@
     }
     
     // Determine which Azure Function to use
-    function determineAzureFunction(file, isBlueprint) {
-        // Use ConvertDocumentJson for all documents including blueprints
-        // The blueprint flags in the request data will handle specialized processing
-        return `${CONFIG.functionAppUrl}/ConvertDocumentJson`;
+    function determineAzureFunction(file, isBlueprint, metadata) {
+        // Use BlueprintTakeoffUnified for blueprints and drawings
+        if (isBlueprint || (metadata && metadata.category && metadata.category.toLowerCase() === 'drawings')) {
+            return `${CONFIG.functionAppUrl}/BlueprintTakeoffUnified`;
+        }
         
         // Large PDFs use special processor
         if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {
@@ -258,20 +258,39 @@
         
         try {
             // Query Azure Cognitive Search for existing hash
-            const searchUrl = `${CONFIG.webhooks.search || '/api/search'}`;
+            const searchEndpoint = CONFIG.searchEndpoint || 'https://fcssearchservice.search.windows.net';
+            const searchApiKey = CONFIG.searchApiKey;
+            const indexName = CONFIG.searchIndexName || 'fcs-construction-docs-index-v2';
+            
+            // Skip if search API key not configured
+            if (!searchApiKey) {
+                console.log('Search API key not configured. Skipping duplicate check.');
+                return false;
+            }
+            
+            // Use Azure Cognitive Search REST API directly
+            const searchUrl = `${searchEndpoint}/indexes/${indexName}/docs/search?api-version=2021-04-30-Preview`;
+            
             const response = await fetch(searchUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'api-key': searchApiKey
+                },
                 body: JSON.stringify({
                     search: fileHash,
                     searchFields: 'fileHash',
-                    select: 'id,fileName,blobUrl,client'
+                    select: 'id,fileName,blobUrl,client',
+                    top: 1
                 })
             });
             
             if (response.ok) {
                 const results = await response.json();
                 return results.value && results.value.length > 0 ? results.value[0] : false;
+            } else if (response.status === 403 || response.status === 401) {
+                console.warn('Search API key not configured or invalid. Skipping duplicate check.');
+                return false;
             }
         } catch (error) {
             console.warn('Duplicate check failed:', error);
@@ -325,9 +344,8 @@
         const response = await fetch(`${CONFIG.functionAppUrl}/ProcessLargePDF`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-functions-key': CONFIG.functionKey || '',
-                'Authorization': CONFIG.functionKey ? `Bearer ${CONFIG.functionKey}` : undefined
+                'Content-Type': 'application/json'
+                // Removed auth headers - functions configured for anonymous access
             },
             body: JSON.stringify(chunkData)
         });

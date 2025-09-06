@@ -11,6 +11,9 @@ module.exports = async function (context, req) {
         docProcessorUrl: 'https://saxtech-docprocessor.azurewebsites.net/api',
         functionKey: process.env.AZURE_FUNCTION_KEY || '',
         docProcessorKey: process.env.DOC_PROCESSOR_KEY || process.env.AZURE_FUNCTION_KEY || '',
+        searchApiKey: process.env.AZURE_SEARCH_API_KEY || '',
+        searchEndpoint: 'https://fcssearchservice.search.windows.net',
+        searchIndexName: 'fcs-construction-docs-index-v2',
         endpoints: {
             analyzeImage: '/analyze-image',
             pdfChunker: '/pdf-chunker',
