@@ -2139,44 +2139,11 @@
           processButton.addEventListener("click", handleProcessButtonClick);
         }
 
-        // Set up client selection handlers
-        if (clientSelect) {
-          // Handle client selection change
-          clientSelect.addEventListener('change', function(e) {
-            const newClient = e.target.value;
-            if (newClient === '__create_new__') {
-              // Open the modal instead of using prompt
-              openCreateClientModal();
-              // Reset the select to previous value until project is created
-              e.target.value = selectedClient || '';
-            } else {
-              selectedClient = newClient;
-              if (chatClientSelect) {
-                chatClientSelect.value = newClient || 'general';
-              }
-              updateProcessButton();
-              updateFileCounts();
-              if (newClient) {
-                loadClientFiles(newClient, true); // Show message on manual selection
-              } else {
-                initializeFileList(); // Reset file list when no client selected
-              }
-            }
-          });
-          
-          // Update chat context when chat client selection changes
-          if (chatClientSelect) {
-            chatClientSelect.addEventListener('change', function(e) {
-              chatContext = e.target.value;
-              // Removed flooding messages on project selection
-            });
-          }
-        }
-
         // Load initial data
         loadClients();
         updateFileCounts();
         updateProcessButton();
+        setupClientSelectionHandlers();
         
         // Re-render file list every few seconds to keep it updated
         setInterval(() => {
