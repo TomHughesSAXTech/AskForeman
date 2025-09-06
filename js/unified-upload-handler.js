@@ -26,7 +26,7 @@
             console.log('Starting unified document upload:', file.name);
             
             // Check file size for chunking (5MB threshold for PDFs)
-            const needsChunking = file.type === 'application/pdf' && file.size > 5 * 1024 * 1024;
+            const needsChunking = false; // Disabled for now - ProcessLargePDF expects blob path
             
             if (needsChunking) {
                 console.log('Large PDF detected, using chunking process');
@@ -225,9 +225,9 @@
     
     // Determine which Azure Function to use
     function determineAzureFunction(file, isBlueprint) {
-        if (isBlueprint) {
-            return `${CONFIG.functionAppUrl}/BlueprintTakeoffUnified`;
-        }
+        // Use ConvertDocumentJson for all documents including blueprints
+        // The blueprint flags in the request data will handle specialized processing
+        return `${CONFIG.functionAppUrl}/ConvertDocumentJson`;
         
         // Large PDFs use special processor
         if (file.type === 'application/pdf' && file.size > 5 * 1024 * 1024) {

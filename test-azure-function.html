@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Function Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover { background: #0056b3; }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Azure Function Connectivity Test</h1>
+    
+    <div>
+        <h2>Test Configuration</h2>
+        <label>Function URL:</label>
+        <input type="text" id="functionUrl" value="https://saxtech-docprocessor.azurewebsites.net/api/BlueprintTakeoffUnified" style="width: 100%; margin: 10px 0; padding: 5px;">
+        
+        <label>Function Key:</label>
+        <input type="text" id="functionKey" placeholder="Enter function key or leave empty to load from config" style="width: 100%; margin: 10px 0; padding: 5px;">
+        
+        <label>Test Data (JSON):</label>
+        <textarea id="testData">{
+    "fileName": "test-blueprint.pdf",
+    "file": "base64_encoded_file_content_here",
+    "mimeType": "application/pdf",
+    "category": "blueprints",
+    "client": "test-client",
+    "processingType": "blueprint",
+    "extractDimensions": true,
+    "extractMeasurements": true,
+    "extractMaterials": true
+}</textarea>
+    </div>
+    
+    <div>
+        <button onclick="testDirectCall()">Test Direct Call</button>
+        <button onclick="testWithCORS()">Test with CORS Headers</button>
+        <button onclick="testPing()">Test Ping Endpoint</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+        }
+        
+        async function testDirectCall() {
+            const url = document.getElementById('functionUrl').value;
+            const key = document.getElementById('functionKey').value;
+            const testData = document.getElementById('testData').value;
+            
+            addResult('Testing direct call to Azure Function...');
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-functions-key': key
+                    },
+                    body: testData
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    addResult(`Success! Status: ${response.status}<br>Response: ${responseText}`, 'success');
+                } else {
+                    addResult(`Failed! Status: ${response.status}<br>Response: ${responseText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Network Error: ${error.message}<br>This might be a CORS issue if running locally.`, 'error');
+            }
+        }
+        
+        async function testWithCORS() {
+            const url = document.getElementById('functionUrl').value;
+            const key = document.getElementById('functionKey').value;
+            const testData = document.getElementById('testData').value;
+            
+            addResult('Testing with CORS headers...');
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-functions-key': key,
+                        'Accept': 'application/json'
+                    },
+                    body: testData
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    addResult(`Success with CORS! Status: ${response.status}<br>Response: ${responseText}`, 'success');
+                } else {
+                    addResult(`Failed with CORS! Status: ${response.status}<br>Response: ${responseText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`CORS Error: ${error.message}<br>Details: ${error.stack}`, 'error');
+            }
+        }
+        
+        async function testPing() {
+            const baseUrl = document.getElementById('functionUrl').value.replace(/\/[^\/]+$/, '');
+            const pingUrl = `${baseUrl}/ping`;
+            
+            addResult(`Testing ping endpoint: ${pingUrl}`);
+            
+            try {
+                const response = await fetch(pingUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                const responseText = await response.text();
+                
+                if (response.ok) {
+                    addResult(`Ping Success! Status: ${response.status}<br>Response: ${responseText}`, 'success');
+                } else {
+                    addResult(`Ping Failed! Status: ${response.status}<br>Response: ${responseText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`Ping Network Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Load configuration on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            addResult('Test page loaded. Click a button to test Azure Function connectivity.');
+        });
+    </script>
+</body>
+</html>

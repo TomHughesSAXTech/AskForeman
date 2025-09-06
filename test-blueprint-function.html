@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blueprint Function Test - Real Files</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #4c51bf;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .upload-label:hover {
+            transform: scale(1.05);
+        }
+        .file-info {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 8px;
+            display: none;
+        }
+        .file-info.active {
+            display: block;
+        }
+        .test-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .option-card {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        .option-card label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .option-card input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+        button {
+            padding: 12px 30px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        .results {
+            margin-top: 30px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 15px;
+            border-left: 4px solid #e0e0e0;
+            background: #f9f9f9;
+            border-radius: 0 8px 8px 0;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .result-item.success {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .result-item.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .result-item.info {
+            border-left-color: #2196f3;
+            background: #e3f2fd;
+        }
+        .result-item.warning {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        .result-content {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            padding: 15px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Blueprint Function Test Suite</h1>
+        
+        <div class="upload-area" id="uploadArea">
+            <p style="font-size: 50px; margin: 0;">📐</p>
+            <p style="font-size: 18px; color: #666;">Drag & drop files here or click to browse</p>
+            <label for="fileInput" class="upload-label">Choose Files</label>
+            <input type="file" id="fileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.dwg,.dxf">
+            <p style="font-size: 14px; color: #999; margin-top: 10px;">Supports: PDF, PNG, JPG, DWG, DXF</p>
+        </div>
+        
+        <div class="file-info" id="fileInfo">
+            <h3>Selected File:</h3>
+            <div id="fileDetails"></div>
+        </div>
+        
+        <div class="test-options">
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="extractDimensions" checked>
+                    Extract Dimensions
+                </label>
+            </div>
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="extractMeasurements" checked>
+                    Extract Measurements
+                </label>
+            </div>
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="extractMaterials" checked>
+                    Extract Materials
+                </label>
+            </div>
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="extractRoomNumbers" checked>
+                    Extract Room Numbers
+                </label>
+            </div>
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="extractSpecifications" checked>
+                    Extract Specifications
+                </label>
+            </div>
+            <div class="option-card">
+                <label>
+                    <input type="checkbox" id="enableOCR" checked>
+                    Enable OCR
+                </label>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button class="btn-primary" onclick="testBlueprintFunction()" id="testBtn">
+                🚀 Test Blueprint Function
+            </button>
+            <button class="btn-secondary" onclick="clearResults()">
+                🗑️ Clear Results
+            </button>
+        </div>
+        
+        <div class="stats" id="stats" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="processingTime">0</div>
+                <div class="stat-label">Processing Time (ms)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="fileSize">0</div>
+                <div class="stat-label">File Size (KB)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="extractedItems">0</div>
+                <div class="stat-label">Extracted Items</div>
+            </div>
+        </div>
+        
+        <div class="results" id="results"></div>
+    </div>
+    
+    <script>
+        let selectedFile = null;
+        const FUNCTION_URL = 'https://saxtech-docprocessor.azurewebsites.net/api/ConvertDocumentJson';
+        let FUNCTION_KEY = ''; // Will be loaded from config
+        
+        // File input handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileDetails = document.getElementById('fileDetails');
+        
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+        
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        }
+        
+        function handleFile(file) {
+            selectedFile = file;
+            fileInfo.classList.add('active');
+            fileDetails.innerHTML = `
+                <strong>Name:</strong> ${file.name}<br>
+                <strong>Type:</strong> ${file.type || 'Unknown'}<br>
+                <strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB<br>
+                <strong>Last Modified:</strong> ${new Date(file.lastModified).toLocaleString()}
+            `;
+            addResult(`File selected: ${file.name}`, 'info');
+        }
+        
+        function addResult(message, type = 'info', details = null) {
+            const results = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result-item ${type}`;
+            
+            let html = `<div class="timestamp">${new Date().toLocaleTimeString()}</div>`;
+            html += `<div>${message}</div>`;
+            
+            if (details) {
+                html += `<div class="result-content">${typeof details === 'object' ? JSON.stringify(details, null, 2) : details}</div>`;
+            }
+            
+            resultDiv.innerHTML = html;
+            results.insertBefore(resultDiv, results.firstChild);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('stats').style.display = 'none';
+        }
+        
+        async function testBlueprintFunction() {
+            if (!selectedFile) {
+                addResult('Please select a file first!', 'error');
+                return;
+            }
+            
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.innerHTML = '⏳ Processing... <span class="spinner"></span>';
+            
+            const startTime = Date.now();
+            
+            try {
+                // Read file as base64
+                addResult('Reading file as base64...', 'info');
+                const base64Data = await readFileAsBase64(selectedFile);
+                
+                // Prepare request data
+                const requestData = {
+                    fileName: selectedFile.name,
+                    file: base64Data,
+                    mimeType: selectedFile.type || 'application/octet-stream',
+                    category: 'blueprints',
+                    client: 'test-client',
+                    clientName: 'Test Client',
+                    processingType: 'blueprint',
+                    extractDimensions: document.getElementById('extractDimensions').checked,
+                    extractMeasurements: document.getElementById('extractMeasurements').checked,
+                    extractMaterials: document.getElementById('extractMaterials').checked,
+                    extractRoomNumbers: document.getElementById('extractRoomNumbers').checked,
+                    extractSpecifications: document.getElementById('extractSpecifications').checked,
+                    enableOCR: document.getElementById('enableOCR').checked,
+                    fileExtension: selectedFile.name.split('.').pop().toLowerCase()
+                };
+                
+                addResult('Sending request to Azure Function...', 'info');
+                
+                // Call Azure Function
+                const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-functions-key': FUNCTION_KEY
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const responseData = await response.json();
+                const processingTime = Date.now() - startTime;
+                
+                if (response.ok && responseData.success) {
+                    addResult('✅ Blueprint processed successfully!', 'success', responseData);
+                    
+                    // Show stats
+                    document.getElementById('stats').style.display = 'grid';
+                    document.getElementById('processingTime').textContent = processingTime;
+                    document.getElementById('fileSize').textContent = (selectedFile.size / 1024).toFixed(0);
+                    
+                    // Count extracted items
+                    let itemCount = 0;
+                    if (responseData.dimensions) itemCount += responseData.dimensions.length || 1;
+                    if (responseData.measurements) itemCount += responseData.measurements.length || 1;
+                    if (responseData.materials) itemCount += responseData.materials.length || 1;
+                    if (responseData.roomNumbers) itemCount += responseData.roomNumbers.length || 1;
+                    if (responseData.specifications) itemCount += responseData.specifications.length || 1;
+                    document.getElementById('extractedItems').textContent = itemCount;
+                    
+                    // Display extracted data
+                    if (responseData.dimensions) {
+                        addResult('📏 Extracted Dimensions', 'success', responseData.dimensions);
+                    }
+                    if (responseData.measurements) {
+                        addResult('📐 Extracted Measurements', 'success', responseData.measurements);
+                    }
+                    if (responseData.materials) {
+                        addResult('🔨 Extracted Materials', 'success', responseData.materials);
+                    }
+                    if (responseData.roomNumbers) {
+                        addResult('🚪 Extracted Room Numbers', 'success', responseData.roomNumbers);
+                    }
+                    if (responseData.specifications) {
+                        addResult('📋 Extracted Specifications', 'success', responseData.specifications);
+                    }
+                    if (responseData.extractedText) {
+                        addResult('📄 Extracted Text (first 500 chars)', 'info', responseData.extractedText.substring(0, 500) + '...');
+                    }
+                } else {
+                    addResult(`❌ Processing failed: ${responseData.error || 'Unknown error'}`, 'error', responseData);
+                }
+                
+            } catch (error) {
+                addResult(`❌ Error: ${error.message}`, 'error', error.stack);
+            } finally {
+                testBtn.disabled = false;
+                testBtn.innerHTML = '🚀 Test Blueprint Function';
+            }
+        }
+        
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Load configuration
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    FUNCTION_KEY = config.docProcessorKey || config.functionKey || '';
+                    addResult('Configuration loaded from API', 'success');
+                } else {
+                    addResult('Could not load config from API. Please set function key manually.', 'warning');
+                }
+            } catch (error) {
+                addResult('Config API not available. Please set function key manually.', 'warning');
+            }
+        }
+        
+        // Initialize
+        addResult('Blueprint Function Test Suite loaded. Select a file to begin.', 'info');
+        loadConfig();
+    </script>
+</body>
+</html>
