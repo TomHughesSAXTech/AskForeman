@@ -1,5 +1,5 @@
 // Unified Upload Handler - Routes documents through proper Azure Functions
-// Version: 2.0.1 - Simplified version with backend-only processing
+// Version: 2.0.2 - Removed processFile override to prevent conflicts
 // Last Updated: 2025-09-06
 
 (function() {
@@ -574,37 +574,8 @@
         }
     }
     
-    // Override the existing processFile function to use unified handler
-    if (typeof window.processFile === 'function') {
-        const originalProcessFile = window.processFile;
-        window.processFile = async function(file, category) {
-            console.log('Using unified upload handler for:', file.name);
-            
-            const metadata = {
-                category: category,
-                client: window.selectedClient || 'general',
-                clientName: window.selectedClient || 'General',
-                updateKnowledgeGraph: true
-            };
-            
-            try {
-                const result = await uploadDocumentWithProcessing(file, metadata);
-                
-                // Call original success handling if needed
-                if (window.addSystemMessage) {
-                    window.addSystemMessage(`✅ Uploaded and processed: ${file.name}`);
-                }
-                
-                return result;
-            } catch (error) {
-                console.error('Upload failed:', error);
-                
-                // Fallback to original function
-                console.log('Falling back to original upload function');
-                return originalProcessFile.call(this, file, category);
-            }
-        };
-    }
+    // Note: Both estimator.html and projects.html have their own processFile implementations
+    // that properly call window.uploadDocumentWithProcessing, so no override is needed
     
     // Fetch configuration from API
     async function loadConfiguration() {
