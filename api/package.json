@@ -1,0 +1,12 @@
+{
+  "name": "askforeman-api",
+  "version": "1.0.0",
+  "description": "API functions for AskForeman Static Web App",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "SAXTechnology",
+  "license": "ISC",
+  "dependencies": {}
+}
