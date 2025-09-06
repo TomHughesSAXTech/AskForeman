@@ -320,7 +320,21 @@ export class ChatManager {
      * Default message formatter with markdown support
      */
     defaultMessageFormatter(text) {
-        // Escape HTML
+        // Check if the text appears to be HTML (contains HTML tags)
+        // If it's HTML from the AI, render it directly without escaping
+        if (text.includes('<') && text.includes('>') && 
+            (text.includes('<a ') || text.includes('<div') || text.includes('<p>') || 
+             text.includes('<ul>') || text.includes('<h') || text.includes('<strong>') ||
+             text.includes('<br') || text.includes('<li>'))) {
+            // This appears to be HTML content from the AI - render it directly
+            // Only do basic safety sanitization
+            return text
+                .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+                .replace(/on\w+="[^"]*"/gi, '') // Remove onclick, onload, etc.
+                .replace(/javascript:/gi, ''); // Remove javascript: protocols
+        }
+        
+        // Otherwise, treat as plain text/markdown and escape HTML
         let formatted = text.replace(/&/g, '&amp;')
                           .replace(/</g, '&lt;')
                           .replace(/>/g, '&gt;');

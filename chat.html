@@ -301,11 +301,14 @@
             messageDiv.className = `message ${sender}`;
             
             if (sender === 'assistant') {
+                // For AI responses, check if it's HTML and handle accordingly
+                const processedContent = formatAIContent(content);
                 messageDiv.innerHTML = `
                     <div class="message-avatar">🔨</div>
-                    <div class="message-content">${escapeHtml(content)}</div>
+                    <div class="message-content">${processedContent}</div>
                 `;
             } else {
+                // For user messages, always escape HTML for safety
                 messageDiv.innerHTML = `
                     <div class="message-content">${escapeHtml(content)}</div>
                 `;
@@ -313,6 +316,24 @@
             
             chatMessages.insertBefore(messageDiv, typingIndicator);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Format AI content - render HTML if present, otherwise escape
+        function formatAIContent(content) {
+            // Check if the text appears to be HTML (contains HTML tags)
+            if (content.includes('<') && content.includes('>') && 
+                (content.includes('<a ') || content.includes('<div') || content.includes('<p>') || 
+                 content.includes('<ul>') || content.includes('<h') || content.includes('<strong>') ||
+                 content.includes('<br') || content.includes('<li>') || content.includes('<table'))) {
+                // This appears to be HTML content from the AI - render it directly
+                // Only do basic safety sanitization
+                return content
+                    .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+                    .replace(/on\w+="[^"]*"/gi, '') // Remove onclick, onload, etc.
+                    .replace(/javascript:/gi, ''); // Remove javascript: protocols
+            }
+            // Otherwise escape it
+            return escapeHtml(content);
         }
 
         // Escape HTML

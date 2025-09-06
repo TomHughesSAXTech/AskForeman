@@ -920,7 +920,21 @@
       function processMessageContent(content) {
         let processedContent = content;
         
-        // Fix broken HTML in search results (unescape HTML entities)
+        // Check if the text appears to be HTML (contains HTML tags) from AI
+        // If it's HTML from the AI, render it directly with basic sanitization
+        if (content.includes('<') && content.includes('>') && 
+            (content.includes('<a ') || content.includes('<div') || content.includes('<p>') || 
+             content.includes('<ul>') || content.includes('<h') || content.includes('<strong>') ||
+             content.includes('<br') || content.includes('<li>') || content.includes('<table'))) {
+            // This appears to be HTML content from the AI - render it directly
+            // Only do basic safety sanitization
+            return content
+                .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+                .replace(/on\w+="[^"]*"/gi, '') // Remove onclick, onload, etc.
+                .replace(/javascript:/gi, ''); // Remove javascript: protocols
+        }
+        
+        // Otherwise treat as plain text and unescape HTML entities for display
         processedContent = processedContent.replace(/&lt;/g, '<');
         processedContent = processedContent.replace(/&gt;/g, '>');
         processedContent = processedContent.replace(/&quot;/g, '"');

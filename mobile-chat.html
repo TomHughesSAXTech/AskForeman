@@ -898,8 +898,17 @@
             
             // Handle HTML content from AI (tables, lists, etc.)
             // If content already contains HTML tags, don't process markdown
-            if (content.includes('<table') || content.includes('<ul') || content.includes('<ol') || content.includes('<div')) {
-                return content; // Return as-is since it's already formatted HTML
+            if (content.includes('<') && content.includes('>') && 
+                (content.includes('<a ') || content.includes('<table') || content.includes('<ul') || 
+                 content.includes('<ol') || content.includes('<div') || content.includes('<p>') ||
+                 content.includes('<h') || content.includes('<strong>') || content.includes('<br') || 
+                 content.includes('<li>'))) {
+                // This appears to be HTML content from the AI - render it directly
+                // Only do basic safety sanitization
+                return content
+                    .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+                    .replace(/on\w+="[^"]*"/gi, '') // Remove onclick, onload, etc.
+                    .replace(/javascript:/gi, ''); // Remove javascript: protocols
             }
             
             // Convert line breaks
