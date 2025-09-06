@@ -1396,7 +1396,29 @@
     <script src="js/unified-upload-handler.js?v=2.0.0"></script>
     <!-- Unified Chat Enhancements -->
     <script src="js/unified-chat-enhancements.js"></script>
-  </body>
+    <script src="js/takeoff-real-integration.js"></script>
+    <script src="js/estimator-dynamic-buildings.js"></script>
+    <script>
+        // Override chat message handler to create fly-in notifications instead
+        window.addFlyInNotification = function(message, type = 'info', duration = 5000) {
+            window.addSystemMessage(message, type, duration);
+        };
+        
+        // Intercept chat messages with focus commands
+        const originalAddChatMessage = window.addChatMessage;
+        window.addChatMessage = function(message, isUser) {
+            if (!isUser && message.toLowerCase().includes('focus on')) {
+                // Convert to fly-in notification
+                window.addFlyInNotification(message, 'info', 7000);
+            } else {
+                // Regular chat message
+                if (originalAddChatMessage) {
+                    originalAddChatMessage(message, isUser);
+                }
+            }
+        };
+    </script>
+</body>
 </html>
     <header class="header">
       <div class="logo">
