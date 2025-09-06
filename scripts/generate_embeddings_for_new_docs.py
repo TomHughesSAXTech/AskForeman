@@ -20,21 +20,22 @@ SEARCH_ENDPOINT = "https://fcssearchservice.search.windows.net"
 SEARCH_API_KEY = os.environ.get("SEARCH_API_KEY", "")
 SEARCH_INDEX_NAME = "fcs-construction-docs-index-v2"
 
-def get_documents_without_embeddings(client: str = None) -> List[Dict[str, Any]]:
-    """Retrieve documents that don't have embeddings."""
+def get_documents(client: str = None, limit: int = 100) -> List[Dict[str, Any]]:
+    """Retrieve documents from the search index."""
     search_url = f"{SEARCH_ENDPOINT}/indexes/{SEARCH_INDEX_NAME}/docs"
     
-    # Build filter query - documents without contentVector
-    filter_query = "contentVector eq null"
+    # Build filter query
+    filter_query = None
     if client:
-        filter_query += f" and client eq '{client}'"
+        filter_query = f"client eq '{client}'"
     
     params = {
         "api-version": "2021-04-30-Preview",
-        "$filter": filter_query,
         "$select": "id,fileName,client,category,content",
-        "$top": 100  # Process up to 100 documents at a time
+        "$top": limit
     }
+    if filter_query:
+        params["$filter"] = filter_query
     
     headers = {
         "api-key": SEARCH_API_KEY,
@@ -45,7 +46,10 @@ def get_documents_without_embeddings(client: str = None) -> List[Dict[str, Any]]
         response = requests.get(search_url, params=params, headers=headers)
         if response.status_code == 200:
             data = response.json()
-            return data.get("value", [])
+            documents = data.get("value", [])
+            # Note: We can't check contentVector status via API as it's not retrievable
+            # So we'll process all documents and update embeddings
+            return documents
         else:
             print(f"Error fetching documents: {response.status_code} - {response.text}")
             return []
@@ -110,7 +114,7 @@ def update_document_with_embeddings(doc_id: str, embeddings: List[float]) -> boo
         print(f"Error updating document {doc_id}: {e}")
         return False
 
-def process_documents(client: str = None, dry_run: bool = False):
+def process_documents(client: str = None, dry_run: bool = False, force: bool = False):
     """Main processing function."""
     # Check for API keys
     if not AZURE_OPENAI_KEY:
@@ -120,15 +124,20 @@ def process_documents(client: str = None, dry_run: bool = False):
         print("Error: SEARCH_API_KEY environment variable not set")
         sys.exit(1)
     
-    # Get documents without embeddings
-    print(f"Fetching documents without embeddings{' for client: ' + client if client else ''}...")
-    documents = get_documents_without_embeddings(client)
+    # Get documents
+    print(f"Fetching documents{' for client: ' + client if client else ''}...")
+    documents = get_documents(client)
     
     if not documents:
-        print("No documents found without embeddings.")
+        print("No documents found.")
         return
     
-    print(f"Found {len(documents)} documents without embeddings.")
+    print(f"Found {len(documents)} documents total.")
+    if force:
+        print("Force mode: Will regenerate embeddings for all documents.")
+    else:
+        print("Note: Cannot determine which documents have embeddings via API.")
+        print("Will generate embeddings for all documents (existing ones will be updated).")
     
     if dry_run:
         print("\nDry run mode - documents that would be processed:")
@@ -179,10 +188,11 @@ def main():
     parser = argparse.ArgumentParser(description='Generate embeddings for documents in Azure Search')
     parser.add_argument('--client', type=str, help='Process only documents for a specific client')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be processed without making changes')
+    parser.add_argument('--force', action='store_true', help='Force regeneration of embeddings for all documents')
     
     args = parser.parse_args()
     
-    process_documents(client=args.client, dry_run=args.dry_run)
+    process_documents(client=args.client, dry_run=args.dry_run, force=args.force)
 
 if __name__ == "__main__":
     main()
