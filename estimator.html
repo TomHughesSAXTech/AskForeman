@@ -3783,22 +3783,85 @@
         // Also handle simple source patterns
         const simpleSourcePattern = /Source:\s*([^\n]+)/g;
         processedContent = processedContent.replace(simpleSourcePattern, (match, source) => {
-          // Extract filename and pages if present
+          // Check if this is a URL source reference
+          const urlMatch = source.match(/(https?:\/\/[^\s]+)/i);
+          if (urlMatch) {
+            const url = urlMatch[1];
+            const displayText = source.replace(url, '').trim();
+            return `
+              <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
+                <span style="font-size: 18px;">🔗</span>
+                <div style="flex: 1;">
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-weight: 600; color: #333;">Source:</span>
+                    ${displayText ? `<span style="margin-left: 8px;">${displayText}</span>` : ''}
+                  </div>
+                  <div style="font-size: 0.9em;">
+                    <a href="${url}" target="_blank" style="color: var(--primary-green); text-decoration: none; word-break: break-all; hover: text-decoration: underline;">
+                      ${url}
+                    </a>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <button onclick="window.open('${url}', '_blank')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🔍 Preview
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+          
+          // Extract filename and pages if present (for document sources)
           const parts = source.match(/(.+?)\s*-\s*Pages?\s*([\d-]+)/i);
           if (parts) {
             const [, fileName, pages] = parts;
-            return `
-              <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
-                <span style="font-size: 20px;">📎</span>
-                <div style="flex: 1;">
-                  <strong>Source:</strong> ${fileName.trim()}
-                  <span style="color: #666; margin-left: 10px;">Pages ${pages}</span>
+            const trimmedName = fileName.trim();
+            // Check if fileName looks like a URL
+            if (trimmedName.startsWith('http://') || trimmedName.startsWith('https://')) {
+              return `
+                <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
+                  <span style="font-size: 18px;">🔗</span>
+                  <div style="flex: 1;">
+                    <div style="margin-bottom: 4px;">
+                      <a href="${trimmedName}" target="_blank" style="color: var(--primary-green); text-decoration: none; font-weight: 600; word-break: break-all;">
+                        ${trimmedName}
+                      </a>
+                    </div>
+                    <div style="font-size: 0.9em; color: #666;">
+                      <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="window.open('${trimmedName}', '_blank')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      🔍 Preview
+                    </button>
+                  </div>
                 </div>
-                <button onclick="requestDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                  View Document
-                </button>
-              </div>
-            `;
+              `;
+            } else {
+              // Regular file reference
+              return `
+                <div class="source-reference" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: #f0f8ff; border-left: 3px solid var(--primary-green); margin: 10px 0; border-radius: 4px;">
+                  <span style="font-size: 20px;">📎</span>
+                  <div style="flex: 1;">
+                    <div style="margin-bottom: 4px;">
+                      <span style="font-weight: 600; color: var(--primary-green);">${trimmedName}</span>
+                    </div>
+                    <div style="font-size: 0.9em; color: #666;">
+                      <span style="margin-right: 8px;">Page${pages.includes('-') ? 's' : ''} ${pages}</span>
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="downloadFile('${fileName.trim()}', '${fileName.trim()}')" style="padding: 4px 12px; background: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      📥 Download
+                    </button>
+                    <button onclick="openDocument('${fileName.trim()}')" style="padding: 4px 12px; background: var(--primary-green); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      👁️ View
+                    </button>
+                  </div>
+                </div>
+              `;
+            }
           }
           return match; // Return original if no match
         });
@@ -3892,6 +3955,35 @@
         const message = `Please show me the document: ${fileName}`;
         chatInput.value = message;
         sendMessage();
+      }
+      
+      // Open document helper - opens a document URL or requests it from AI
+      function openDocument(fileName) {
+        // If it's a URL, open directly
+        if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+          window.open(fileName, '_blank');
+        } else {
+          // Request the document and display it
+          const message = `Please analyze this document: ${fileName}`;
+          chatInput.value = message;
+          sendMessage();
+        }
+      }
+
+      // Download document helper - initiates download or requests download link
+      function downloadDocument(fileName) {
+        // If it's a URL, attempt direct download
+        if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+          const a = document.createElement('a');
+          a.href = fileName;
+          a.download = fileName.split('/').pop();
+          a.click();
+        } else {
+          // Send a request to get the document download URL
+          const message = `Please provide a download link for: ${fileName}`;
+          chatInput.value = message;
+          sendMessage();
+        }
       }
 
       function addSystemMessage(content) {
