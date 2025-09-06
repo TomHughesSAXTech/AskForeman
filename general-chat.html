@@ -877,6 +877,9 @@
           // Remove typing indicator
           typingIndicator.remove();
           
+          // Process the response text for formatting
+          responseText = processMessageContent(responseText);
+          
           // Add assistant response
           const assistantMessage = document.createElement('div');
           assistantMessage.className = 'message assistant';
@@ -912,9 +915,53 @@
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
       }
+      
+      // Process message content for formatting
+      function processMessageContent(content) {
+        let processedContent = content;
+        
+        // Fix broken HTML in search results (unescape HTML entities)
+        processedContent = processedContent.replace(/&lt;/g, '<');
+        processedContent = processedContent.replace(/&gt;/g, '>');
+        processedContent = processedContent.replace(/&quot;/g, '"');
+        processedContent = processedContent.replace(/&#39;/g, "'");
+        processedContent = processedContent.replace(/&amp;/g, '&');
+        
+        // Fix search result formatting with link cards
+        processedContent = processedContent.replace(
+          /🔗\s*([^<\n]+)\n\s*(https?:\/\/[^\s]+)/gi,
+          function(match) {
+            const lines = match.split('\n');
+            const title = lines[0].replace('🔗', '').trim();
+            const url = lines[1].trim();
+            return `<div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-left: 3px solid var(--construction-orange); border-radius: 4px;">
+                <div style="font-weight: bold; margin-bottom: 5px;">🔗 ${title}</div>
+                <a href="${url}" target="_blank" style="color: var(--construction-orange); text-decoration: none; word-break: break-all;">${url}</a>
+            </div>`;
+          }
+        );
+        
+        // Convert URLs to clickable links
+        const urlPattern = /(?:https?:\/\/[^\s<>"]+|www\.[^\s<>"]+|[a-zA-Z0-9.-]+\.(com|org|net|io|gov|edu|co|uk|ca|de|jp|fr|au|us|ru|ch|it|nl|se|no|es|mil)[^\s<>"]*)/gi;
+        processedContent = processedContent.replace(urlPattern, (url) => {
+          // Skip if already part of an HTML tag
+          if (url.indexOf('onclick=') > -1 || url.indexOf('src=') > -1 || url.indexOf('href=') > -1) {
+            return url;
+          }
+          
+          const href = url.startsWith('http') ? url : `https://${url}`;
+          const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+          return `<a href="${href}" target="_blank" style="color: var(--construction-orange); text-decoration: underline; word-break: break-all;">${displayUrl}</a>`;
+        });
+        
+        // Convert markdown-style links [text](url) to HTML links
+        const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+        processedContent = processedContent.replace(markdownLinkPattern, (match, text, url) => {
+          return `<a href="${url}" target="_blank" style="color: var(--construction-orange); text-decoration: underline; font-weight: 500;">${text}</a>`;
+        });
+        
+        return processedContent;
+      }
     </script>
-    <!-- Chat attachment and search formatting fixes -->
-    <script src="js/fix-chat-attachments.js"></script>
-    <script src="js/fix-search-formatting.js"></script>
   </body>
 </html>
